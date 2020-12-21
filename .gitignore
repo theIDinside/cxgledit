@@ -1,0 +1,6 @@
+cmake-build-debug/
+deps/glm
+deps/fmt
+deps/glfw
+.idea/
+bin/
