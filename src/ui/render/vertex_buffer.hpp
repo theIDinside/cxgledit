@@ -14,6 +14,10 @@ struct TextVertex {
     GLfloat x{}, y{}, u{}, v{};
 };
 
+constexpr auto gpu_mem_required(std::size_t characterCount) -> std::size_t {
+    return sizeof(TextVertex) * 6 * characterCount;
+}
+
 struct TextVertices {
     explicit TextVertices(usize vertexCount);
 
@@ -47,19 +51,18 @@ struct TSTextVertices {
 
 using byte = unsigned char;
 using usize = std::size_t;
-using LocalStore = std::vector<byte>;
-class VertexBufferObject {
-public:
+using LocalStore = std::vector<TextVertex>;
+
+struct VertexBufferObject {
     VertexBufferObject(GLuint id, GLenum bufferType, LocalStore&& reservedMemory);
-    static std::unique_ptr<VertexBufferObject> create(GLenum bufferType, usize reservedSize = 0);
+    static std::unique_ptr<VertexBufferObject> create(GLuint vboId, GLenum bufferType, usize reservedSize = 0);
     void bind();
-    void add_data(const void* data, usize data_length, int repeat = 1);
-private:
+    int upload_to_gpu(bool clear_on_upload = true);
+    void reserve_gpu_memory(std::size_t text_character_count);
     GLuint id{0};
     GLenum type;
     LocalStore data;
-    usize bytes_added{0};
-    usize bytes_uploaded{0};
+    usize reservedGPUMemory{0};
     bool created{false};
     /// flag indicating whether GPU has equal representation of data uploaded. if !pristine, GPU needs an upload to have the same
     bool pristine{false};
@@ -67,9 +70,10 @@ private:
 };
 
 struct VAO {
-    static std::unique_ptr<VAO> make(GLenum VBOType, usize VBOReservedSize = 0);
+    static std::unique_ptr<VAO> make(GLenum VBOType, usize reservedVertexSpace = 0);
     void bind_all();
-
+    void flush_and_draw();
+    void reserve_gpu_size(std::size_t text_character_count);
     GLuint vao_id;
     std::unique_ptr<VertexBufferObject> vbo;
 };

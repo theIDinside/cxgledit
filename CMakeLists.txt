@@ -62,7 +62,14 @@ add_executable(cxgledit src/main.cpp
         src/ui/render/shader.cpp src/ui/render/shader.hpp
         src/ui/render/texture.cpp src/ui/render/texture.hpp
         src/ui/render/vertex_buffer.cpp src/ui/render/vertex_buffer.hpp
-        src/utils/utils.cpp src/utils/utils.hpp deps/include/stb/stb_image_write.h)
+        src/utils/utils.cpp src/utils/utils.hpp
+        deps/include/stb/stb_image_write.h
+        src/app.cpp src/app.hpp
+        src/core/core.hpp
+        src/core/text_data.cpp src/core/text_data.hpp
+        src/core/strops.cpp src/core/strops.hpp
+        src/utils/fileutil.cpp src/utils/fileutil.hpp
+        src/utils/strops.hpp src/ui/view.cpp src/ui/view.hpp src/ui/managers/font_library.cpp src/ui/managers/font_library.hpp src/ui/managers/shader_library.cpp src/ui/managers/shader_library.hpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${GLFW_DIR}/include")
 set(GLFW_BUILD_EXAMPLES OFF CACHE INTERNAL "Build the GLFW example programs")
@@ -106,7 +113,7 @@ else ()
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O3")
     message("Build type is ${CMAKE_BUILD_TYPE}. Copying assets to ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}/assets")
     message("Debug has instrumentation features enabled.")
-    target_compile_definitions(cxgledit PUBLIC INSTRUMENTATION_SET KEEP_LOGS IS_DEBUG)
+    target_compile_definitions(cxgledit PUBLIC INSTRUMENTATION KEEP_LOGS IS_DEBUG)
     add_custom_command(TARGET cxgledit POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${PROJECT_SOURCE_DIR}/assets ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}/assets)

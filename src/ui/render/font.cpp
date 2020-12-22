@@ -27,7 +27,6 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
 
     auto total_possible_glyph_count = charRange.to - charRange.from;
 
-
     int max_dim = (1 + (face->size->metrics.height >> 6)) * ceilf(sqrtf(NUM_GLYPHS));
     int tex_width = 1;
     while (tex_width < max_dim) tex_width <<= 1;
@@ -60,7 +59,8 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
             }
         }
 
-        // this is stuff you'd need when rendering individual glyphs out of the atlas
+        // this is stuff you'd need when rendering individual glyphs out of the
+        // atlas
 
         glyph_info glyphInfo{
                 .x0 = pen_x,
@@ -75,20 +75,6 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
         };
 
         glyph_cache.push_back(glyphInfo);
-/*
-        info[i].x0 = pen_x;
-        info[i].y0 = pen_y;
-        info[i].x1 = pen_x + bmp->width;
-        info[i].y1 = pen_y + bmp->rows;
-
-        info[i].x_off = face->glyph->bitmap_left;
-        info[i].y_off = face->glyph->bitmap_top;
-        info[i].advance = face->glyph->advance.x >> 6;
-        info[i].bearing = glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top);
-        info[i].size = glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows);
-*/
-
-
         pen_x += bmp->width + 1;
     }
     fmt::print("Max glyph height was: {}\n", max_glyph_height);
@@ -104,48 +90,30 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
         png_data[i * 4 + 2] |= pixels[i];
         png_data[i * 4 + 3] = 0xff;
     }
-    stbi_write_png("font_output.png", tex_width, tex_height, 4, png_data, tex_width * 4);
+
+    auto png_filename = fmt::format("{}_output.png", path);
+
+    stbi_write_png(png_filename.c_str(), tex_width, tex_height, 4, png_data, tex_width * 4);
 
     free(png_data);
     free(pixels);
 
-    return std::make_unique<SimpleFont>(SimpleFont{pixel_size, std::move(texture), std::move(glyph_cache)});
+    auto font = std::make_unique<SimpleFont>(SimpleFont{pixel_size, std::move(texture), std::move(glyph_cache)});
+    font->row_height = row_advance;
+    return font;
 }
 
-SimpleFont::SimpleFont(int pixelSize, std::unique_ptr<Texture> &&texture, std::vector<glyph_info>&& glyphs) : pixel_size(pixelSize), t(std::move(texture)), glyph_cache(std::move(glyphs)) {}
+SimpleFont::SimpleFont(int pixelSize, std::unique_ptr<Texture> &&texture, std::vector<glyph_info> &&glyphs)
+    : pixel_size(pixelSize), t(std::move(texture)), glyph_cache(std::move(glyphs)) {}
 
 static int test_count = 0;
 
 TextVertices SimpleFont::make_gpu_data(const std::string &text, int xPos, int yPos) {
     auto string_data = TextVertices::init_from_string(text);
-
-
     auto start_x = xPos;
     auto start_y = yPos;
     auto x = start_x;
     auto y = start_y;
-    /*
-    float xpos = x + ch.bearing.x;
-    float ypos = y - (ch.size.y - ch.bearing.y);
-
-    // ch.bearing = glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top)
-    // ch.size = glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows)
-    //
-    // vilket ger (x_off, y_off) = ch.bearing
-    // och (_, y1) = ch.size
-    h = y1 - y_off
-    float w = ch.size.x * scale;
-    float h = ch.size.y * scale;
-    // update VBO for each character
-    float vertices[6][4] = {{xpos, ypos + h, 0.0f, 0.0f},    {xpos, ypos, 0.0f, 1.0f},
-                            {xpos + w, ypos, 1.0f, 1.0f},
-
-                            {xpos, ypos + h, 0.0f, 0.0f},    {xpos + w, ypos, 1.0f, 1.0f},
-                            {xpos + w, ypos + h, 1.0f, 0.0f}};
-
-    float ypos = y - (ch.size.y - ch.bearing.y);
-    float ypos = y - (y_off - y1)
-*/
     auto vert_pointer_pos = string_data.data;
     for (const auto &c : text) {
         // auto &glyph = this->data[c];
@@ -177,8 +145,41 @@ TextVertices SimpleFont::make_gpu_data(const std::string &text, int xPos, int yP
         vert_pointer_pos += 6;
         x += glyph.advance;
     }
-
-
-    // assert(vertex_drawn - non_drawables*6 == string_data.vertex_count);
     return string_data;
+}
+int SimpleFont::get_row_advance() const { return row_advance; }
+void SimpleFont::emplace_gpu_data(VAO *vao, const std::string &text, int xPos, int yPos) {
+    vao->vbo->data.clear();
+    vao->vbo->data.reserve(text.size() * 6);
+    auto& store = vao->vbo->data;
+    auto start_x = xPos;
+    auto start_y = yPos;
+    auto x = start_x;
+    auto y = start_y;
+    for (const auto &c : text) {
+        // auto &glyph = this->data[c];
+        auto &glyph = this->glyph_cache[c];
+        if (c == '\n') {
+            x = start_x;
+            y -= row_advance;
+            continue;
+        }
+        auto xpos = float(x) + glyph.bearing.x;
+        auto ypos = float(y) - static_cast<float>(glyph.size.y - glyph.bearing.y);
+        auto x0 = float(glyph.x0) / float(t->width);
+        auto x1 = float(glyph.x1) / float(t->width);
+        auto y0 = float(glyph.y0) / float(t->height);
+        auto y1 = float(glyph.y1) / float(t->height);
+        auto w = float(glyph.x1 - glyph.x0);
+        auto h = float(glyph.y1 - glyph.y0);
+        store.emplace_back(xpos, ypos + h, x0, y0);
+        store.emplace_back(xpos, ypos, x0, y1);
+        store.emplace_back(xpos + w, ypos, x1, y1);
+        store.emplace_back(xpos, ypos + h, x0, y0);
+        store.emplace_back(xpos + w, ypos, x1, y1);
+        store.emplace_back(xpos + w, ypos + h, x1, y0);
+        x += glyph.advance;
+    }
+
+
 }

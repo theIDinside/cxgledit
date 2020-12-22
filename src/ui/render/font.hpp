@@ -43,11 +43,12 @@ public:
     SimpleFont(int pixelSize, std::unique_ptr<Texture>&& texture, std::vector<glyph_info>&& glyphs);
 
     TextVertices make_gpu_data(const std::string& text, int xpos, int ypos);
+    void emplace_gpu_data(VAO* vao, const std::string& text, int xPos, int yPos);
     std::unique_ptr<Texture> t{nullptr};
-
+    int get_row_advance() const;
     std::vector<glyph_info> glyph_cache;
-
+    int row_height;
 private:
-    glyph_info* data = info;
+    // glyph_info* data = info;
     int pixel_size{};
 };

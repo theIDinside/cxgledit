@@ -4,7 +4,9 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <iostream>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 class Shader
 {
@@ -43,6 +45,7 @@ public:
     void setMat4(const std::string &name, const glm::mat4 &mat) const;
 
     static Shader load_shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr);
+    static Shader load_shader(fs::path vertexPath, fs::path fragmentPath, fs::path geometryPath = "");
 
 private:
     // utility function for checking shader compilation/linking errors.

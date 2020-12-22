@@ -1,12 +1,14 @@
+#include "app.hpp"
 #include <GLFW/glfw3.h>
+#include <core/core.hpp>
 #include <fmt/core.h>
+#include <fstream>
 #include <glad/glad.h>
+#include <glm/gtc/matrix_transform.hpp>
 #include <mutex>
 #include <ui/render/font.hpp>
 #include <ui/render/shader.hpp>
 #include <utils/utils.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <fstream>
 
 static int wh = 768, ww = 1024;
 static GLFWwindow* win = nullptr;
@@ -32,6 +34,19 @@ void render(const std::string& text, SimpleFont* font, Shader& fontShader, GLuin
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
     vertexData.destroy();
+}
+
+void render(const std::string& text, SimpleFont* font, Shader& fontShader, VAO* vao, int atx, int aty) {
+    font->emplace_gpu_data(vao, text, atx, wh - aty);
+    glm::vec3 col{1.0, 0.5, 0.0};
+    fontShader.use();
+    font->t->bind();
+    projection = glm::ortho(0.0f, static_cast<float>(ww), 0.0f, static_cast<float>(wh));
+    vao->bind_all();
+    // glUniform3f(glGetUniformLocation(shader.ID, "textColor"), col.x, col.y, col.z);
+    fontShader.setVec3("textColor", col);
+    fontShader.setMat4("projection", projection);
+    vao->flush_and_draw();
 }
 
 auto init_glfw(int win_width, int win_height) {
@@ -79,39 +94,62 @@ static std::string text_buffer{""};
 
 int main() {
 
-    auto SWEDISH_LAST_ALPHA_CHAR_UNICODE = 0x00f6u;
+
+    auto app = App::create(ww, wh);
+    // app->load_file("main_2.cpp");
+    app->run_loop();
+
+    // */
+
+    /*
 
     text_buffer.reserve(100000);
     fmt::print("Creating window");
     win = init_glfw(ww, wh);
     projection = glm::ortho(0.0f, float(ww), 0.0f, float(wh));
-    auto font = SimpleFont::setup_font("assets/fonts/Ubuntu-R.ttf", 24, CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE });
-    auto text_shader = Shader::load_shader("assets/shaders/textshader.vs", "assets/shaders/textshader.fs");
-    text_shader.use();
 
-    text_shader.setMat4("projection", projection);
+
+    FontConfig default_font_cfg {
+            .name = "Ubuntu-R",
+            .path = "assets/fonts/Ubuntu-R.ttf",
+            .pixel_size = 24,
+            .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE }
+    };
+    // "assets/shaders/textshader.vs", "assets/shaders/textshader.fs"
+    ShaderConfig text_shader_cfg {
+            .name = "text",
+            .vs_path = "assets/shaders/textshader.vs",
+            .fs_path = "assets/shaders/textshader.fs"
+    };
+
+    FontLibrary::get_instance().load_font(default_font_cfg);
+    ShaderLibrary::get_instance().load_shader(text_shader_cfg);
+
+
+    // auto font = SimpleFont::setup_font("assets/fonts/Ubuntu-R.ttf", 24, CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE });
+    // auto text_shader = Shader::load_shader("assets/shaders/textshader.vs", "assets/shaders/textshader.fs");
+
+    auto font = FontLibrary::get_default_font();
+    auto text_shader = ShaderLibrary::get_instance().get_shader("text");
+
+    text_shader->use();
+
+    text_shader->setMat4("projection", projection);
     std::string tmp_buffer;
 
     auto file_path = "main_2.cpp";
     std::ifstream f{file_path};
-    tmp_buffer.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+    text_buffer.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
     fmt::print("Loaded file with {} bytes\n", text_buffer.size());
 
     auto VAO = 0u;
     auto VBO = 0u;
     constexpr auto CHARACTERS_DISPLAY_DEFAULT_LENGTH = 1000000; // default setup buffer for 30k characters
-    constexpr auto TEXT_DISPLAY_BUFFER_SIZE = sizeof(float) * 6 * 4 * CHARACTERS_DISPLAY_DEFAULT_LENGTH;
+    constexpr auto TEXT_DISPLAY_BUFFER_SIZE = gpu_mem_required(CHARACTERS_DISPLAY_DEFAULT_LENGTH);
+
     fmt::print("Creating a buffer of {} bytes\n", TEXT_DISPLAY_BUFFER_SIZE);
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glEnableVertexAttribArray(0);
-    glBufferData(GL_ARRAY_BUFFER, TEXT_DISPLAY_BUFFER_SIZE, nullptr, GL_DYNAMIC_DRAW);
-    // glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+
+    auto vao = VAO::make(GL_ARRAY_BUFFER, TEXT_DISPLAY_BUFFER_SIZE);
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -139,7 +177,8 @@ int main() {
 
     while(!glfwWindowShouldClose(win)) {
         auto t1 = std::chrono::high_resolution_clock::now();
-        render(text_buffer, font.get(), text_shader, VAO, VBO, 10, 100);
+        // render(text_buffer, font.get(), text_shader, vao->vao_id, vao->vbo->id, 5, font->get_row_advance());
+        render(text_buffer, font, *text_shader, vao.get(), 5, font->get_row_advance());
         auto t2 = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
         fmt::print("Frame time: {}us\n",duration);
@@ -148,9 +187,9 @@ int main() {
         glfwWaitEventsTimeout(1);
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        text_shader.setMat4("projection", projection);
+        text_shader->setMat4("projection", projection);
     }
 
-
+    // */
     return 0;
 }
