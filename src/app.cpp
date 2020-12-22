@@ -8,7 +8,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <utils/utils.hpp>
 
-#define get_app_handle(window) (App*)glfwGetWindowUserPointer(window)
+#define get_app_handle(window) (App *) glfwGetWindowUserPointer(window)
 
 void framebuffer_callback(GLFWwindow *window, int width, int height) {
     fmt::print("New width: {}\t New height: {}\n", width, height);
@@ -45,25 +45,21 @@ App *App::create(int app_width, int app_height, const std::string &title) {
     instance->title = title;
     instance->window = window;
 
-    if(!instance->window) {
+    if (!instance->window) {
         glfwTerminate();
         PANIC("Failed to create GLFW Window");
     }
 
     // "assets/fonts/Ubuntu-R.ttf", 24, CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE }
 
-    FontConfig default_font_cfg {
-            .name = "Ubuntu-R",
-            .path = "assets/fonts/Ubuntu-R.ttf",
-            .pixel_size = 24,
-            .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE }
-    };
+    FontConfig default_font_cfg{.name = "Ubuntu-R",
+                                .path = "assets/fonts/Ubuntu-R.ttf",
+                                .pixel_size = 24,
+                                .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
     // "assets/shaders/textshader.vs", "assets/shaders/textshader.fs"
-    ShaderConfig text_shader {
-            .name = "text",
-            .vs_path = "assets/shaders/textshader.vs",
-            .fs_path = "assets/shaders/textshader.fs"
-    };
+    ShaderConfig text_shader{.name = "text",
+                             .vs_path = "assets/shaders/textshader.vs",
+                             .fs_path = "assets/shaders/textshader.fs"};
 
     /*
     ShaderConfig cursor_shader {
@@ -102,18 +98,18 @@ App *App::create(int app_width, int app_height, const std::string &title) {
     static constexpr auto pressed_or_repeated = [](auto action) -> bool { return action & PRESS_MASK; };
 
     glfwSetKeyCallback(window, [](auto win, int key, int scancode, int action, int mods) {
-      auto app = get_app_handle(win);
+        auto app = get_app_handle(win);
 
-      if (pressed_or_repeated(action)) {
-          switch(key) {
-              case GLFW_KEY_ENTER:
-                  app->active->insert('\n');
-                  break;
-              case GLFW_KEY_TAB:
-                  app->active->insert("    ");
-                  break;
-          }
-      }
+        if (pressed_or_repeated(action)) {
+            switch (key) {
+                case GLFW_KEY_ENTER:
+                    app->active->insert('\n');
+                    break;
+                case GLFW_KEY_TAB:
+                    app->active->insert("    ");
+                    break;
+            }
+        }
     });
 
     return instance;
@@ -128,7 +124,7 @@ void App::set_dimensions(int w, int h) {
     this->projection = glm::ortho(0.0f, static_cast<float>(w), 0.0f, static_cast<float>(h));
 }
 void App::run_loop() {
-    while(this->no_close_condition()) {
+    while (this->no_close_condition()) {
         // TODO: do stuff.
         draw_all();
         glfwWaitEventsTimeout(1);
@@ -137,16 +133,12 @@ void App::run_loop() {
     }
 }
 bool App::no_close_condition() {
-    if(glfwWindowShouldClose(window)) {
-        return false;
-    }
+    if (glfwWindowShouldClose(window)) { return false; }
     return true;
 }
-void App::load_file(const fs::path& file) {
-    if(!fs::exists(file)) {
-        PANIC("File {} doesn't exist. Forced exit.", file.string());
-    }
-    if(active->empty()) {
+void App::load_file(const fs::path &file) {
+    if (!fs::exists(file)) { PANIC("File {} doesn't exist. Forced exit.", file.string()); }
+    if (active->empty()) {
         util::println("Active text buffer is empty. Loading data into it.");
         std::string tmp;
         std::ifstream f{file};
@@ -166,13 +158,9 @@ void App::load_file(const fs::path& file) {
     }
 }
 void App::draw_all() {
-    for(auto& view : views) {
-        view->draw();
-    }
+    for (auto &view : views) { view->draw(); }
     glfwSwapBuffers(this->window);
 }
 void App::update_views_projections() {
-    for(auto& view : views) {
-        view->set_projection(projection);
-    }
+    for (auto &view : views) { view->set_projection(projection); }
 }
