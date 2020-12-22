@@ -4,3 +4,4 @@ deps/fmt
 deps/glfw
 .idea/
 bin/
+cmake-build-relwithdebinfo/

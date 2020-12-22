@@ -17,9 +17,12 @@ void render(const std::string& text, SimpleFont* font, Shader& fontShader, GLuin
     glm::vec3 col{1.0, 0.5, 0.0};
     fontShader.use();
     font->t->bind();
+    projection = glm::ortho(0.0f, static_cast<float>(ww), 0.0f, static_cast<float>(wh));
+
     glBindVertexArray(VAO);
     // glUniform3f(glGetUniformLocation(shader.ID, "textColor"), col.x, col.y, col.z);
     fontShader.setVec3("textColor", col);
+    fontShader.setMat4("projection", projection);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     // glBufferData(GL_ARRAY_BUFFER, vertexData.bytes_size(), vertexData.data, GL_DYNAMIC_DRAW);
@@ -91,7 +94,7 @@ int main() {
 
     auto file_path = "main_2.cpp";
     std::ifstream f{file_path};
-    text_buffer.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+    tmp_buffer.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
     fmt::print("Loaded file with {} bytes\n", text_buffer.size());
 
     auto VAO = 0u;
@@ -131,6 +134,8 @@ int main() {
         }
       }
     });
+
+
 
     while(!glfwWindowShouldClose(win)) {
         auto t1 = std::chrono::high_resolution_clock::now();
