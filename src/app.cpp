@@ -3,10 +3,7 @@
 //
 
 #include "app.hpp"
-#include <core/core.hpp>
-#include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>
-#include <utils/utils.hpp>
 
 #define get_app_handle(window) (App *) glfwGetWindowUserPointer(window)
 
@@ -14,6 +11,7 @@ void framebuffer_callback(GLFWwindow *window, int width, int height) {
     fmt::print("New width: {}\t New height: {}\n", width, height);
     auto app = get_app_handle(window);
     app->set_dimensions(width, height);
+    app->update_views_dimensions();
     app->update_views_projections();
     glViewport(0, 0, width, height);
 }
@@ -80,7 +78,8 @@ App *App::create(int app_width, int app_height, const std::string &title) {
     auto bufHandle = StdStringBuffer::make_handle();
     instance->data.push_back(std::move(bufHandle));
     instance->active = instance->data.back().get();
-    instance->load_file("main_2.cpp");
+
+    // instance->load_file("main_2.cpp");
 
     auto v = View::create(instance->active, "main", app_width, app_height, 0, app_height);
     v->set_projection(instance->projection);
@@ -163,4 +162,9 @@ void App::draw_all() {
 }
 void App::update_views_projections() {
     for (auto &view : views) { view->set_projection(projection); }
+}
+void App::update_views_dimensions() {
+    views[0]->set_dimensions(win_width, win_height);
+    views[0]->set_projection(projection);
+    views[0]->anchor_at(0, win_height);
 }

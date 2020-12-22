@@ -9,11 +9,14 @@
 #include <ui/render/vertex_buffer.hpp>
 #include <core/text_data.hpp>
 
+
 class View {
 public:
     static std::unique_ptr<View> create(TextData* data, const std::string& name, int w, int h, int x, int y);
     void draw();
     void set_projection(glm::mat4 projection);
+    void set_dimensions(int w, int h);
+    void anchor_at(int x, int y);
 private:
     int width{}, height{}, x{}, y{};
     std::unique_ptr<VAO> vao{nullptr}; // the graphical representation

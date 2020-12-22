@@ -48,3 +48,11 @@ void View::draw() {
 void View::set_projection(glm::mat4 projection) {
     this->projection = projection;
 }
+void View::set_dimensions(int w, int h) {
+    this->width = w;
+    this->height = h;
+}
+void View::anchor_at(int x, int y) {
+    this->x = x;
+    this->y = y;
+}

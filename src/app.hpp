@@ -26,6 +26,8 @@ public:
     void load_file(const fs::path& file);
     void draw_all();
     void update_views_projections();
+    void update_views_dimensions();
+
 private:
     void cleanup();
     GLFWwindow *window;
