@@ -15,6 +15,18 @@
 
 using u64 = std::size_t;
 
+SyntaxColor red{.r = 1.0f};
+SyntaxColor green{.g = 1.0f};
+SyntaxColor blue{.b = 1.0f};
+SyntaxColor sc1{.r = 1.0f, .g = 0.5f, .b = 0.0f};
+SyntaxColor sc2{.r = 1.0f, .g = 0.5f, .b = 0.3f};
+SyntaxColor sc3{.r = 0.3f, .g = 0.8f, .b = 0.8f};
+SyntaxColor sc4{.r = 0.2f, .g = 0.9f, .b = 0.1f};
+SyntaxColor sc5{.r = 0.7f, .g = 1.0f, .b = 1.0f};
+
+
+SyntaxColor SimpleFont::colors[8]{red, green, blue, sc1, sc2, sc3, sc4, sc5};
+
 std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int pixel_size, CharacterRange charRange) {
     FT_Library ft;
     FT_Face face;
@@ -151,7 +163,7 @@ int SimpleFont::get_row_advance() const { return row_advance; }
 void SimpleFont::emplace_gpu_data(VAO *vao, const std::string &text, int xPos, int yPos) {
     vao->vbo->data.clear();
     vao->vbo->data.reserve(text.size() * 6);
-    auto& store = vao->vbo->data;
+    auto &store = vao->vbo->data;
     auto start_x = xPos;
     auto start_y = yPos;
     auto x = start_x;
@@ -159,6 +171,10 @@ void SimpleFont::emplace_gpu_data(VAO *vao, const std::string &text, int xPos, i
     auto r = 1.0f;
     auto g = 0.0f;
     auto b = 0.2f;
+
+    std::vector<std::size_t>
+            del; // delimiters are separated by whitespaces, (), {} or []
+
     for (const auto &c : text) {
         // auto &glyph = this->data[c];
         auto &glyph = this->glyph_cache[c];
@@ -183,6 +199,98 @@ void SimpleFont::emplace_gpu_data(VAO *vao, const std::string &text, int xPos, i
         store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
         x += glyph.advance;
     }
+}
 
+void SimpleFont::emplace_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos) {
+    vao->vbo->data.clear();
+    vao->vbo->data.reserve(text.size() * 6);
+    auto &store = vao->vbo->data;
+    auto start_x = xPos;
+    auto start_y = yPos;
+    auto x = start_x;
+    auto y = start_y;
+    auto r = 0.2f;
+    auto g = 0.325f;
+    auto b = 0.75f;
 
+    auto words = text_elements(text);
+    std::vector<Keyword> keywords_ranges;
+
+    for (const auto &[begin, end] : words) {
+        auto rng = text.substr(begin, end - begin);
+        for (const auto &[word, color] : keywords) {
+            if (word == rng) {
+                keywords_ranges.emplace_back(Keyword{begin, end, color});
+            }
+        }
+    }
+
+    // iterate through all characters
+    auto item_it = keywords_ranges.begin();
+    auto pos = 0;
+    bool syntax_set = false;
+
+    auto data_index = 0;
+    for (auto c = text.begin(); c != text.end(); c++, pos++) {
+        if(item_it != keywords_ranges.end()) {
+            auto &kw = *item_it;
+            auto [begin, end, col] = *item_it;
+            if (pos > end) {
+                item_it++;
+                if (item_it != keywords_ranges.end()) {
+                    begin = item_it->begin;
+                    end = item_it->end;
+                    col = item_it->color;
+                }
+            }
+            if (pos >= begin && pos < end) { // handled syntax color
+                r = col.x;
+                g = col.y;
+                b = col.z;
+            } else {    // default text color
+                r = 1;
+                g = 1;
+                b = 1;
+            }
+        }
+        auto &glyph = this->glyph_cache[*c];
+        if (*c == '\n') {
+            x = start_x;
+            y -= row_advance;
+            continue;
+        }
+        auto xpos = float(x) + glyph.bearing.x;
+        auto ypos = float(y) - static_cast<float>(glyph.size.y - glyph.bearing.y);
+        auto x0 = float(glyph.x0) / float(t->width);
+        auto x1 = float(glyph.x1) / float(t->width);
+        auto y0 = float(glyph.y0) / float(t->height);
+        auto y1 = float(glyph.y1) / float(t->height);
+        auto w = float(glyph.x1 - glyph.x0);
+        auto h = float(glyph.y1 - glyph.y0);
+        store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+        store.emplace_back(xpos, ypos, x0, y1, r, g, b);
+        store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+        store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+        store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+        store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
+        x += glyph.advance;
+    }
+}
+std::vector<Word> text_elements(std::string_view text) {
+    std::vector<Word> items;
+    auto ptr = text.begin();
+    auto end = text.end();
+    std::vector<std::size_t> del;
+
+    for (auto i = 0; ptr != end; i++, ptr++) {
+        if (!std::isalpha(*ptr) && *ptr != '_' && *ptr != '#') {
+            del.push_back(i);
+        }
+    }
+    auto begin = 0;
+    for (auto pos : del) {
+        items.emplace_back(begin, pos);
+        begin = pos + 1;
+    }
+    return items;
 }

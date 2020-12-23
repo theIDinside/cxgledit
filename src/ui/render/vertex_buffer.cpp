@@ -69,19 +69,13 @@ void VAO::reserve_gpu_size(std::size_t text_character_count) {
 }
 
 auto TextVertices::bytes_size() const -> int {
-    return sizeof(GLfloat) * 4 * vertex_count;
+    return sizeof(TextVertex) * vertex_count;
 }
 
 TextVertices::TextVertices(usize vertexCount) : data(new TextVertex[vertexCount]), vertex_count(vertexCount) {
 
 }
 
-void TextVertices::push_quad_then_delete(TextVertex v_data[6]) {
-    auto curPtrPos = (data + (current_quad_index * 6));
-    std::copy(v_data, v_data+6, curPtrPos);
-    delete[] v_data;
-    current_quad_index++;
-}
 bool TextVertices::complete() const {
     return (current_quad_index * 6) - vertex_count == 0;
 }
@@ -89,10 +83,9 @@ void TextVertices::destroy() {
     delete[] data;
 }
 TextVertices TextVertices::init_from_string(const std::string &text) {
-
-    return TextVertices{text.size() * 6};
+    return TextVertices{text.size() * sizeof(TextVertex)};
 }
 TSTextVertices TSTextVertices::init_from_string(const std::string &text) {
-    return TSTextVertices{text.size() * 4};
+    return TSTextVertices{text.size() * sizeof(TextVertex)};
 }
 TSTextVertices::TSTextVertices(usize vertexCount) : data(new TextVertex[vertexCount]), vertex_count(vertexCount) {}

@@ -35,7 +35,7 @@ void View::draw() {
     shader->setVec3("textColor", col);
     shader->setMat4("projection", projection);
     auto vao_ = vao.get();
-    auto data_ = data->to_std_string();
+    auto data_ = data->to_string_view();
 
 
     font->emplace_gpu_data(

@@ -79,7 +79,7 @@ App *App::create(int app_width, int app_height, const std::string &title) {
     instance->data.push_back(std::move(bufHandle));
     instance->active = instance->data.back().get();
 
-    instance->load_file("main_2.cpp");
+    // instance->load_file("main_2.cpp");
 
     auto v = View::create(instance->active, "main", app_width, app_height, 0, app_height);
     v->set_projection(instance->projection);
