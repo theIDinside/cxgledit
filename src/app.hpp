@@ -24,7 +24,7 @@ public:
     void run_loop();
     void set_dimensions(int w, int h);
     void load_file(const fs::path& file);
-    void draw_all();
+    void draw_all(bool force_redraw = false);
     void update_views_projections();
     void update_views_dimensions();
     void update_projection();

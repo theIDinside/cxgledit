@@ -26,22 +26,16 @@ std::unique_ptr<View> View::create(TextData *data, const std::string &name, int 
     return v;
 }
 void View::draw() {
-    FN_MICRO_BENCH();
-    glm::vec3 col{1.0, 0.5, 0.0};
     vao->bind_all();
     shader->use();
     font->t->bind();
     // projection = glm::ortho(0.0f, static_cast<float>(ww), 0.0f, static_cast<float>(wh));
-    {
-        PUSH_FN_SUBSECTION("Setting uniforms");
-        shader->set_projection(projection);
-    }
+    shader->set_projection(projection);
     auto vao_ = vao.get();
 
     if(data->is_pristine()) {
         vao->draw();
     } else {
-        PUSH_FN_SUBSECTION("rebuild & draw");
         auto data_view = data->to_string_view();
         font->emplace_gpu_data(vao_, data_view, this->x + View::TEXT_LENGTH_FROM_EDGE, this->y - font->get_row_advance());
         vao->flush_and_draw();
@@ -62,3 +56,15 @@ SimpleFont *View::get_font() {
     return font;
 }
 TextData *View::get_text_buffer() const { return data; }
+void View::forced_draw() {
+    FN_MICRO_BENCH();
+    vao->bind_all();
+    shader->use();
+    font->t->bind();
+    auto data_view = data->to_string_view();
+    font->emplace_gpu_data(vao.get(), data_view, this->x + View::TEXT_LENGTH_FROM_EDGE, this->y - font->get_row_advance());
+    vao->flush_and_draw();
+}
+void View::set_scroll(int scrollPos) {
+    this->scroll = scrollPos;
+}

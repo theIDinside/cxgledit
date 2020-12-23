@@ -12,7 +12,8 @@ constexpr auto SWEDISH_LAST_ALPHA_CHAR_UNICODE = 0x00f6u;
 template<typename... Args>
 void panic(const char *message, Args... args) {
     fmt::print(message, args...);
-    fmt::print("\nExiting.");
+    fmt::print("\nExiting.\n");
+    fflush(stdout);
     std::abort();
 }
 

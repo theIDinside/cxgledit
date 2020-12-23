@@ -15,9 +15,11 @@ public:
     static constexpr auto TEXT_LENGTH_FROM_EDGE = 4u;
     static std::unique_ptr<View> create(TextData* data, const std::string& name, int w, int h, int x, int y);
     void draw();
+    void forced_draw();
     void set_projection(glm::mat4 projection);
     void set_dimensions(int w, int h);
     void anchor_at(int x, int y);
+    void set_scroll(int scroll_pos);
     SimpleFont* get_font();
     [[nodiscard]] TextData* get_text_buffer() const;
 private:
@@ -28,4 +30,5 @@ private:
     std::string name{};
     TextData* data = nullptr;
     glm::mat4 projection;
+    int scroll = 0;
 };

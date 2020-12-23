@@ -13,6 +13,7 @@ void framebuffer_callback(GLFWwindow *window, int width, int height) {
     app->set_dimensions(width, height);
     app->update_views_dimensions();
     app->update_views_projections();
+    app->draw_all(true);
     glViewport(0, 0, width, height);
 }
 
@@ -177,8 +178,19 @@ void App::load_file(const fs::path &file) {
         active_buffer = data.back().get();
     }
 }
-void App::draw_all() {
-    for (auto &view : views) { view->draw(); }
+
+/**
+ * If the application window changes dimensions, the alignment, the text placement, everything might get out of sync,
+ * and to ameliorate that, one can call draw_all(true), thus forcing a recalculation of the projection matrix,
+ * and upload new adjusted vertex data to the GPU, displaying the views & window correctly.
+ * @param force_redraw
+ */
+void App::draw_all(bool force_redraw) {
+    if (force_redraw) {
+        for (auto &view : views) view->forced_draw();
+    } else {
+        for (auto &view : views) view->draw();
+    }
     glfwSwapBuffers(this->window);
 }
 void App::update_views_projections() {
@@ -222,6 +234,9 @@ void App::kb_command(int key) {
         } break;
     }
 }
+
+
+
 void App::graceful_exit() {
     // TODO: ask user to save / discard unsaved changes
     // TODO: clean up GPU memory resources

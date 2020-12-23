@@ -49,7 +49,20 @@ constexpr std::array keywords{mp("int", c_keyword),    mp("bool", c_keyword),
                               mp("struct", c_keyword), mp("using", c_keyword),
                               mp("const", c_keyword), mp("char", c_keyword),
                               mp("constexpr", c_keyword), mp("auto", c_keyword),
-                              mp("#define", YELLOW), mp("#include", YELLOW)};
+                              mp("this", c_keyword), mp("static", c_keyword),
+                              mp("class", c_keyword), mp("public", c_keyword),
+                              mp("private", c_keyword), mp("protected", c_keyword),
+                              mp("unsigned", c_keyword), mp("signed", c_keyword),
+                              mp("mutable", c_keyword), mp("volatile", c_keyword),
+                              mp("return", c_keyword), mp("signed", c_keyword),
+                              mp("nullptr", c_keyword), mp("final", c_keyword),
+                              mp("virtual", c_keyword), mp("override", c_keyword),
+                              mp("true", c_keyword), mp("false", c_keyword),
+                              mp("if", c_keyword), mp("else", c_keyword),
+                              mp("namespace", c_keyword), mp("friend", c_keyword),
+                              mp("operator", c_keyword), mp("explicit", c_keyword),
+                              mp("#define", YELLOW), mp("#include", YELLOW),
+                              };
 
 constexpr std::array highlight{RED, GREEN, BLUE, YELLOW, WHITE};
 
@@ -96,7 +109,6 @@ public:
     TextVertices make_gpu_data(const std::string& text, int xpos, int ypos);
     void emplace_gpu_data(VAO* vao, const std::string& text, int xPos, int yPos);
     void emplace_gpu_data(VAO* vao, std::string_view text, int xPos, int yPos);
-
 
 
     std::unique_ptr<Texture> t{nullptr};
