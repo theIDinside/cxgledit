@@ -12,6 +12,7 @@ using usize = std::size_t;
 
 struct TextVertex {
     GLfloat x{}, y{}, u{}, v{};
+    GLfloat r{}, g{}, b{};
 };
 
 constexpr auto gpu_mem_required(std::size_t characterCount) -> std::size_t {

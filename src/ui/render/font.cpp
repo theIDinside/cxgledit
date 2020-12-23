@@ -156,6 +156,9 @@ void SimpleFont::emplace_gpu_data(VAO *vao, const std::string &text, int xPos, i
     auto start_y = yPos;
     auto x = start_x;
     auto y = start_y;
+    auto r = 1.0f;
+    auto g = 0.0f;
+    auto b = 0.2f;
     for (const auto &c : text) {
         // auto &glyph = this->data[c];
         auto &glyph = this->glyph_cache[c];
@@ -172,12 +175,12 @@ void SimpleFont::emplace_gpu_data(VAO *vao, const std::string &text, int xPos, i
         auto y1 = float(glyph.y1) / float(t->height);
         auto w = float(glyph.x1 - glyph.x0);
         auto h = float(glyph.y1 - glyph.y0);
-        store.emplace_back(xpos, ypos + h, x0, y0);
-        store.emplace_back(xpos, ypos, x0, y1);
-        store.emplace_back(xpos + w, ypos, x1, y1);
-        store.emplace_back(xpos, ypos + h, x0, y0);
-        store.emplace_back(xpos + w, ypos, x1, y1);
-        store.emplace_back(xpos + w, ypos + h, x1, y0);
+        store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+        store.emplace_back(xpos, ypos, x0, y1, r, g, b);
+        store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+        store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+        store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+        store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
         x += glyph.advance;
     }
 
