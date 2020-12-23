@@ -35,3 +35,23 @@ std::optional<std::vector<CountResult>> count_elements(const ContainerType& str,
   if(!res.empty()) return res;
   else return {};
 }
+
+/*
+ * std::optional<int> a = 10;
+ * std::optional<int> b = {};
+ * or(a, [](auto e) {
+ *
+ * })
+ *
+ */
+
+
+
+template<typename T, typename MapTo, typename Fn>
+constexpr auto map_or(std::optional<T> opt, MapTo or_value, Fn fn) -> MapTo {
+    if(opt) {
+        return fn(*opt);
+    } else {
+        return or_value;
+    }
+}

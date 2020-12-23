@@ -179,6 +179,7 @@ public:
     [[nodiscard]] virtual size_t npos() const = 0;
     [[nodiscard]] virtual std::size_t size() const = 0;
     [[nodiscard]] virtual bool empty() const { return size() == 0; };
+    virtual std::size_t lines_count() const = 0;
 
     virtual BufferCursor &get_cursor() = 0;
 
@@ -194,12 +195,17 @@ public:
 
 #ifdef DEBUG
     [[nodiscard]] virtual std::string to_std_string() const = 0;
-    [[nodiscard]] virtual std::string_view to_string_view() const = 0;
+    [[nodiscard]] virtual std::string_view to_string_view() = 0;
     virtual void load_string(std::string &&data) = 0;
 #endif
 
+    virtual bool is_pristine() const {
+        return display_pristine;
+    }
+
 protected:
     std::size_t m_lines;
+    bool display_pristine{false};
 private:
     virtual void char_move_forward(std::size_t count) = 0;
     virtual void char_move_backward(std::size_t count) = 0;
@@ -233,6 +239,7 @@ public:
     void set_line(std::size_t pos) override;
     BufferCursor &get_cursor() override;
 
+
     /// INIT CALLS
     static std::unique_ptr<TextData> make_handle();
     static std::unique_ptr<TextData> make_handle(std::string data);
@@ -243,7 +250,7 @@ public:
     [[nodiscard]] std::optional<size_t> find_from(size_t pos, char ch) const override;
     [[nodiscard]] size_t rfind_from(size_t pos, std::string_view v) const override;
     [[nodiscard]] size_t find_from(size_t pos, std::string_view v) const override;
-
+    size_t lines_count() const override;
 
     char &get_at(std::size_t pos) override;
     std::optional<char> get_value_at_safe(std::size_t pos) override;
@@ -252,7 +259,7 @@ public:
 
 #ifdef DEBUG
     [[nodiscard]] std::string to_std_string() const override;
-    [[nodiscard]] std::string_view to_string_view() const override;
+    [[nodiscard]] std::string_view to_string_view() override;
     void load_string(std::string &&data) override;
 #endif
 
@@ -266,4 +273,7 @@ private:
     void remove_ch_forward(size_t i);
     void remove_ch_backward(size_t i);
     std::string store;
+    // This variable is set/checked every time a view wants to display. So once
+    // vertex data is generated, this is set to true, until any text is inserted to the buffer
+    // at which point it is set to false. This way we don't have to reconstruct vertex data every render cycle.
 };

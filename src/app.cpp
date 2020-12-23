@@ -39,6 +39,7 @@ App *App::create(int app_width, int app_height, const std::string &title) {
 
     instance->win_height = app_height;
     instance->win_width = app_width;
+    instance->scroll = 0;
     instance->projection = glm::ortho(0.0f, static_cast<float>(app_width), 0.0f, static_cast<float>(app_height));
     instance->title = title;
     instance->window = window;
@@ -77,19 +78,20 @@ App *App::create(int app_width, int app_height, const std::string &title) {
     ShaderLibrary::get_instance().load_shader(text_shader);
     auto bufHandle = StdStringBuffer::make_handle();
     instance->data.push_back(std::move(bufHandle));
-    instance->active = instance->data.back().get();
+    instance->active_buffer = instance->data.back().get();
 
-    // instance->load_file("main_2.cpp");
+    instance->load_file("main_2.cpp");
 
-    auto v = View::create(instance->active, "main", app_width, app_height, 0, app_height);
+    auto v = View::create(instance->active_buffer, "main", app_width, app_height, 0, app_height);
     v->set_projection(instance->projection);
     instance->views.push_back(std::move(v));
+    instance->active_view = instance->views.back().get();
 
     glfwSetWindowUserPointer(window, instance);
 
     glfwSetCharCallback(window, [](auto win, auto codepoint) {
         auto app = get_app_handle(win);
-        app->active->insert(codepoint);
+        app->active_buffer->insert(codepoint);
         // text_buffer.push_back(codepoint);
     });
 
@@ -100,13 +102,34 @@ App *App::create(int app_width, int app_height, const std::string &title) {
         auto app = get_app_handle(win);
 
         if (pressed_or_repeated(action)) {
-            switch (key) {
-                case GLFW_KEY_ENTER:
-                    app->active->insert('\n');
-                    break;
-                case GLFW_KEY_TAB:
-                    app->active->insert("    ");
-                    break;
+            if (mods & GLFW_MOD_CONTROL) {
+                app->kb_command(key);
+            } else {
+                switch (key) {
+                    case GLFW_KEY_ENTER:
+                        app->active_buffer->insert('\n');
+                        break;
+                    case GLFW_KEY_TAB:
+                        app->active_buffer->insert("    ");
+                        break;
+                    case GLFW_KEY_DOWN: {
+                        auto scrolled_lines = app->scroll / app->active_view->get_font()->get_row_advance();
+                        if (!(std::abs(scrolled_lines) >=
+                              app->get_active_view()->get_text_buffer()->lines_count() - 1)) {
+                            app->scroll -= app->active_view->get_font()->get_row_advance();
+                            app->active_view->set_projection(glm::ortho(
+                                    0.0f, static_cast<float>(app->win_width), static_cast<float>(app->scroll),
+                                    static_cast<float>(app->win_height + app->scroll)));
+                        }
+                    } break;
+                    case GLFW_KEY_UP:
+                        auto scroll_pos = app->scroll + app->active_view->get_font()->get_row_advance();
+                        app->scroll = std::min(scroll_pos, 0);
+                        app->active_view->set_projection(glm::ortho(0.0f, static_cast<float>(app->win_width),
+                                                                    static_cast<float>(app->scroll),
+                                                                    static_cast<float>(app->win_height + app->scroll)));
+                        break;
+                }
             }
         }
     });
@@ -126,25 +149,23 @@ void App::run_loop() {
     while (this->no_close_condition()) {
         // TODO: do stuff.
         draw_all();
+        // glfwPollEvents();
         glfwWaitEventsTimeout(1);
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
     }
 }
-bool App::no_close_condition() {
-    if (glfwWindowShouldClose(window)) { return false; }
-    return true;
-}
+bool App::no_close_condition() { return (!glfwWindowShouldClose(window) && !exit_command_requested); }
 void App::load_file(const fs::path &file) {
     if (!fs::exists(file)) { PANIC("File {} doesn't exist. Forced exit.", file.string()); }
-    if (active->empty()) {
+    if (active_buffer->empty()) {
         util::println("Active text buffer is empty. Loading data into it.");
         std::string tmp;
         std::ifstream f{file};
         tmp.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
         util::println("Loaded {} bytes from file {}", tmp.size(), file.string());
-        active->load_string(std::move(tmp));
-        assert(!active->empty());
+        active_buffer->load_string(std::move(tmp));
+        assert(!active_buffer->empty());
     } else {
         PANIC("WE CAN'T HANDLE MULTIPLE FILES OR VIEWS RIGHT NOW.");
         auto bufHandle = StdStringBuffer::make_handle();
@@ -153,7 +174,7 @@ void App::load_file(const fs::path &file) {
         tmp.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
         bufHandle->load_string(std::move(tmp));
         data.push_back(std::move(bufHandle));
-        active = data.back().get();
+        active_buffer = data.back().get();
     }
 }
 void App::draw_all() {
@@ -167,4 +188,43 @@ void App::update_views_dimensions() {
     views[0]->set_dimensions(win_width, win_height);
     views[0]->set_projection(projection);
     views[0]->anchor_at(0, win_height);
+}
+
+View *App::get_active_view() const { return active_view; }
+
+void App::kb_command(int key) {
+    switch (key) {
+        case GLFW_KEY_ENTER:
+            active_buffer->insert('\n');
+            break;
+        case GLFW_KEY_TAB:
+            active_buffer->insert("    ");
+            break;
+        case GLFW_KEY_DOWN: {
+            auto scrolled_lines = scroll / active_view->get_font()->get_row_advance();
+            if (!(std::abs(scrolled_lines) >= get_active_view()->get_text_buffer()->lines_count() - 1)) {
+                auto scroll_factor = 10;
+                scroll -= (scroll_factor * active_view->get_font()->get_row_advance());
+                active_view->set_projection(glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scroll),
+                                                       static_cast<float>(win_height + scroll)));
+            }
+        } break;
+        case GLFW_KEY_UP: {
+            auto scroll_factor = 10;
+            auto scroll_pos = scroll + (scroll_factor * active_view->get_font()->get_row_advance());
+            scroll = std::min(scroll_pos, 0);
+            active_view->set_projection(glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scroll),
+                                                   static_cast<float>(win_height + scroll)));
+        } break;
+        case GLFW_KEY_Q: {
+            util::println("Ctrl+Q was pressed");
+            this->graceful_exit();
+        } break;
+    }
+}
+void App::graceful_exit() {
+    // TODO: ask user to save / discard unsaved changes
+    // TODO: clean up GPU memory resources
+    // TODO: clean up CPU memory resources
+    exit_command_requested = true;
 }

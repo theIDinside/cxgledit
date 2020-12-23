@@ -74,7 +74,9 @@ struct VAO {
     static std::unique_ptr<VAO> make(GLenum VBOType, usize reservedVertexSpace = 0);
     void bind_all();
     void flush_and_draw();
+    void draw();
     void reserve_gpu_size(std::size_t text_character_count);
     GLuint vao_id;
     std::unique_ptr<VertexBufferObject> vbo;
+    int last_items_rendered;
 };

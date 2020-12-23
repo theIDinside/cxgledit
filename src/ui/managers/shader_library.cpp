@@ -10,6 +10,7 @@ void ShaderLibrary::load_shader(ShaderConfig cfg) {
     const auto [name, vertex_path, frag_path] = cfg;
     auto shader = Shader::load_shader(vertex_path, frag_path);
     shaders[name] = shader;
+    shaders[name].setup();
     util::println("Stored shader {}. {} shaders has been installed.", name, shaders.size());
 }
 ShaderLibrary &ShaderLibrary::get_instance() {

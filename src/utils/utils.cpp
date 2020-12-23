@@ -17,8 +17,8 @@ Timer::Timer(const std::string_view &title) : benchmark_title(title) {
 }
 Timer::~Timer() {
     end = hiResClk::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>((end - begin)).count();
-    fmt::print("{} - {}ms\n", benchmark_title, duration);
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>((end - begin)).count();
+    fmt::print("{}: {}us\n", benchmark_title, duration);
 }
 #endif
 

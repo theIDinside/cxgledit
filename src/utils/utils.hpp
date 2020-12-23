@@ -4,7 +4,9 @@
 #include <filesystem>
 
 #ifdef DEBUG
+#include <array>
 #include <chrono>
+#include <map>
 #include <memory>
 #endif
 
@@ -24,9 +26,27 @@ struct Timer {
 };
 #endif
 
+/*
+ * Concatenate preprocessor tokens A and B without expanding macro definitions
+ * (however, if invoked from a macro, macro arguments are expanded).
+ */
+#define PPCAT_NX(A, B) A ## B
+
+/*
+ * Concatenate preprocessor tokens A and B after macro-expanding them.
+ */
+#define PPCAT(A, B) PPCAT_NX(A, B)
+
+
 #ifdef INSTRUMENTATION
 #define MICRO_BENCH(title) Timer timer##__LINE__{title}
+#define SECTION_MICRO_BENCH(title, section) Timer timer##__LINE__{##title##section}
 #define FN_MICRO_BENCH() MICRO_BENCH(__PRETTY_FUNCTION__)
+#define PUSH_FN_SUBSECTION(sectionKey) \
+std::string n = __PRETTY_FUNCTION__; \
+n.append(sectionKey);                  \
+MICRO_BENCH(n)
+
 #else
 #define MICRO_BENCH(title)
 #define FN_MICRO_BENCH() MICRO_BENCH(__PRETTY_FUNCTION__)

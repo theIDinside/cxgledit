@@ -2,16 +2,18 @@
 // Created by 46769 on 2020-12-20.
 //
 
+// App headers
 #include "font.hpp"
+#include <core/core.hpp>
 
-#include "texture.hpp"
-#include "vertex_buffer.hpp"
+// Sys headers
 #include <algorithm>
-#include <fmt/core.h>
 #include <vector>
 
+// 3rd party headers
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb/stb_image_write.h>
+
 
 using u64 = std::size_t;
 
@@ -172,8 +174,7 @@ void SimpleFont::emplace_gpu_data(VAO *vao, const std::string &text, int xPos, i
     auto g = 0.0f;
     auto b = 0.2f;
 
-    std::vector<std::size_t>
-            del; // delimiters are separated by whitespaces, (), {} or []
+    std::vector<std::size_t> del;// delimiters are separated by whitespaces, (), {} or []
 
     for (const auto &c : text) {
         // auto &glyph = this->data[c];
@@ -202,6 +203,7 @@ void SimpleFont::emplace_gpu_data(VAO *vao, const std::string &text, int xPos, i
 }
 
 void SimpleFont::emplace_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos) {
+    FN_MICRO_BENCH();
     vao->vbo->data.clear();
     vao->vbo->data.reserve(text.size() * 6);
     auto &store = vao->vbo->data;
@@ -219,9 +221,7 @@ void SimpleFont::emplace_gpu_data(VAO *vao, std::string_view text, int xPos, int
     for (const auto &[begin, end] : words) {
         auto rng = text.substr(begin, end - begin);
         for (const auto &[word, color] : keywords) {
-            if (word == rng) {
-                keywords_ranges.emplace_back(Keyword{begin, end, color});
-            }
+            if (word == rng) { keywords_ranges.emplace_back(Keyword{begin, end, color}); }
         }
     }
 
@@ -232,7 +232,7 @@ void SimpleFont::emplace_gpu_data(VAO *vao, std::string_view text, int xPos, int
 
     auto data_index = 0;
     for (auto c = text.begin(); c != text.end(); c++, pos++) {
-        if(item_it != keywords_ranges.end()) {
+        if (item_it != keywords_ranges.end()) {
             auto &kw = *item_it;
             auto [begin, end, col] = *item_it;
             if (pos > end) {
@@ -243,11 +243,11 @@ void SimpleFont::emplace_gpu_data(VAO *vao, std::string_view text, int xPos, int
                     col = item_it->color;
                 }
             }
-            if (pos >= begin && pos < end) { // handled syntax color
+            if (pos >= begin && pos < end) {// handled syntax color
                 r = col.x;
                 g = col.y;
                 b = col.z;
-            } else {    // default text color
+            } else {// default text color
                 r = 1;
                 g = 1;
                 b = 1;
@@ -283,9 +283,7 @@ std::vector<Word> text_elements(std::string_view text) {
     std::vector<std::size_t> del;
 
     for (auto i = 0; ptr != end; i++, ptr++) {
-        if (!std::isalpha(*ptr) && *ptr != '_' && *ptr != '#') {
-            del.push_back(i);
-        }
+        if (!std::isalpha(*ptr) && *ptr != '_' && *ptr != '#') { del.push_back(i); }
     }
     auto begin = 0;
     for (auto pos : del) {

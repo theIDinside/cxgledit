@@ -50,26 +50,29 @@ if (NOT glfw_POPULATED)
 endif ()
 
 set(UI_RENDER_SOURCES
-        src/ui/render/font.cpp src/ui/render/font.hpp
-        src/ui/render/shader.cpp src/ui/render/shader.hpp
-        src/ui/render/texture.cpp src/ui/render/texture.hpp
-        src/ui/render/vertex_buffer.cpp src/ui/render/vertex_buffer.hpp)
-
-set(UTIL_SOURCES src/utils/utils.cpp src/utils/utils.hpp)
-
-add_executable(cxgledit src/main.cpp
+        src/ui/managers/font_library.cpp src/ui/managers/font_library.hpp
+        src/ui/managers/shader_library.cpp src/ui/managers/shader_library.hpp
         src/ui/render/font.cpp src/ui/render/font.hpp
         src/ui/render/shader.cpp src/ui/render/shader.hpp
         src/ui/render/texture.cpp src/ui/render/texture.hpp
         src/ui/render/vertex_buffer.cpp src/ui/render/vertex_buffer.hpp
+        src/ui/view.cpp src/ui/view.hpp)
+
+set(UTIL_SOURCES
         src/utils/utils.cpp src/utils/utils.hpp
-        deps/include/stb/stb_image_write.h
-        src/app.cpp src/app.hpp
-        src/core/core.hpp
-        src/core/text_data.cpp src/core/text_data.hpp
-        src/core/strops.cpp src/core/strops.hpp
         src/utils/fileutil.cpp src/utils/fileutil.hpp
-        src/utils/strops.hpp src/ui/view.cpp src/ui/view.hpp src/ui/managers/font_library.cpp src/ui/managers/font_library.hpp src/ui/managers/shader_library.cpp src/ui/managers/shader_library.hpp)
+        src/utils/strops.hpp)
+
+set(CORE_SOURCE
+        src/core/core.hpp
+        src/core/strops.cpp src/core/strops.hpp
+        src/core/text_data.cpp src/core/text_data.hpp)
+
+add_executable(cxgledit
+        src/main.cpp src/app.cpp src/app.hpp
+        ${CORE_SOURCE}
+        ${UI_RENDER_SOURCES}
+        ${UTIL_SOURCES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${GLFW_DIR}/include")
 set(GLFW_BUILD_EXAMPLES OFF CACHE INTERNAL "Build the GLFW example programs")

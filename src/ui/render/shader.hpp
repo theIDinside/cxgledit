@@ -8,6 +8,10 @@
 
 namespace fs = std::filesystem;
 
+enum Uniforms {
+    Projection
+};
+
 class Shader
 {
 public:
@@ -43,6 +47,8 @@ public:
     void setMat3(const std::string &name, const glm::mat3 &mat) const;
     // ------------------------------------------------------------------------
     void setMat4(const std::string &name, const glm::mat4 &mat) const;
+    void set_projection(const glm::mat4 &mat);
+    void setup();
 
     static Shader load_shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr);
     static Shader load_shader(fs::path vertexPath, fs::path fragmentPath, fs::path geometryPath = "");
@@ -51,4 +57,5 @@ private:
     // utility function for checking shader compilation/linking errors.
     // ------------------------------------------------------------------------
     static void checkCompileErrors(unsigned int shader, std::string type);
+    int projection;
 };

@@ -16,13 +16,13 @@ void panic(const char *message, Args... args) {
     std::abort();
 }
 
-#define PANIC(...)                                                                                                          \
-    fmt::print("panicked in {}\n\tMessage: ", __PRETTY_FUNCTION__);                                                         \
+#define PANIC(...)                                                                                                     \
+    fmt::print("panicked in {}\n\tMessage: ", __PRETTY_FUNCTION__);                                                    \
     panic(__VA_ARGS__)
 
 /// Use to implement comparisons between objects. Implements only based on a single value in each object
-#define SPACE_SHIP(Type, discriminate_on)                                                                               \
-    friend bool operator==(const Type &lhs, const Type &rhs) { return lhs.discriminate_on == rhs.discriminate_on; } \
-    friend bool operator!=(const Type &lhs, const Type &rhs) { return !(lhs == rhs); }                                      \
-    friend bool operator<(const Type &lhs, const Type &rhs) { return lhs.discriminate_on < rhs.discriminate_on; }   \
+#define SPACE_SHIP(Type, discriminate_on)                                                                              \
+    friend bool operator==(const Type &lhs, const Type &rhs) { return lhs.discriminate_on == rhs.discriminate_on; }    \
+    friend bool operator!=(const Type &lhs, const Type &rhs) { return !(lhs == rhs); }                                 \
+    friend bool operator<(const Type &lhs, const Type &rhs) { return lhs.discriminate_on < rhs.discriminate_on; }      \
     friend bool operator>(const Type &lhs, const Type &rhs) { return lhs.discriminate_on > rhs.discriminate_on; }

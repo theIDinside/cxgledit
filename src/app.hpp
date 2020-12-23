@@ -27,17 +27,25 @@ public:
     void draw_all();
     void update_views_projections();
     void update_views_dimensions();
-
+    void update_projection();
+    [[nodiscard]] View* get_active_view() const;
 private:
     void cleanup();
     GLFWwindow *window;
     std::string title;
     int win_height;
     int win_width;
+    int scroll;
     glm::mat4 projection;
 
     std::vector<std::unique_ptr<TextData>> data;
     std::vector<std::unique_ptr<View>> views;
-    TextData* active;
+
+    TextData* active_buffer;
+    View* active_view;
+
     bool no_close_condition();
+    void kb_command(int i);
+    void graceful_exit();
+    bool exit_command_requested;
 };

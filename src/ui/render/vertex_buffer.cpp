@@ -3,6 +3,8 @@
 //
 
 #include "vertex_buffer.hpp"
+#include <core/core.hpp>
+
 std::unique_ptr<VertexBufferObject> VertexBufferObject::create(GLuint vboId, GLenum type, const usize reservedSize) {
     LocalStore data;
     data.reserve(reservedSize > 0 ? reservedSize : 1024);
@@ -61,11 +63,16 @@ std::unique_ptr<VAO> VAO::make(GLenum VBOType, usize reservedVertexSpace) {
 void VAO::flush_and_draw() {
     bind_all();
     auto count = vbo->upload_to_gpu(true);
+    this->last_items_rendered = count;
     glDrawArrays(GL_TRIANGLES, 0, count);
 }
 void VAO::reserve_gpu_size(std::size_t text_character_count) {
     bind_all();
     vbo->reserve_gpu_memory(text_character_count);
+}
+void VAO::draw() {
+    bind_all();
+    glDrawArrays(GL_TRIANGLES, 0, last_items_rendered);
 }
 
 auto TextVertices::bytes_size() const -> int {

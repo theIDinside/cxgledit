@@ -26,27 +26,29 @@ std::unique_ptr<View> View::create(TextData *data, const std::string &name, int 
     return v;
 }
 void View::draw() {
+    FN_MICRO_BENCH();
     glm::vec3 col{1.0, 0.5, 0.0};
     vao->bind_all();
     shader->use();
     font->t->bind();
     // projection = glm::ortho(0.0f, static_cast<float>(ww), 0.0f, static_cast<float>(wh));
-    // glUniform3f(glGetUniformLocation(shader.ID, "textColor"), col.x, col.y, col.z);
-    shader->setVec3("textColor", col);
-    shader->setMat4("projection", projection);
+    {
+        PUSH_FN_SUBSECTION("Setting uniforms");
+        shader->set_projection(projection);
+    }
     auto vao_ = vao.get();
-    auto data_ = data->to_string_view();
 
-
-    font->emplace_gpu_data(
-            vao_,
-            data_,
-            this->x + 3, this->y - 10);
-    vao->flush_and_draw();
-    // glBufferData(GL_ARRAY_BUFFER, vertexData.bytes_size(), vertexData.data, GL_DYNAMIC_DRAW);
+    if(data->is_pristine()) {
+        vao->draw();
+    } else {
+        PUSH_FN_SUBSECTION("rebuild & draw");
+        auto data_view = data->to_string_view();
+        font->emplace_gpu_data(vao_, data_view, this->x + View::TEXT_LENGTH_FROM_EDGE, this->y - font->get_row_advance());
+        vao->flush_and_draw();
+    }
 }
-void View::set_projection(glm::mat4 projection) {
-    this->projection = projection;
+void View::set_projection(glm::mat4 view_projection) {
+    this->projection = std::move(view_projection);
 }
 void View::set_dimensions(int w, int h) {
     this->width = w;
@@ -56,3 +58,7 @@ void View::anchor_at(int x, int y) {
     this->x = x;
     this->y = y;
 }
+SimpleFont *View::get_font() {
+    return font;
+}
+TextData *View::get_text_buffer() const { return data; }
