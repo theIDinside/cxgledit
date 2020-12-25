@@ -66,7 +66,7 @@ set(UTIL_SOURCES
 set(CORE_SOURCE
         src/core/core.hpp
         src/core/strops.cpp src/core/strops.hpp
-        src/core/text_data.cpp src/core/text_data.hpp)
+        src/core/text_data.cpp src/core/text_data.hpp src/core/commands/command.cpp src/core/commands/command.hpp)
 
 add_executable(cxgledit
         src/main.cpp src/app.cpp src/app.hpp

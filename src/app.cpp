@@ -1,4 +1,4 @@
-//
+
 // Created by 46769 on 2020-12-22.
 //
 
@@ -84,10 +84,13 @@ App *App::create(int app_width, int app_height, const std::string &title) {
     instance->load_file("main_2.cpp");
 
     auto v = View::create(instance->active_buffer, "main", app_width, app_height, 0, app_height);
+    auto cv = CommandView::create("command", app_width, FontLibrary::get_default_font()->get_row_advance() + 2, 0,
+                                  FontLibrary::get_default_font()->get_row_advance() + 2);
+    cv->command_view->set_projection(instance->projection);
     v->set_projection(instance->projection);
     instance->views.push_back(std::move(v));
     instance->active_view = instance->views.back().get();
-
+    instance->command_view = std::move(cv);
     glfwSetWindowUserPointer(window, instance);
 
     glfwSetCharCallback(window, [](auto win, auto codepoint) {
@@ -106,31 +109,7 @@ App *App::create(int app_width, int app_height, const std::string &title) {
             if (mods & GLFW_MOD_CONTROL) {
                 app->kb_command(key);
             } else {
-                switch (key) {
-                    case GLFW_KEY_ENTER:
-                        app->active_buffer->insert('\n');
-                        break;
-                    case GLFW_KEY_TAB:
-                        app->active_buffer->insert("    ");
-                        break;
-                    case GLFW_KEY_DOWN: {
-                        auto scrolled_lines = app->scroll / app->active_view->get_font()->get_row_advance();
-                        if (!(std::abs(scrolled_lines) >=
-                              app->get_active_view()->get_text_buffer()->lines_count() - 1)) {
-                            app->scroll -= app->active_view->get_font()->get_row_advance();
-                            app->active_view->set_projection(glm::ortho(
-                                    0.0f, static_cast<float>(app->win_width), static_cast<float>(app->scroll),
-                                    static_cast<float>(app->win_height + app->scroll)));
-                        }
-                    } break;
-                    case GLFW_KEY_UP:
-                        auto scroll_pos = app->scroll + app->active_view->get_font()->get_row_advance();
-                        app->scroll = std::min(scroll_pos, 0);
-                        app->active_view->set_projection(glm::ortho(0.0f, static_cast<float>(app->win_width),
-                                                                    static_cast<float>(app->scroll),
-                                                                    static_cast<float>(app->win_height + app->scroll)));
-                        break;
-                }
+                app->handle_input(key, mods);
             }
         }
     });
@@ -149,11 +128,11 @@ void App::set_dimensions(int w, int h) {
 void App::run_loop() {
     while (this->no_close_condition()) {
         // TODO: do stuff.
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
         draw_all();
         // glfwPollEvents();
         glfwWaitEventsTimeout(1);
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
     }
 }
 bool App::no_close_condition() { return (!glfwWindowShouldClose(window) && !exit_command_requested); }
@@ -191,6 +170,8 @@ void App::draw_all(bool force_redraw) {
     } else {
         for (auto &view : views) view->draw();
     }
+    this->command_view->draw();
+    glViewport(0, 0, this->win_width, this->win_height);
     glfwSwapBuffers(this->window);
 }
 void App::update_views_projections() {
@@ -200,6 +181,9 @@ void App::update_views_dimensions() {
     views[0]->set_dimensions(win_width, win_height);
     views[0]->set_projection(projection);
     views[0]->anchor_at(0, win_height);
+    command_view->w = win_width;
+    command_view->command_view->set_dimensions(win_width, command_view->h);
+    command_view->command_view->set_projection(projection);
 }
 
 View *App::get_active_view() const { return active_view; }
@@ -236,10 +220,60 @@ void App::kb_command(int key) {
 }
 
 
-
 void App::graceful_exit() {
     // TODO: ask user to save / discard unsaved changes
     // TODO: clean up GPU memory resources
     // TODO: clean up CPU memory resources
     exit_command_requested = true;
+}
+void App::set_input_to_command_view() {
+    active_buffer = command_view->input_buffer.get();
+    if(!edit_command)
+        command_view->set_prefix("command");
+    edit_command = true;
+}
+void App::input_char(char i) {
+
+}
+void App::handle_input(int key, int modifier) {
+    switch (key) {
+        case GLFW_KEY_ENTER:
+            if (edit_command) {
+                active_buffer->clear();
+                active_buffer = active_view->get_text_buffer();
+                edit_command = false;
+            } else {
+                active_buffer->insert('\n');
+            }
+            break;
+        case GLFW_KEY_TAB:
+            active_buffer->insert("    ");
+            break;
+        case GLFW_KEY_DOWN: {
+            if (edit_command) {
+
+            } else {
+                auto scrolled_lines = scroll / active_view->get_font()->get_row_advance();
+                if (!(std::abs(scrolled_lines) >=
+                      get_active_view()->get_text_buffer()->lines_count() - 1)) {
+                    scroll -= active_view->get_font()->get_row_advance();
+                    active_view->set_projection(glm::ortho(
+                            0.0f, static_cast<float>(win_width), static_cast<float>(scroll),
+                            static_cast<float>(win_height + scroll)));
+                }
+            }
+        } break;
+        case GLFW_KEY_UP: {
+            if (!edit_command) {
+                auto scroll_pos = scroll + active_view->get_font()->get_row_advance();
+                scroll = std::min(scroll_pos, 0);
+                active_view->set_projection(glm::ortho(
+                        0.0f, static_cast<float>(win_width), static_cast<float>(scroll),
+                        static_cast<float>(win_height + scroll)));
+            }
+        } break;
+        case GLFW_KEY_ESCAPE:
+            set_input_to_command_view();
+            break;
+    }
 }

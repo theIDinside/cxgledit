@@ -29,6 +29,7 @@ public:
     void update_views_dimensions();
     void update_projection();
     [[nodiscard]] View* get_active_view() const;
+    void set_input_to_command_view();
 private:
     void cleanup();
     GLFWwindow *window;
@@ -40,6 +41,7 @@ private:
 
     std::vector<std::unique_ptr<TextData>> data;
     std::vector<std::unique_ptr<View>> views;
+    std::unique_ptr<CommandView> command_view;
 
     TextData* active_buffer;
     View* active_view;
@@ -48,4 +50,7 @@ private:
     void kb_command(int i);
     void graceful_exit();
     bool exit_command_requested;
+    bool edit_command = false;
+    void input_char(char ch);
+    void handle_input(int i, int i1);
 };

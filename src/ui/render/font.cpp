@@ -205,7 +205,7 @@ void SimpleFont::emplace_gpu_data(VAO *vao, const std::string &text, int xPos, i
 void SimpleFont::emplace_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos) {
     FN_MICRO_BENCH();
     vao->vbo->data.clear();
-    vao->vbo->data.reserve(text.size() * 6);
+    vao->vbo->data.reserve(text.size() * sizeof(TextVertex));
     auto &store = vao->vbo->data;
     auto start_x = xPos;
     auto start_y = yPos;
@@ -216,14 +216,20 @@ void SimpleFont::emplace_gpu_data(VAO *vao, std::string_view text, int xPos, int
     auto b = 0.75f;
 
     auto words = text_elements(text);
-    std::vector<Keyword> keywords_ranges;
+    std::vector<ColorFormatInfo> keywords_ranges;
 
     for (const auto &[begin, end] : words) {
         auto rng = text.substr(begin, end - begin);
-        for (const auto &[word, color] : keywords) {
-            if (word == rng) { keywords_ranges.emplace_back(Keyword{begin, end, color}); }
+        if (*rng.begin() == '"') {
+            fmt::print("Range of string found: '{}'\n", rng);
+            keywords_ranges.emplace_back(ColorFormatInfo{begin, end, DARKER_GREEN});
+        } else {
+            for (const auto &[word, color] : keywords) {
+                if (word == rng) { keywords_ranges.emplace_back(ColorFormatInfo{begin, end, color}); }
+            }
         }
     }
+    // [_"."], first ": 1, second ": 3
 
     // iterate through all characters
     auto item_it = keywords_ranges.begin();
@@ -276,19 +282,148 @@ void SimpleFont::emplace_gpu_data(VAO *vao, std::string_view text, int xPos, int
         x += glyph.advance;
     }
 }
+
+enum class LexType {
+    Unknown = -1,
+    // Literals
+    String,
+    Number,
+    // Types
+    Type,
+    Primitive,
+    // Identifiers
+    Variable,
+    LineComment,
+    BlockComment,
+    KeyWord,
+    Macro,
+    Include,
+};
+
+struct Lexeme {
+    int begin, length;
+    LexType type;
+};
+
+//
+// inline constexpr auto length = [](auto begin, auto end) { return end - begin; };
+
+
+std::vector<Lexeme> lex_text(std::string_view text) {
+    auto current_type = LexType::Unknown;
+    auto last_lexed = LexType::Unknown;
+    std::vector<Lexeme> results{};
+
+    // For some reason I keep mentally struggling with this absolutely simple thing, which means I have to double check
+    // all the damn time, which is often, thus killing efficiency.
+    constexpr auto length = [](auto begin, auto end) { return end - begin; };
+    constexpr auto advance = [](auto &it, auto &idx) {
+        ++it;
+        ++idx;
+    };
+    const auto e = text.end();
+    auto pos = 0;
+    auto item_begin = 0;
+    for (auto it = text.begin(); it != e; advance(it, pos)) {
+        if (*it == '/') {
+            if (current_type == LexType::LineComment) {// find newline and set Lexeme {
+                for (; it != e && *it != '\n'; advance(it, pos)) {}
+                last_lexed = LexType::LineComment;
+                results.emplace_back(item_begin, length(item_begin, pos), last_lexed);
+                current_type = LexType::Unknown;
+            } else {
+                item_begin = pos;
+                current_type = LexType::LineComment;
+            }
+        } else if (*it == '"') {
+            item_begin = pos;
+            bool escaped = false;
+            for (; it != e; advance(it, pos)) {
+                if (*it == '"' && !escaped) break;
+                else if (*it == '"' && escaped) {
+                    escaped = false;
+                } else if (*it == '\\') {
+                    escaped = true;
+                }
+            }
+            last_lexed = LexType::String;
+            results.emplace_back(item_begin, length(item_begin, pos), last_lexed);
+            current_type = LexType::Unknown;
+        } else if(*it == '*') {
+            if(current_type == LexType::LineComment) {
+                current_type = LexType::BlockComment;
+                for(; it != e; advance(it, pos)) {
+                    if(*it == '*') {
+                        auto next = it;
+                        next++;
+                        if(next != e && *next == '/') {
+                            advance(it, pos);
+                            break;
+                        }
+                    }
+                }
+                last_lexed = current_type;
+                current_type = LexType::Unknown;
+                results.emplace_back(item_begin, length(item_begin, pos), last_lexed);
+            }
+        } else if(*it == '#') {
+
+        } else if(*it == '<' && last_lexed == LexType::Include) {
+
+        }
+    }
+    return results;
+}
+
+
 std::vector<Word> text_elements(std::string_view text) {
     std::vector<Word> items;
     auto ptr = text.begin();
     auto end = text.end();
     std::vector<std::size_t> del;
 
+    /*
+     * if (*ptr == '"') {
+            del.push_back(i);
+            ptr++;
+            i++;
+            while (*ptr != '"' && ptr != end) {
+                i++;
+                ptr++;
+            }
+            del.push_back(i);
+            ptr++;
+            i++;
+        } else
+     */
+
+    auto start = 0;
     for (auto i = 0; ptr != end; i++, ptr++) {
-        if (!std::isalpha(*ptr) && *ptr != '_' && *ptr != '#') { del.push_back(i); }
+        if (!std::isalpha(*ptr) && *ptr != '_' && *ptr != '#') {
+            del.push_back(i);
+            if (*ptr == '"') {
+                if (del.back() == i - 1) del.pop_back();
+                ptr++;
+                i++;
+                while (*ptr != '"' && ptr != end) {
+                    i++;
+                    ptr++;
+                }
+                del.push_back(i);
+                ptr++;
+                i++;
+            }
+        }
     }
     auto begin = 0;
-    for (auto pos : del) {
+    for (auto it = del.begin(); it != del.end(); it++) {
+        auto pos = *it;
         items.emplace_back(begin, pos);
-        begin = pos + 1;
+        if (text[pos] == '"') {
+            begin = pos;
+        } else {
+            begin = pos + 1;
+        }
     }
     return items;
 }

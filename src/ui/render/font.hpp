@@ -39,6 +39,7 @@ constexpr glm::vec3 c_keyword{0.820f,0.500f,0.000f};
 constexpr auto YELLOW = glm::vec3{0.893f, 1.0f, 0.0f};
 constexpr auto RED = glm::vec3{1.0f, 0.0f, 0.0f};
 constexpr auto GREEN = glm::vec3{0.0f, 1.0f, 0.0f};
+constexpr auto DARKER_GREEN = glm::vec3{0.0f, 0.83f, 0.0f};
 constexpr auto BLUE = glm::vec3{0.0f, 0.0f, 1.0f};
 constexpr auto WHITE = glm::vec3{1.0f, 1.0f, 1.0f};
 
@@ -62,11 +63,12 @@ constexpr std::array keywords{mp("int", c_keyword),    mp("bool", c_keyword),
                               mp("namespace", c_keyword), mp("friend", c_keyword),
                               mp("operator", c_keyword), mp("explicit", c_keyword),
                               mp("#define", YELLOW), mp("#include", YELLOW),
-                              };
+                              mp("sizeof", c_keyword),mp("static_cast", c_keyword)
+};
 
 constexpr std::array highlight{RED, GREEN, BLUE, YELLOW, WHITE};
 
-struct Keyword {
+struct ColorFormatInfo {
     std::size_t begin;
     std::size_t end;
     glm::vec3 color;
@@ -96,6 +98,21 @@ struct Word {
 };
 
 std::vector<Word> text_elements(std::string_view text);
+
+enum Ident {
+    NONE = 0,
+    COMMENT_BEGIN,
+    LINECOMMENT,
+    BLOCKCOMMENT,
+    BLOCKCOMMENT_END,
+    STRING_BEGIN,
+    STRING_END,
+    NUMBER_BEGIN,
+    MACRO_BEGIN,
+    TYPE,
+    VARIABLE,
+    DELIMITER
+};
 
 class SimpleFont {
 public:
