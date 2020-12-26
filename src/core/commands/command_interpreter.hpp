@@ -1,0 +1,12 @@
+//
+// Created by 46769 on 2020-12-25.
+//
+
+#ifndef CXGLEDIT_COMMAND_INTERPRETER_HPP
+#define CXGLEDIT_COMMAND_INTERPRETER_HPP
+
+
+class CommandInterpreter {};
+
+
+#endif//CXGLEDIT_COMMAND_INTERPRETER_HPP
