@@ -22,6 +22,8 @@ public:
     static std::unique_ptr<View> create(TextData* data, const std::string& name, int w, int h, int x, int y, ViewType type = ViewType::Text);
     void draw();
     void forced_draw();
+
+    void forced_draw_with_prefix_colorized(const std::string& prefix, std::optional<std::vector<ColorizeTextRange>> colorInfo);
     void set_projection(glm::mat4 projection);
     void set_dimensions(int w, int h);
     void anchor_at(int x, int y);
@@ -36,6 +38,7 @@ private:
     std::string name{};
     TextData* data = nullptr;
     glm::mat4 projection;
+    std::size_t vertexCapacity{0};
     int scroll = 0;
     ViewType type = ViewType::Text;
     friend class CommandView;
@@ -50,8 +53,9 @@ public:
     std::unique_ptr<View> command_view;
     std::unique_ptr<TextData> input_buffer;
     void draw();
-    void input(char ch);
     void set_text(std::string_view& view);
     void set_prefix(const std::string& prefix);
     static std::unique_ptr<CommandView> create(const std::string& name, int width, int height, int x, int y);
+    bool active;
+    bool has_changed{false};
 };

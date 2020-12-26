@@ -57,6 +57,7 @@ namespace fs = std::filesystem;
 
 class TextData {
 public:
+    int id{0};
     struct BufferCursor {
         std::size_t pos{0};
         std::size_t line{0};
@@ -120,7 +121,7 @@ public:
 
         RTextDataIterator(const RTextDataIterator &) = default;
         self operator++() {
-            fmt::print("?? {}/{}\n", m_index, iterated_count);
+            // fmt::print("?? {}/{}\n", m_index, iterated_count);
             auto it = *this;
             iterated_count++;
             m_index--;

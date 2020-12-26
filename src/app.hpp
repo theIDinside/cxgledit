@@ -45,6 +45,7 @@ private:
 
     TextData* active_buffer;
     View* active_view;
+    bool reading_comand{false};
 
     bool no_close_condition();
     void kb_command(int i);

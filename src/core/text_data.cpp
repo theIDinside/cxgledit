@@ -345,7 +345,10 @@ void StdStringBuffer::remove_ch_forward(size_t i) {
     }
 }
 void StdStringBuffer::remove_ch_backward(size_t i) {
-    if ((int) cursor.pos - (int) i >= 0) { store.erase(cursor.pos - i, i); }
+    if ((int) cursor.pos - (int) i >= 0) {
+        store.erase(cursor.pos - i, i);
+        cursor.pos -= i;
+    }
 }
 // TODO(simon): MAJOR CLEAN UP NEEDED!
 std::optional<size_t> StdStringBuffer::get_item_pos_from(const Movement &m) {
@@ -453,6 +456,7 @@ void StdStringBuffer::load_string(std::string &&data) {
     m_lines = str::count_newlines(data.data(), data.size());
     util::println("Read {} lines of text", m_lines);
     store = std::move(data);
+    display_pristine = false;
 }
 size_t StdStringBuffer::lines_count() const {
     return map_or(count_elements(this->store, '\n'), 0, [](auto &&el) { return el.size(); });

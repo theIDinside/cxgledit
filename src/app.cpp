@@ -3,9 +3,15 @@
 //
 
 #include "app.hpp"
+// #include <core/commands/command_interpreter.hpp>
+#include <core/commands/command_interpreter.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <ranges>
+
 
 #define get_app_handle(window) (App *) glfwGetWindowUserPointer(window)
+
+static auto BUFFERS_COUNT = 0;
 
 void framebuffer_callback(GLFWwindow *window, int width, int height) {
     fmt::print("New width: {}\t New height: {}\n", width, height);
@@ -78,10 +84,12 @@ App *App::create(int app_width, int app_height, const std::string &title) {
     FontLibrary::get_instance().load_font(default_font_cfg);
     ShaderLibrary::get_instance().load_shader(text_shader);
     auto bufHandle = StdStringBuffer::make_handle();
+    BUFFERS_COUNT++;
+    bufHandle->id = BUFFERS_COUNT;
     instance->data.push_back(std::move(bufHandle));
     instance->active_buffer = instance->data.back().get();
 
-    instance->load_file("main_2.cpp");
+    // instance->load_file("main_2.cpp");
 
     auto v = View::create(instance->active_buffer, "main", app_width, app_height, 0, app_height);
     auto cv = CommandView::create("command", app_width, FontLibrary::get_default_font()->get_row_advance() + 2, 0,
@@ -96,6 +104,15 @@ App *App::create(int app_width, int app_height, const std::string &title) {
     glfwSetCharCallback(window, [](auto win, auto codepoint) {
         auto app = get_app_handle(win);
         app->active_buffer->insert(codepoint);
+        if (app->edit_command) {
+            // TODO: let CommandInterpreter know to INvalidate any argument cycling of current command, and re-validate the input
+            auto &ci = CommandInterpreter::get_instance();
+            if(ci.has_command_waiting()) {
+                ci.destroy_current_command();
+                ci.validate(app->active_buffer->to_std_string());
+                ci.cycle_current_command_arguments();
+            }
+        }
         // text_buffer.push_back(codepoint);
     });
 
@@ -137,6 +154,7 @@ void App::run_loop() {
 }
 bool App::no_close_condition() { return (!glfwWindowShouldClose(window) && !exit_command_requested); }
 void App::load_file(const fs::path &file) {
+    util::println("Loading file into buffer {}", active_buffer->id);
     if (!fs::exists(file)) { PANIC("File {} doesn't exist. Forced exit.", file.string()); }
     if (active_buffer->empty()) {
         util::println("Active text buffer is empty. Loading data into it.");
@@ -228,38 +246,61 @@ void App::graceful_exit() {
 }
 void App::set_input_to_command_view() {
     active_buffer = command_view->input_buffer.get();
-    if(!edit_command)
-        command_view->set_prefix("command");
+    if (!edit_command) { command_view->set_prefix("command"); }
     edit_command = true;
+    command_view->active = true;
 }
-void App::input_char(char i) {
-
-}
+void App::input_char(char i) {}
 void App::handle_input(int key, int modifier) {
     switch (key) {
         case GLFW_KEY_ENTER:
             if (edit_command) {
+                auto cmd_input = active_buffer->to_std_string();
                 active_buffer->clear();
                 active_buffer = active_view->get_text_buffer();
                 edit_command = false;
+                // EXECUTE INPUT COMMAND & DESTROY IT
+
+                if(CommandInterpreter::get_instance().has_command_waiting()) {
+                    auto cmd = CommandInterpreter::get_instance().finalize();
+                    if(cmd)
+                        cmd->exec(this);
+                    CommandInterpreter::get_instance().destroy_current_command();
+                } else {
+                    CommandInterpreter::get_instance().validate(cmd_input);
+                    auto cmd = CommandInterpreter::get_instance().finalize();
+                    if(cmd)
+                        cmd->exec(this);
+                    CommandInterpreter::get_instance().destroy_current_command();
+                }
             } else {
                 active_buffer->insert('\n');
             }
             break;
-        case GLFW_KEY_TAB:
-            active_buffer->insert("    ");
+        case GLFW_KEY_TAB: {
+            if (edit_command) {
+                auto &ci = CommandInterpreter::get_instance();
+                if (ci.has_command_waiting()) {
+                    ci.cycle_current_command_arguments();
+                } else {
+                    ci.validate(active_buffer->to_std_string());
+                    ci.cycle_current_command_arguments();
+                }
+            } else {
+                active_buffer->insert("    ");
+            }
             break;
+        }
         case GLFW_KEY_DOWN: {
             if (edit_command) {
 
             } else {
                 auto scrolled_lines = scroll / active_view->get_font()->get_row_advance();
-                if (!(std::abs(scrolled_lines) >=
-                      get_active_view()->get_text_buffer()->lines_count() - 1)) {
+                if (!(std::abs(scrolled_lines) >= get_active_view()->get_text_buffer()->lines_count() - 1)) {
                     scroll -= active_view->get_font()->get_row_advance();
-                    active_view->set_projection(glm::ortho(
-                            0.0f, static_cast<float>(win_width), static_cast<float>(scroll),
-                            static_cast<float>(win_height + scroll)));
+                    active_view->set_projection(glm::ortho(0.0f, static_cast<float>(win_width),
+                                                           static_cast<float>(scroll),
+                                                           static_cast<float>(win_height + scroll)));
                 }
             }
         } break;
@@ -267,13 +308,20 @@ void App::handle_input(int key, int modifier) {
             if (!edit_command) {
                 auto scroll_pos = scroll + active_view->get_font()->get_row_advance();
                 scroll = std::min(scroll_pos, 0);
-                active_view->set_projection(glm::ortho(
-                        0.0f, static_cast<float>(win_width), static_cast<float>(scroll),
-                        static_cast<float>(win_height + scroll)));
+                active_view->set_projection(glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scroll),
+                                                       static_cast<float>(win_height + scroll)));
             }
         } break;
         case GLFW_KEY_ESCAPE:
             set_input_to_command_view();
             break;
+        case GLFW_KEY_BACKSPACE:
+            if (edit_command) {
+                auto &ci = CommandInterpreter::get_instance();
+                ci.destroy_current_command();
+            }
+            active_buffer->remove(Movement::Char(1, CursorDirection::Back));
+            break;
     }
+    command_view->active = edit_command;
 }

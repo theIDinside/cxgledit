@@ -66,13 +66,18 @@ set(UTIL_SOURCES
 set(CORE_SOURCE
         src/core/core.hpp
         src/core/strops.cpp src/core/strops.hpp
-        src/core/text_data.cpp src/core/text_data.hpp src/core/commands/command.cpp src/core/commands/command.hpp)
+        src/core/text_data.cpp src/core/text_data.hpp )
+
+set(COMMANDS_SOURCE
+        src/core/commands/command.cpp src/core/commands/command.hpp
+        src/core/commands/command_interpreter.cpp src/core/commands/command_interpreter.hpp)
 
 add_executable(cxgledit
         src/main.cpp src/app.cpp src/app.hpp
         ${CORE_SOURCE}
         ${UI_RENDER_SOURCES}
-        ${UTIL_SOURCES})
+        ${UTIL_SOURCES}
+        ${COMMANDS_SOURCE})
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${GLFW_DIR}/include")
 set(GLFW_BUILD_EXAMPLES OFF CACHE INTERNAL "Build the GLFW example programs")

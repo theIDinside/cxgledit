@@ -3,6 +3,8 @@
 #include <fmt/core.h>
 #include <filesystem>
 
+
+
 #ifdef DEBUG
 #include <array>
 #include <chrono>
@@ -70,6 +72,12 @@ namespace util::file {
     std::vector<std::string> read_file_to_lines(const fs::path& filePath);
 }
 
+/// This is not really a "safe" delete in that sense, but for purposes in this project it is.
+/// Why? Because, we actually use pointers in the "owning / non-owning" sense that the C++ standard
+/// talks about, thus, if it's a non-owning pointer, deleting it must set it to nullptr, as we have requested the memory to die
+/// but we also don't want to keep pointing to that address. So when our CommandInterpreter for instance wants to delete
+/// the "current command" it is owning & pointing to, we want to be able to check in successive calls after that if ptr == nullptr
+
 namespace util {
     void printmsg(const char* msg);
 
@@ -80,3 +88,15 @@ namespace util {
         fflush(stdout);
     }
 }
+
+template <typename T>
+void safe_delete(T*& t) {
+    if(t)
+    {
+        util::println("Deleted command");
+        delete t;
+    }
+    t = nullptr;
+}
+
+

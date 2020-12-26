@@ -4,6 +4,12 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include <string>
+#include <vector>
+#include <numeric>
+#include <optional>
+#include <list>
+
 
 using u64 = uint64_t;
 
@@ -20,3 +26,9 @@ u64 naive_newline_count(const char* data, std::size_t len);
 namespace str {
     u64 count_newlines(const char* data, std::size_t length);
 }
+
+namespace util::str
+{
+    std::vector<std::string_view> vec_split_string(const std::string& str, char delimiter = ' ');
+    std::list<std::string_view> list_split_string(const std::string &str, char delimiter = ' ');
+} // namespace cx

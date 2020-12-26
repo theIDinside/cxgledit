@@ -114,8 +114,16 @@ enum Ident {
     DELIMITER
 };
 
+
+struct ColorizeTextRange {
+    std::size_t begin, length;
+    glm::vec3 color;
+};
+
 class SimpleFont {
 public:
+
+
     static SyntaxColor colors[8];
     // Static member vars
     static const int CHARACTERS_TEXTURE_SIZE; //!< Size of texture atlas (in pixels) that stores characters
@@ -124,9 +132,8 @@ public:
     SimpleFont(int pixelSize, std::unique_ptr<Texture>&& texture, std::vector<glyph_info>&& glyphs);
 
     TextVertices make_gpu_data(const std::string& text, int xpos, int ypos);
-    void emplace_gpu_data(VAO* vao, const std::string& text, int xPos, int yPos);
-    void emplace_gpu_data(VAO* vao, std::string_view text, int xPos, int yPos);
-
+    void emplace_source_text_gpu_data(VAO* vao, std::string_view text, int xPos, int yPos);
+    void emplace_colorized_text_gpu_data(VAO* vao, std::string_view text, int xPos, int yPos, std::optional<std::vector<ColorizeTextRange>> colorData);
 
     std::unique_ptr<Texture> t{nullptr};
     int get_row_advance() const;
