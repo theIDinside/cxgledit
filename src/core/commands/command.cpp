@@ -43,7 +43,8 @@ OpenFile::OpenFile(const std::string &argInput) : Command("OpenFile"), file{argI
 
         if (fs::is_directory(argInput)) {
             // we have writen for instance /foo/bar/ - so hitting tab here should cycle through everything in bar
-            auto it = std::ranges::subrange(begin, end) | std::views::filter(keepWithPrefix) | std::views::transform(to_path);
+            auto it = std::ranges::subrange(begin, end) | std::views::filter(keepWithPrefix) |
+                      std::views::transform(to_path);
             std::ranges::copy(it, std::back_inserter(withSamePrefix));
         } else {
             // we have written e.g. /foo/bar/ta - hitting tab will cycle through everything with the prefix "ta" in dir
@@ -52,9 +53,7 @@ OpenFile::OpenFile(const std::string &argInput) : Command("OpenFile"), file{argI
             std::ranges::copy(it, std::back_inserter(withSamePrefix));
         }
         util::println("Found with prefix {}: {}. Printing:", filePrefix, withSamePrefix.size());
-        for(const auto& p : withSamePrefix) {
-            fmt::print("{} \t", p.string());
-        }
+        for (const auto &p : withSamePrefix) { fmt::print("{} \t", p.string()); }
     } else {
         util::println("PATH DOES NOT EXIST: {}", path.string());
     }

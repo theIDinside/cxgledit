@@ -1,9 +1,7 @@
 
 #pragma once
-#include <fmt/core.h>
 #include <filesystem>
-
-
+#include <fmt/core.h>
 
 #ifdef DEBUG
 #include <array>
@@ -21,7 +19,7 @@ using namespace std::chrono_literals;
 using hiResClk = std::chrono::high_resolution_clock;
 using chronotp = std::chrono::high_resolution_clock::time_point;
 struct Timer {
-    explicit Timer(const std::string_view& timer_title);
+    explicit Timer(const std::string_view &timer_title);
     ~Timer();
     std::string_view benchmark_title;
     chronotp begin, end;
@@ -32,22 +30,23 @@ struct Timer {
  * Concatenate preprocessor tokens A and B without expanding macro definitions
  * (however, if invoked from a macro, macro arguments are expanded).
  */
-#define PPCAT_NX(A, B) A ## B
+#define PPCAT_NX(A, B) A##B
 
 /*
  * Concatenate preprocessor tokens A and B after macro-expanding them.
  */
 #define PPCAT(A, B) PPCAT_NX(A, B)
 
-
 #ifdef INSTRUMENTATION
-#define MICRO_BENCH(title) Timer timer##__LINE__{title}
-#define SECTION_MICRO_BENCH(title, section) Timer timer##__LINE__{##title##section}
+#define MICRO_BENCH(title)                                                                                             \
+    Timer timer##__LINE__ { title }
+#define SECTION_MICRO_BENCH(title, section)                                                                            \
+    Timer timer##__LINE__ { ##title##section }
 #define FN_MICRO_BENCH() MICRO_BENCH(__PRETTY_FUNCTION__)
-#define PUSH_FN_SUBSECTION(sectionKey) \
-std::string n = __PRETTY_FUNCTION__; \
-n.append(sectionKey);                  \
-MICRO_BENCH(n)
+#define PUSH_FN_SUBSECTION(sectionKey)                                                                                 \
+    std::string n = __PRETTY_FUNCTION__;                                                                               \
+    n.append(sectionKey);                                                                                              \
+    MICRO_BENCH(n)
 
 #else
 #define MICRO_BENCH(title)
@@ -66,10 +65,9 @@ using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
 
-
 namespace fs = std::filesystem;
 namespace util::file {
-    std::vector<std::string> read_file_to_lines(const fs::path& filePath);
+    std::vector<std::string> read_file_to_lines(const fs::path &filePath);
 }
 
 /// This is not really a "safe" delete in that sense, but for purposes in this project it is.
@@ -79,23 +77,18 @@ namespace util::file {
 /// the "current command" it is owning & pointing to, we want to be able to check in successive calls after that if ptr == nullptr
 
 namespace util {
-    void printmsg(const char* msg);
+    void printmsg(const char *msg);
 
-    template<typename ...Args>
-    void println(const char* fmt_string, Args... args) {
+    template<typename... Args>
+    void println(const char *fmt_string, Args... args) {
         fmt::print(fmt_string, args...);
         fmt::print("\n");
         fflush(stdout);
     }
-}
+}// namespace util
 
-template <typename T>
-void safe_delete(T*& t) {
-    if(t)
-    {
-        delete t;
-    }
+template<typename T>
+void safe_delete(T *&t) {
+    if (t) { delete t; }
     t = nullptr;
 }
-
-

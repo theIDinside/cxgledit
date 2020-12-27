@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include <ui/render/shader.hpp>
+#include <filesystem>
 #include <map>
 #include <string>
-#include <filesystem>
+#include <ui/render/shader.hpp>
 
 namespace fs = std::filesystem;
 struct ShaderConfig {
@@ -18,10 +18,11 @@ struct ShaderConfig {
 
 class ShaderLibrary {
 public:
-    static ShaderLibrary& get_instance();
+    static ShaderLibrary &get_instance();
     void load_shader(ShaderConfig cfg);
-    [[nodiscard]] Shader* get_shader(const std::string& key);
-    [[nodiscard]] static Shader* get_text_shader();
+    [[nodiscard]] Shader *get_shader(const std::string &key);
+    [[nodiscard]] static Shader *get_text_shader();
+
 private:
     ShaderLibrary() = default;
     std::map<std::string, Shader> shaders;

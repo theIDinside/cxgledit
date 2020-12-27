@@ -9,7 +9,7 @@
 #include <vector>
 
 struct CountResult {
-  size_t found_at_idx;
+    size_t found_at_idx;
 };
 
 /**
@@ -21,19 +21,19 @@ struct CountResult {
  * @param ch
  * @return
  */
-template <typename ContainerType, typename ElemType>
-std::optional<std::vector<CountResult>> count_elements(const ContainerType& str, ElemType ch) {
-  static_assert(std::is_same_v<typename ContainerType::value_type, ElemType>, "Container must contain elements of type ElemType");
-  std::vector<CountResult> res;
-  auto index = 0;
-  for(const auto& c : str) {
-    if(c == ch) {
-      res.push_back(CountResult{static_cast<size_t>(index)});
+template<typename ContainerType, typename ElemType>
+std::optional<std::vector<CountResult>> count_elements(const ContainerType &str, ElemType ch) {
+    static_assert(std::is_same_v<typename ContainerType::value_type, ElemType>,
+                  "Container must contain elements of type ElemType");
+    std::vector<CountResult> res;
+    auto index = 0;
+    for (const auto &c : str) {
+        if (c == ch) { res.push_back(CountResult{static_cast<size_t>(index)}); }
+        index++;
     }
-    index++;
-  }
-  if(!res.empty()) return res;
-  else return {};
+    if (!res.empty()) return res;
+    else
+        return {};
 }
 
 /*
@@ -45,11 +45,9 @@ std::optional<std::vector<CountResult>> count_elements(const ContainerType& str,
  *
  */
 
-
-
 template<typename T, typename MapTo, typename Fn>
 constexpr auto map_or(std::optional<T> opt, MapTo or_value, Fn fn) -> MapTo {
-    if(opt) {
+    if (opt) {
         return fn(*opt);
     } else {
         return or_value;

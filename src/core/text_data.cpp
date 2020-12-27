@@ -255,6 +255,7 @@ void StdStringBuffer::clear() {
     cursor.pos = 0;
     cursor.col_pos = 0;
     cursor.line = 0;
+    display_pristine = false;
 }
 void StdStringBuffer::insert(char ch) {
     if (cursor.pos == store.capacity() || store.size() == store.capacity()) {
@@ -308,7 +309,6 @@ std::optional<char> StdStringBuffer::get_value_at_safe(std::size_t pos) {
 }
 size_t StdStringBuffer::npos() const { return std::string::npos; }
 TextData::BufferCursor &StdStringBuffer::get_cursor() { return cursor; }
-
 
 void StdStringBuffer::remove(const Movement &m) {
     switch (m.construct) {

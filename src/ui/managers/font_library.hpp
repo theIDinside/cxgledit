@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <string>
 #include <map>
+#include <string>
 #include <ui/render/font.hpp>
 
 struct FontConfig {
@@ -17,12 +17,12 @@ struct FontConfig {
 
 class FontLibrary {
 public:
-    FontLibrary(const FontLibrary&) = delete;
-    static FontLibrary& get_instance();
-    void load_font(const FontConfig& config, bool setAsDefault = true);
-    SimpleFont* get_font(const std::string& key);
+    FontLibrary(const FontLibrary &) = delete;
+    static FontLibrary &get_instance();
+    void load_font(const FontConfig &config, bool setAsDefault = true);
+    SimpleFont *get_font(const std::string &key);
 
-    static SimpleFont* get_default_font();
+    static SimpleFont *get_default_font();
 
 private:
     FontLibrary() {}

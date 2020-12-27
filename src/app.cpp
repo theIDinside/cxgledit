@@ -8,7 +8,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <ranges>
 
-
 #define get_app_handle(window) (App *) glfwGetWindowUserPointer(window)
 
 static auto BUFFERS_COUNT = 0;
@@ -107,7 +106,7 @@ App *App::create(int app_width, int app_height, const std::string &title) {
         if (app->edit_command) {
             // TODO: let CommandInterpreter know to INvalidate any argument cycling of current command, and re-validate the input
             auto &ci = CommandInterpreter::get_instance();
-            if(ci.has_command_waiting()) {
+            if (ci.has_command_waiting()) {
                 auto cmd = ci.get_currently_edited_cmd()->actual_input();
                 ci.destroy_current_command();
                 ci.validate(app->active_buffer->to_std_string());
@@ -208,7 +207,7 @@ void App::update_views_dimensions() {
 View *App::get_active_view() const { return active_view; }
 
 void App::kb_command(int key) {
-    if(!edit_command) {
+    if (!edit_command) {
         switch (key) {
             case GLFW_KEY_ENTER:
                 active_buffer->insert('\n');
@@ -221,7 +220,8 @@ void App::kb_command(int key) {
                 if (!(std::abs(scrolled_lines) >= get_active_view()->get_text_buffer()->lines_count() - 1)) {
                     auto scroll_factor = 10;
                     scroll -= (scroll_factor * active_view->get_font()->get_row_advance());
-                    active_view->set_projection(glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scroll),
+                    active_view->set_projection(glm::ortho(0.0f, static_cast<float>(win_width),
+                                                           static_cast<float>(scroll),
                                                            static_cast<float>(win_height + scroll)));
                 }
             } break;
@@ -234,14 +234,16 @@ void App::kb_command(int key) {
             } break;
             case GLFW_KEY_Q: {
                 util::println("Ctrl+Q was pressed");
-                this->graceful_exit();
+                if (!active_buffer->empty()) {
+                    active_buffer->clear();
+                } else {
+                    this->graceful_exit();
+                }
             } break;
         }
     } else {
-
     }
 }
-
 
 void App::graceful_exit() {
     // TODO: ask user to save / discard unsaved changes
@@ -266,17 +268,15 @@ void App::handle_input(int key, int modifier) {
                 edit_command = false;
                 // EXECUTE INPUT COMMAND & DESTROY IT
 
-                if(CommandInterpreter::get_instance().has_command_waiting()) {
+                if (CommandInterpreter::get_instance().has_command_waiting()) {
                     auto cmd = CommandInterpreter::get_instance().finalize();
-                    if(cmd)
-                        cmd->exec(this);
+                    if (cmd) cmd->exec(this);
                     CommandInterpreter::get_instance().destroy_current_command();
                 } else {
                     util::println("No command waiting in list, validating before executing.");
                     CommandInterpreter::get_instance().validate(cmd_input);
                     auto cmd = CommandInterpreter::get_instance().finalize();
-                    if(cmd)
-                        cmd->exec(this);
+                    if (cmd) cmd->exec(this);
                     CommandInterpreter::get_instance().destroy_current_command();
                 }
             } else {

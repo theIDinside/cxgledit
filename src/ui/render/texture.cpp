@@ -11,10 +11,10 @@ std::unique_ptr<Texture> Texture::setup_texture_info() {
     return tex;
 }
 
-std::unique_ptr<Texture> Texture::make_from_data(const unsigned char* data, int width, int height, int bytesPerPixel) {
+std::unique_ptr<Texture> Texture::make_from_data(const unsigned char *data, int width, int height, int bytesPerPixel) {
     auto t = Texture::setup_texture_info();
     t->bind();
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);// disable byte-alignment restriction
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
     t->width = width;
     t->height = height;
@@ -25,7 +25,4 @@ std::unique_ptr<Texture> Texture::make_from_data(const unsigned char* data, int 
     return t;
 }
 
-void Texture::bind(const int textureUnit) const {
-    glBindTexture(GL_TEXTURE_2D, id);
-}
-
+void Texture::bind(const int textureUnit) const { glBindTexture(GL_TEXTURE_2D, id); }

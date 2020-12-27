@@ -14,7 +14,6 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb/stb_image_write.h>
 
-
 using u64 = std::size_t;
 
 SyntaxColor red{.r = 1.0f};
@@ -25,7 +24,6 @@ SyntaxColor sc2{.r = 1.0f, .g = 0.5f, .b = 0.3f};
 SyntaxColor sc3{.r = 0.3f, .g = 0.8f, .b = 0.8f};
 SyntaxColor sc4{.r = 0.2f, .g = 0.9f, .b = 0.1f};
 SyntaxColor sc5{.r = 0.7f, .g = 1.0f, .b = 1.0f};
-
 
 SyntaxColor SimpleFont::colors[8]{red, green, blue, sc1, sc2, sc3, sc4, sc5};
 
@@ -402,7 +400,6 @@ struct Lexeme {
 //
 // inline constexpr auto length = [](auto begin, auto end) { return end - begin; };
 
-
 std::vector<Lexeme> lex_text(std::string_view text) {
     auto current_type = LexType::Unknown;
     auto last_lexed = LexType::Unknown;
@@ -468,9 +465,8 @@ std::vector<Lexeme> lex_text(std::string_view text) {
     return results;
 }
 
-
-std::vector<Word> text_elements(std::string_view text) {
-    std::vector<Word> items;
+std::vector<Words> text_elements(std::string_view text) {
+    std::vector<Words> items;
     auto ptr = text.begin();
     auto end = text.end();
     std::vector<std::size_t> del;

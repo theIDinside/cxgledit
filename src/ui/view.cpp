@@ -3,6 +3,8 @@
 //
 
 #include "view.hpp"
+#include <vector>
+
 #include <core/commands/command_interpreter.hpp>
 #include <ui/managers/font_library.hpp>
 #include <ui/managers/shader_library.hpp>

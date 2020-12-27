@@ -5,13 +5,12 @@
 #pragma once
 #include "core.hpp"
 #include <cassert>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <string_view>
-#include <utils/strops.hpp>
 #include <utility>
-#include <filesystem>
-
+#include <utils/strops.hpp>
 
 class TextData;
 enum CursorDirection { Forward, Back };
@@ -33,7 +32,6 @@ struct Movement {
 
 class TextDataIterator;
 
-
 /// UNSAFE: Checks character +1 beyond where ch points to.
 
 enum DelimiterSize { None, One, Two };
@@ -47,7 +45,7 @@ static inline bool is_delimiter(char ch) {
         return true;
     } else if (ch == '>') {
         return true;
-    } else if(ch == '.') {
+    } else if (ch == '.') {
         return true;
     }
     return false;
@@ -115,7 +113,7 @@ public:
         using iterator_category = std::input_iterator_tag;
 
         explicit RTextDataIterator(TextData *buf, int index, size_t it_count = 1)
-                : ptr_buf(buf), m_index(index), iterated_count(it_count) {
+            : ptr_buf(buf), m_index(index), iterated_count(it_count) {
             assert(index != buf->size());
         }
 
@@ -127,13 +125,13 @@ public:
             m_index--;
             return it;
         }
-        self& operator++(int) {
+        self &operator++(int) {
             this->iterated_count++;
             this->m_index--;
             return *this;
         }
 
-        self& operator+(int i) {
+        self &operator+(int i) {
             m_index -= i;
             iterated_count += i;
             return *this;
@@ -187,11 +185,10 @@ public:
     virtual void step_cursor_to(size_t pos) = 0;
     virtual void move_cursor(Movement movement) = 0;
 
-
     virtual TextDataIterator begin() { return TextDataIterator{this}; }
     virtual TextDataIterator end() { return TextDataIterator{this, size()}; }
 
-    virtual RTextDataIterator rbegin() { return RTextDataIterator{this, (int)size()-1, 0}; }
+    virtual RTextDataIterator rbegin() { return RTextDataIterator{this, (int) size() - 1, 0}; }
     virtual RTextDataIterator rend() { return RTextDataIterator{this, 0, size()}; }
 
 #ifdef DEBUG
@@ -200,13 +197,12 @@ public:
     virtual void load_string(std::string &&data) = 0;
 #endif
 
-    virtual bool is_pristine() const {
-        return display_pristine;
-    }
+    virtual bool is_pristine() const { return display_pristine; }
 
 protected:
     std::size_t m_lines;
     bool display_pristine{false};
+
 private:
     virtual void char_move_forward(std::size_t count) = 0;
     virtual void char_move_backward(std::size_t count) = 0;
@@ -239,7 +235,6 @@ public:
     void step_cursor_to(size_t pos) override;
     void set_line(std::size_t pos) override;
     BufferCursor &get_cursor() override;
-
 
     /// INIT CALLS
     static std::unique_ptr<TextData> make_handle();

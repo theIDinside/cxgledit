@@ -67,9 +67,7 @@ void CommandInterpreter::destroy_current_command_if_no_match(std::string_view vi
 }
 Command *CommandInterpreter::finalize() {
     if (auto i = dynamic_cast<OpenFile *>(current_command); i) {
-        if (i->fileNameSelected) {
-            i->file = i->withSamePrefix[i->curr_file_index];
-        }
+        if (i->fileNameSelected) { i->file = i->withSamePrefix[i->curr_file_index]; }
     }
     return current_command;
 }

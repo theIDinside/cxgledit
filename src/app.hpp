@@ -3,8 +3,8 @@
 //
 
 #pragma once
-#include <filesystem>
 #include <GLFW/glfw3.h>
+#include <filesystem>
 #include <glm/glm.hpp>
 #include <string>
 #include <ui/render/font.hpp>
@@ -23,13 +23,14 @@ public:
     ~App();
     void run_loop();
     void set_dimensions(int w, int h);
-    void load_file(const fs::path& file);
+    void load_file(const fs::path &file);
     void draw_all(bool force_redraw = false);
     void update_views_projections();
     void update_views_dimensions();
     void update_projection();
-    [[nodiscard]] View* get_active_view() const;
+    [[nodiscard]] View *get_active_view() const;
     void set_input_to_command_view();
+
 private:
     void cleanup();
     GLFWwindow *window;
@@ -43,8 +44,8 @@ private:
     std::vector<std::unique_ptr<View>> views;
     std::unique_ptr<CommandView> command_view;
 
-    TextData* active_buffer;
-    View* active_view;
+    TextData *active_buffer;
+    View *active_view;
     bool reading_comand{false};
 
     bool no_close_condition();

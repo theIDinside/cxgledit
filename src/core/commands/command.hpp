@@ -18,7 +18,7 @@ struct Command {
     explicit Command(std::string name) : name(std::move(name)) {}
     virtual ~Command() = default;
     std::string name;
-    virtual void exec(App*) = 0;
+    virtual void exec(App *) = 0;
     virtual void tab_handle() = 0;
     virtual bool validate() { return true; }
     virtual void next_arg() {}

@@ -1,27 +1,24 @@
 #pragma once
 #include <glm/glm.hpp>
 
-#include <string>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
-#include <filesystem>
+#include <string>
 
 namespace fs = std::filesystem;
 
-enum Uniforms {
-    Projection
-};
+enum Uniforms { Projection };
 
-class Shader
-{
+class Shader {
 public:
     unsigned int ID;
     // constructor generates the shader on the fly
     // ------------------------------------------------------------------------
     Shader() noexcept = default;
     explicit Shader(unsigned id) noexcept;
-    Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr) noexcept;
-    Shader(const Shader& copy) noexcept = default;
+    Shader(const char *vertexPath, const char *fragmentPath, const char *geometryPath = nullptr) noexcept;
+    Shader(const Shader &copy) noexcept = default;
     // activate the shader
     // ------------------------------------------------------------------------
     void use() const;
@@ -50,7 +47,7 @@ public:
     void set_projection(const glm::mat4 &mat);
     void setup();
 
-    static Shader load_shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr);
+    static Shader load_shader(const char *vertexPath, const char *fragmentPath, const char *geometryPath = nullptr);
     static Shader load_shader(fs::path vertexPath, fs::path fragmentPath, fs::path geometryPath = "");
 
 private:

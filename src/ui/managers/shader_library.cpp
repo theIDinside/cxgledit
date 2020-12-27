@@ -18,13 +18,11 @@ ShaderLibrary &ShaderLibrary::get_instance() {
     return sl;
 }
 
-Shader *ShaderLibrary::get_shader(const std::string& key) {
-    if(auto res = shaders.find(key); res != std::end(shaders)) {
+Shader *ShaderLibrary::get_shader(const std::string &key) {
+    if (auto res = shaders.find(key); res != std::end(shaders)) {
         return &(res->second);
     } else {
         PANIC("No shader with key {} was found. Forced crash.", key);
     }
 }
-Shader *ShaderLibrary::get_text_shader() {
-    return ShaderLibrary::get_instance().get_shader("text");
-}
+Shader *ShaderLibrary::get_text_shader() { return ShaderLibrary::get_instance().get_shader("text"); }
