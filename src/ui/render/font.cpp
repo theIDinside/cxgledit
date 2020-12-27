@@ -182,7 +182,7 @@ void SimpleFont::emplace_source_text_gpu_data(VAO *vao, std::string_view text, i
     for (const auto &[begin, end] : words) {
         auto rng = text.substr(begin, end - begin);
         if (rng.begin() != rng.end() && *rng.begin() == '"') {
-            fmt::print("Range of string found: '{}'\n", rng);
+            // fmt::print("Range of string found: '{}'\n", rng);
             keywords_ranges.emplace_back(ColorFormatInfo{begin, end, DARKER_GREEN});
         } else {
             for (const auto &[word, color] : keywords) {

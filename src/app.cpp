@@ -108,6 +108,7 @@ App *App::create(int app_width, int app_height, const std::string &title) {
             // TODO: let CommandInterpreter know to INvalidate any argument cycling of current command, and re-validate the input
             auto &ci = CommandInterpreter::get_instance();
             if(ci.has_command_waiting()) {
+                auto cmd = ci.get_currently_edited_cmd()->actual_input();
                 ci.destroy_current_command();
                 ci.validate(app->active_buffer->to_std_string());
                 ci.cycle_current_command_arguments();
@@ -207,33 +208,37 @@ void App::update_views_dimensions() {
 View *App::get_active_view() const { return active_view; }
 
 void App::kb_command(int key) {
-    switch (key) {
-        case GLFW_KEY_ENTER:
-            active_buffer->insert('\n');
-            break;
-        case GLFW_KEY_TAB:
-            active_buffer->insert("    ");
-            break;
-        case GLFW_KEY_DOWN: {
-            auto scrolled_lines = scroll / active_view->get_font()->get_row_advance();
-            if (!(std::abs(scrolled_lines) >= get_active_view()->get_text_buffer()->lines_count() - 1)) {
+    if(!edit_command) {
+        switch (key) {
+            case GLFW_KEY_ENTER:
+                active_buffer->insert('\n');
+                break;
+            case GLFW_KEY_TAB:
+                active_buffer->insert("    ");
+                break;
+            case GLFW_KEY_DOWN: {
+                auto scrolled_lines = scroll / active_view->get_font()->get_row_advance();
+                if (!(std::abs(scrolled_lines) >= get_active_view()->get_text_buffer()->lines_count() - 1)) {
+                    auto scroll_factor = 10;
+                    scroll -= (scroll_factor * active_view->get_font()->get_row_advance());
+                    active_view->set_projection(glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scroll),
+                                                           static_cast<float>(win_height + scroll)));
+                }
+            } break;
+            case GLFW_KEY_UP: {
                 auto scroll_factor = 10;
-                scroll -= (scroll_factor * active_view->get_font()->get_row_advance());
+                auto scroll_pos = scroll + (scroll_factor * active_view->get_font()->get_row_advance());
+                scroll = std::min(scroll_pos, 0);
                 active_view->set_projection(glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scroll),
                                                        static_cast<float>(win_height + scroll)));
-            }
-        } break;
-        case GLFW_KEY_UP: {
-            auto scroll_factor = 10;
-            auto scroll_pos = scroll + (scroll_factor * active_view->get_font()->get_row_advance());
-            scroll = std::min(scroll_pos, 0);
-            active_view->set_projection(glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scroll),
-                                                   static_cast<float>(win_height + scroll)));
-        } break;
-        case GLFW_KEY_Q: {
-            util::println("Ctrl+Q was pressed");
-            this->graceful_exit();
-        } break;
+            } break;
+            case GLFW_KEY_Q: {
+                util::println("Ctrl+Q was pressed");
+                this->graceful_exit();
+            } break;
+        }
+    } else {
+
     }
 }
 
@@ -267,6 +272,7 @@ void App::handle_input(int key, int modifier) {
                         cmd->exec(this);
                     CommandInterpreter::get_instance().destroy_current_command();
                 } else {
+                    util::println("No command waiting in list, validating before executing.");
                     CommandInterpreter::get_instance().validate(cmd_input);
                     auto cmd = CommandInterpreter::get_instance().finalize();
                     if(cmd)
@@ -281,7 +287,9 @@ void App::handle_input(int key, int modifier) {
             if (edit_command) {
                 auto &ci = CommandInterpreter::get_instance();
                 if (ci.has_command_waiting()) {
-                    ci.cycle_current_command_arguments();
+                    ci.auto_complete();
+                    active_buffer->clear();
+                    active_buffer->insert(ci.get_currently_edited_cmd()->as_auto_completed());
                 } else {
                     ci.validate(active_buffer->to_std_string());
                     ci.cycle_current_command_arguments();
@@ -293,7 +301,13 @@ void App::handle_input(int key, int modifier) {
         }
         case GLFW_KEY_DOWN: {
             if (edit_command) {
-
+                auto &ci = CommandInterpreter::get_instance();
+                if (ci.has_command_waiting()) {
+                    ci.cycle_current_command_arguments();
+                } else {
+                    ci.validate(active_buffer->to_std_string());
+                    ci.cycle_current_command_arguments();
+                }
             } else {
                 auto scrolled_lines = scroll / active_view->get_font()->get_row_advance();
                 if (!(std::abs(scrolled_lines) >= get_active_view()->get_text_buffer()->lines_count() - 1)) {

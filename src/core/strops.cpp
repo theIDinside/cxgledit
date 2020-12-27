@@ -86,6 +86,5 @@ std::list<std::string_view> util::str::list_split_string(const std::string &str,
             v.remove_prefix(pos+1);
         }
     }
-    util::println("Size of last elem: {}", res.back().size());
     return res;
 }

@@ -93,7 +93,6 @@ template <typename T>
 void safe_delete(T*& t) {
     if(t)
     {
-        util::println("Deleted command");
         delete t;
     }
     t = nullptr;

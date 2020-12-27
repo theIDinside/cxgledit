@@ -24,7 +24,10 @@ public:
     std::optional<std::string_view> prev_history_input() const;
     bool has_command_waiting();
     Command* get_currently_edited_cmd();
+    void destroy_cmd_and_set_new(Command* cmd);
     void destroy_current_command_if_no_match(std::string_view view);
+
+    void auto_complete();
 
 private:
     CommandInterpreter() = default;
