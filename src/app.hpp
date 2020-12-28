@@ -29,7 +29,7 @@ public:
     void update_views_dimensions();
     void update_projection();
     [[nodiscard]] View *get_active_view() const;
-    void set_input_to_command_view();
+    void set_input_to_command_view(bool toggleOn);
 
 private:
     void cleanup();

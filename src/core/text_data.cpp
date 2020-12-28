@@ -25,6 +25,7 @@ void StdStringBuffer::move_cursor(Movement m) {
         default:
             PANIC("Block and file movements not yet implemented");
     }
+    state_is_pristine = false;
 }
 void StdStringBuffer::char_move_forward(std::size_t count) {
     if (cursor.pos + count >= size()) {
@@ -248,14 +249,14 @@ void StdStringBuffer::insert(const std::string_view &data) {
     } else {
         cursor.col_pos += inc;
     }
-    this->display_pristine = false;
+    this->state_is_pristine = false;
 }
 void StdStringBuffer::clear() {
     store.clear();
     cursor.pos = 0;
     cursor.col_pos = 0;
     cursor.line = 0;
-    display_pristine = false;
+    state_is_pristine = false;
 }
 void StdStringBuffer::insert(char ch) {
     if (cursor.pos == store.capacity() || store.size() == store.capacity()) {
@@ -270,7 +271,7 @@ void StdStringBuffer::insert(char ch) {
         cursor.line++;
         cursor.col_pos = 0;
     }
-    this->display_pristine = false;
+    this->state_is_pristine = false;
 }
 void StdStringBuffer::set_cursor(std::size_t pos) { cursor.pos = pos; }
 size_t StdStringBuffer::get_cursor_pos() const { return cursor.pos; }
@@ -324,6 +325,7 @@ void StdStringBuffer::remove(const Movement &m) {
         default:
             PANIC("Removing other than char, word, line is an error at this point");
     }
+    this->state_is_pristine = false;
 }
 void StdStringBuffer::remove_ch_forward(size_t i) {
     if (cursor.pos + i < store.size()) {
@@ -449,14 +451,14 @@ void StdStringBuffer::step_cursor_to(size_t pos) {
 #ifdef DEBUG
 std::string StdStringBuffer::to_std_string() const { return store; }
 std::string_view StdStringBuffer::to_string_view() {
-    display_pristine = true;
+    state_is_pristine = true;
     return store;
 }
 void StdStringBuffer::load_string(std::string &&data) {
     m_lines = str::count_newlines(data.data(), data.size());
     util::println("Read {} lines of text", m_lines);
     store = std::move(data);
-    display_pristine = false;
+    state_is_pristine = false;
 }
 size_t StdStringBuffer::lines_count() const {
     return map_or(count_elements(this->store, '\n'), 0, [](auto &&el) { return el.size(); });

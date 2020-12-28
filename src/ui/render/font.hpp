@@ -11,11 +11,14 @@
 #include <vector>
 
 #include <map>
+#include <core/text_data.hpp>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include "texture.hpp"
 #include "vertex_buffer.hpp"
+
+class View;
 
 struct SyntaxColor {
     GLfloat r{0.0f}, g{0.0f}, b{0.0f};
@@ -127,8 +130,13 @@ public:
                CharacterRange charRange = CharacterRange{.from = 32, .to = 255});
     SimpleFont(int pixelSize, std::unique_ptr<Texture> &&texture, std::vector<glyph_info> &&glyphs);
 
-    TextVertices make_gpu_data(const std::string &text, int xpos, int ypos);
-    void emplace_source_text_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos);
+    void emplace_source_text_gpu_data(VAO *vao, View* view, int xPos, int yPos);
+
+
+
+    void emplace_colorized_text_gpu_data(VAO *vao, TextData* text, int xPos, int yPos,
+                                         std::optional<std::vector<ColorizeTextRange>> colorData);
+
     void emplace_colorized_text_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos,
                                          std::optional<std::vector<ColorizeTextRange>> colorData);
 
@@ -136,6 +144,8 @@ public:
     int get_row_advance() const;
     std::vector<glyph_info> glyph_cache;
     int row_height;
+    int max_glyph_width;
+    int max_glyph_height;
 
 private:
     // glyph_info* data = info;

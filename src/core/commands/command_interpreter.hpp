@@ -11,12 +11,17 @@
 #include <string>
 #include <string_view>
 
+enum class Cycle : int {
+    Forward = GLFW_KEY_DOWN,        // down
+    Backward = GLFW_KEY_UP,       // up
+};
+
 class CommandInterpreter {
 public:
     CommandInterpreter(const CommandInterpreter &) = delete;
     static CommandInterpreter &get_instance();
     void validate(const std::string &input);
-    void cycle_current_command_arguments();
+    void cycle_current_command_arguments(Cycle);
     void destroy_current_command();
     Command *finalize();
 

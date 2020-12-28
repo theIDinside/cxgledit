@@ -197,11 +197,18 @@ public:
     virtual void load_string(std::string &&data) = 0;
 #endif
 
-    virtual bool is_pristine() const { return display_pristine; }
+    virtual bool is_pristine() const { return state_is_pristine; }
 
 protected:
     std::size_t m_lines;
-    bool display_pristine{false};
+
+    /**
+     * Changed this to "state_is_pristine" to also communicate that, not only the text data
+     * is represented by this variable, but the entire state of this text buffer, which includes the
+     * cursor. This is so we can know from the outside if the cursor has moved, and thus needs to be redrawn on the
+     * frontend
+     */
+    bool state_is_pristine{false};
 
 private:
     virtual void char_move_forward(std::size_t count) = 0;

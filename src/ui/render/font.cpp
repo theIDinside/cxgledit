@@ -5,6 +5,7 @@
 // App headers
 #include "font.hpp"
 #include <core/core.hpp>
+#include <ui/view.hpp>
 
 // Sys headers
 #include <algorithm>
@@ -49,6 +50,7 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
     auto *pixels = (unsigned char *) calloc(tex_width * tex_height, 1);
     int pen_x = 0, pen_y = 0;
     auto max_glyph_height = 0u;
+    auto max_glyph_width = 0u;
     std::vector<glyph_info> glyph_cache;
 
     // for (int i = 0; i < NUM_GLYPHS; ++i) {
@@ -57,6 +59,7 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
         FT_Load_Char(face, i, FT_LOAD_RENDER | FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT);
         FT_Bitmap *bmp = &face->glyph->bitmap;
         max_glyph_height = std::max(face->glyph->bitmap.rows, max_glyph_height);
+        max_glyph_width = std::max(face->glyph->bitmap.width, max_glyph_width);
 
         if (pen_x + bmp->width >= tex_width) {
             pen_x = 0;
@@ -90,7 +93,7 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
         pen_x += bmp->width + 1;
     }
     fmt::print("Max glyph height was: {}\n", max_glyph_height);
-    auto max_adv_y = max_glyph_height + 2;
+    auto max_adv_y = max_glyph_height + 5;
     row_advance = max_adv_y;
     auto texture = Texture::make_from_data(pixels, tex_width, tex_height, 1);
     FT_Done_FreeType(ft);
@@ -112,6 +115,9 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
 
     auto font = std::make_unique<SimpleFont>(SimpleFont{pixel_size, std::move(texture), std::move(glyph_cache)});
     font->row_height = row_advance;
+    font->max_glyph_width = max_glyph_width;
+    font->max_glyph_height = max_glyph_height;
+
     return font;
 }
 
@@ -120,49 +126,14 @@ SimpleFont::SimpleFont(int pixelSize, std::unique_ptr<Texture> &&texture, std::v
 
 static int test_count = 0;
 
-TextVertices SimpleFont::make_gpu_data(const std::string &text, int xPos, int yPos) {
-    auto string_data = TextVertices::init_from_string(text);
-    auto start_x = xPos;
-    auto start_y = yPos;
-    auto x = start_x;
-    auto y = start_y;
-    auto vert_pointer_pos = string_data.data;
-    for (const auto &c : text) {
-        // auto &glyph = this->data[c];
-        auto &glyph = this->glyph_cache[c];
-        if (c == '\n') {
-            x = start_x;
-            y -= row_advance;
-            continue;
-        }
-        auto xpos = float(x) + glyph.bearing.x;
-        auto ypos = float(y) - static_cast<float>(glyph.size.y - glyph.bearing.y);
-
-        auto x0 = float(glyph.x0) / float(t->width);
-        auto x1 = float(glyph.x1) / float(t->width);
-        auto y0 = float(glyph.y0) / float(t->height);
-        auto y1 = float(glyph.y1) / float(t->height);
-
-        auto w = float(glyph.x1 - glyph.x0);
-        auto h = float(glyph.y1 - glyph.y0);
-
-        vert_pointer_pos[0] = TextVertex{xpos, ypos + h, x0, y0};
-        vert_pointer_pos[1] = TextVertex{xpos, ypos, x0, y1};
-        vert_pointer_pos[2] = TextVertex{xpos + w, ypos, x1, y1};
-
-        vert_pointer_pos[3] = TextVertex{xpos, ypos + h, x0, y0};
-        vert_pointer_pos[4] = TextVertex{xpos + w, ypos, x1, y1};
-        vert_pointer_pos[5] = TextVertex{xpos + w, ypos + h, x1, y0};
-
-        vert_pointer_pos += 6;
-        x += glyph.advance;
-    }
-    return string_data;
-}
 int SimpleFont::get_row_advance() const { return row_advance; }
 
-void SimpleFont::emplace_source_text_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos) {
+void SimpleFont::emplace_source_text_gpu_data(VAO *vao, View *view, int xPos, int yPos) {
     // FN_MICRO_BENCH();
+    auto text = view->get_text_buffer()->to_string_view();
+    auto view_cursor = view->get_cursor();
+    int data_index_pos = view->get_text_buffer()->get_cursor_pos();
+
     vao->vbo->data.clear();
     vao->vbo->data.reserve(text.size() * sizeof(TextVertex));
     auto &store = vao->vbo->data;
@@ -188,63 +159,78 @@ void SimpleFont::emplace_source_text_gpu_data(VAO *vao, std::string_view text, i
             }
         }
     }
-    // [_"."], first ": 1, second ": 3
-
     // iterate through all characters
     auto item_it = keywords_ranges.begin();
     auto pos = 0;
-    bool syntax_set = false;
-
     auto data_index = 0;
-    for (auto c = text.begin(); c != text.end(); c++, pos++) {
-        if (item_it != keywords_ranges.end()) {
-            auto &kw = *item_it;
-            auto [begin, end, col] = *item_it;
-            if (pos > end) {
-                item_it++;
-                if (item_it != keywords_ranges.end()) {
-                    begin = item_it->begin;
-                    end = item_it->end;
-                    col = item_it->color;
+    bool has_text = !text.empty();
+    auto xpos = float(x);
+    auto ypos = float(y);
+    if (!has_text) {
+        view_cursor->update_cursor_data(x, y - 6);
+    } else {
+        for (auto c = text.begin(); c != text.end(); c++, pos++, data_index_pos--) {
+            if (item_it != keywords_ranges.end()) {
+                auto &kw = *item_it;
+                auto [begin, end, col] = *item_it;
+                if (pos > end) {
+                    item_it++;
+                    if (item_it != keywords_ranges.end()) {
+                        begin = item_it->begin;
+                        end = item_it->end;
+                        col = item_it->color;
+                    }
+                }
+                if (pos >= begin && pos < end) {// handled syntax color
+                    r = col.x;
+                    g = col.y;
+                    b = col.z;
+                } else {// default text color
+                    r = 1;
+                    g = 1;
+                    b = 1;
                 }
             }
-            if (pos >= begin && pos < end) {// handled syntax color
-                r = col.x;
-                g = col.y;
-                b = col.z;
-            } else {// default text color
-                r = 1;
-                g = 1;
-                b = 1;
+            auto &glyph = this->glyph_cache[*c];
+            if (*c == '\n') {
+                if (data_index_pos == 0) {
+                    view_cursor->update_cursor_data(x, y - 6);
+                }
+                x = start_x;
+                y -= row_advance;
+                continue;
             }
+            xpos = float(x) + glyph.bearing.x;
+            ypos = float(y) - static_cast<float>(glyph.size.y - glyph.bearing.y);
+            auto x0 = float(glyph.x0) / float(t->width);
+            auto x1 = float(glyph.x1) / float(t->width);
+            auto y0 = float(glyph.y0) / float(t->height);
+            auto y1 = float(glyph.y1) / float(t->height);
+            auto w = float(glyph.x1 - glyph.x0);
+            auto h = float(glyph.y1 - glyph.y0);
+            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+            store.emplace_back(xpos, ypos, x0, y1, r, g, b);
+            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+            store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
+            if (data_index_pos == 0) { view_cursor->update_cursor_data(xpos, y - 6); }
+            x += glyph.advance;
         }
-        auto &glyph = this->glyph_cache[*c];
-        if (*c == '\n') {
-            x = start_x;
-            y -= row_advance;
-            continue;
-        }
-        auto xpos = float(x) + glyph.bearing.x;
-        auto ypos = float(y) - static_cast<float>(glyph.size.y - glyph.bearing.y);
-        auto x0 = float(glyph.x0) / float(t->width);
-        auto x1 = float(glyph.x1) / float(t->width);
-        auto y0 = float(glyph.y0) / float(t->height);
-        auto y1 = float(glyph.y1) / float(t->height);
-        auto w = float(glyph.x1 - glyph.x0);
-        auto h = float(glyph.y1 - glyph.y0);
-        store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-        store.emplace_back(xpos, ypos, x0, y1, r, g, b);
-        store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-        store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-        store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-        store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
-        x += glyph.advance;
+    }
+    if (view->get_text_buffer()->get_cursor_pos() == view->get_text_buffer()->size()) {
+        xpos = float(x);
+        ypos = float(y);
+        view_cursor->update_cursor_data(xpos, y - 6);
     }
 }
 
-void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos,
+void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, TextData *text_buffer, int xPos, int yPos,
                                                  std::optional<std::vector<ColorizeTextRange>> colorData) {
     // FN_MICRO_BENCH();
+    auto text = text_buffer->to_string_view();
+    auto cursor_char_pos = text_buffer->get_cursor_pos();
+
     vao->vbo->data.clear();
     vao->vbo->data.reserve(text.size() * sizeof(TextVertex));
     auto &store = vao->vbo->data;
@@ -280,6 +266,7 @@ void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, std::string_view text
                 auto y1 = float(glyph.y1) / float(t->height);
                 auto w = float(glyph.x1 - glyph.x0);
                 auto h = float(glyph.y1 - glyph.y0);
+
                 store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
                 store.emplace_back(xpos, ypos, x0, y1, r, g, b);
                 store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
@@ -346,7 +333,147 @@ void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, std::string_view text
             }
         }
     } else {
-        util::println("Drawing text non-colorized: {}", text);
+        auto data_index = 0;
+        for (char c : text) {
+            auto &glyph = this->glyph_cache[c];
+            if (c == '\n') {
+                x = start_x;
+                y -= row_advance;
+                continue;
+            }
+            auto xpos = float(x) + glyph.bearing.x;
+            auto ypos = float(y) - static_cast<float>(glyph.size.y - glyph.bearing.y);
+            auto x0 = float(glyph.x0) / float(t->width);
+            auto x1 = float(glyph.x1) / float(t->width);
+            auto y0 = float(glyph.y0) / float(t->height);
+            auto y1 = float(glyph.y1) / float(t->height);
+            auto w = float(glyph.x1 - glyph.x0);
+            auto h = float(glyph.y1 - glyph.y0);
+            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+            store.emplace_back(xpos, ypos, x0, y1, r, g, b);
+            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+            store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
+            x += glyph.advance;
+            data_index++;
+        }
+    }
+}
+void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos,
+                                                 std::optional<std::vector<ColorizeTextRange>> colorData) {
+
+    // FN_MICRO_BENCH();
+
+    vao->vbo->data.clear();
+    vao->vbo->data.reserve(text.size() * sizeof(TextVertex));
+    auto &store = vao->vbo->data;
+    auto start_x = xPos;
+    auto start_y = yPos;
+    auto x = start_x;
+    auto y = start_y;
+    auto defaultColor = glm::fvec3{0.2f, 0.325f, 0.75f};
+    auto r = defaultColor.x;
+    auto g = defaultColor.y;
+    auto b = defaultColor.z;
+
+    if (colorData) {
+        auto cd = colorData.value();
+        auto colorInfo = cd.front();
+        auto curr = 0;
+        for (auto &cInfo : cd) {
+            r = defaultColor.x;
+            g = defaultColor.y;
+            b = defaultColor.z;
+            for (auto i = curr; i < colorInfo.begin; i++) {
+                auto &glyph = this->glyph_cache[text[i]];
+                if (text[i] == '\n') {
+                    x = start_x;
+                    y -= row_advance;
+                    continue;
+                }
+                auto xpos = float(x) + glyph.bearing.x;
+                auto ypos = float(y) - static_cast<float>(glyph.size.y - glyph.bearing.y);
+                auto x0 = float(glyph.x0) / float(t->width);
+                auto x1 = float(glyph.x1) / float(t->width);
+                auto y0 = float(glyph.y0) / float(t->height);
+                auto y1 = float(glyph.y1) / float(t->height);
+                auto w = float(glyph.x1 - glyph.x0);
+                auto h = float(glyph.y1 - glyph.y0);
+                /*
+                auto quadData = std::array<TextVertex, 4>{TextVertex{xpos, ypos + h, x0, y0, r, g, b},
+                                                          TextVertex{xpos, ypos, x0, y1, r, g, b},
+                                                          TextVertex{xpos + w, ypos, x1, y1, r, g, b},
+                                                          TextVertex{xpos + w, ypos + h, x1, y0, r, g, b}};
+
+                vao->push_quad(std::move(quadData));
+*/
+                store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+                store.emplace_back(xpos, ypos, x0, y1, r, g, b);
+                store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+                store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+                store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+                store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
+                x += glyph.advance;
+            }
+            auto ce = colorInfo.begin + colorInfo.length;
+            r = colorInfo.color.x;
+            g = colorInfo.color.y;
+            b = colorInfo.color.z;
+            for (auto i = colorInfo.begin; i < ce; i++) {
+                auto &glyph = this->glyph_cache[text[i]];
+                if (text[i] == '\n') {
+                    x = start_x;
+                    y -= row_advance;
+                    continue;
+                }
+                auto xpos = float(x) + glyph.bearing.x;
+                auto ypos = float(y) - static_cast<float>(glyph.size.y - glyph.bearing.y);
+                auto x0 = float(glyph.x0) / float(t->width);
+                auto x1 = float(glyph.x1) / float(t->width);
+                auto y0 = float(glyph.y0) / float(t->height);
+                auto y1 = float(glyph.y1) / float(t->height);
+                auto w = float(glyph.x1 - glyph.x0);
+                auto h = float(glyph.y1 - glyph.y0);
+                store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+                store.emplace_back(xpos, ypos, x0, y1, r, g, b);
+                store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+                store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+                store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+                store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
+                x += glyph.advance;
+            }
+            curr = ce + 1;
+        }
+        if (curr < text.size()) {
+            r = defaultColor.x;
+            g = defaultColor.y;
+            b = defaultColor.z;
+            for (auto i = curr; i < text.size(); i++) {
+                auto &glyph = this->glyph_cache[text[i]];
+                if (text[i] == '\n') {
+                    x = start_x;
+                    y -= row_advance;
+                    continue;
+                }
+                auto xpos = float(x) + glyph.bearing.x;
+                auto ypos = float(y) - static_cast<float>(glyph.size.y - glyph.bearing.y);
+                auto x0 = float(glyph.x0) / float(t->width);
+                auto x1 = float(glyph.x1) / float(t->width);
+                auto y0 = float(glyph.y0) / float(t->height);
+                auto y1 = float(glyph.y1) / float(t->height);
+                auto w = float(glyph.x1 - glyph.x0);
+                auto h = float(glyph.y1 - glyph.y0);
+                store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+                store.emplace_back(xpos, ypos, x0, y1, r, g, b);
+                store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+                store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+                store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+                store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
+                x += glyph.advance;
+            }
+        }
+    } else {
         auto data_index = 0;
         for (char c : text) {
             auto &glyph = this->glyph_cache[c];
@@ -488,21 +615,7 @@ std::vector<Words> text_elements(std::string_view text) {
 
     auto start = 0;
     for (auto i = 0; ptr != end; i++, ptr++) {
-        if (!std::isalpha(*ptr) && *ptr != '_' && *ptr != '#') {
-            del.push_back(i);
-            if (*ptr == '"') {
-                if (del.back() == i - 1) del.pop_back();
-                ptr++;
-                i++;
-                while (*ptr != '"' && ptr != end) {
-                    i++;
-                    ptr++;
-                }
-                del.push_back(i);
-                ptr++;
-                i++;
-            }
-        }
+        if (!std::isalpha(*ptr) && *ptr != '_' && *ptr != '#') { del.push_back(i); }
     }
     auto begin = 0;
     for (auto it = del.begin(); it != del.end(); it++) {

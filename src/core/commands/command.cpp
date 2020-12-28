@@ -24,10 +24,10 @@ OpenFile::OpenFile(const std::string &argInput) : Command("OpenFile"), file{argI
         path = "./";
         file = path / file;
     }
-    // util::println("File [{}] - Path: [{}]", file.string(), path.string());
     auto filePrefix = file.filename().string();
+
     auto keepWithPrefix = [prefix = filePrefix](auto &p) {
-        auto fname = p.path().stem().string();
+        auto fname = p.path().filename().string();
         if (fname.size() >= prefix.size()) {
             return fname.substr(0, prefix.size()) == prefix;
         } else {
@@ -52,7 +52,6 @@ OpenFile::OpenFile(const std::string &argInput) : Command("OpenFile"), file{argI
                       std::views::transform(to_path);
             std::ranges::copy(it, std::back_inserter(withSamePrefix));
         }
-        util::println("Found with prefix {}: {}. Printing:", filePrefix, withSamePrefix.size());
         for (const auto &p : withSamePrefix) { fmt::print("{} \t", p.string()); }
     } else {
         util::println("PATH DOES NOT EXIST: {}", path.string());
@@ -83,9 +82,23 @@ void OpenFile::next_arg() {
         } else {
             curr_file_index = ++curr_file_index % withSamePrefix.size();
         }
-    } else {
     }
 }
+
+void OpenFile::prev_arg() {
+    if (!withSamePrefix.empty()) {
+        if (!fileNameSelected) {
+            fileNameSelected = true;
+        } else {
+            if(curr_file_index <= 0) {
+                curr_file_index = withSamePrefix.size() - 1;
+            } else {
+                curr_file_index--;
+            }
+        }
+    }
+}
+
 std::string OpenFile::as_auto_completed() const {
     if (fileNameSelected) {
         std::string str_rep{"open "};
@@ -100,6 +113,8 @@ std::string OpenFile::as_auto_completed() const {
     }
 }
 std::string OpenFile::actual_input() const { return "open " + file.string(); }
+
+
 
 std::optional<std::unique_ptr<Command>> parse_command(std::string input) {
     auto str_parts = util::str::list_split_string(input);

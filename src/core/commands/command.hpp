@@ -48,6 +48,7 @@ struct OpenFile : public Command {
     std::string actual_input() const override;
     bool validate() override;
     void next_arg() override;
+    void prev_arg() override;
     [[nodiscard]] std::string as_auto_completed() const override;
     fs::path file;
 

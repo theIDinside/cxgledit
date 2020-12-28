@@ -12,8 +12,9 @@
 /// ----------------- VIEW FACTORY FUNCTIONS -----------------
 
 std::unique_ptr<View> View::create(TextData *data, const std::string &name, int w, int h, int x, int y, ViewType type) {
-    auto reserveMemory = gpu_mem_required(1024);// reserve GPU memory for at least 1024 characters.
-    if (!data->empty()) { reserveMemory = gpu_mem_required(data->size()); }
+    auto reserveMemory =
+            gpu_mem_required_for_quads<TextVertex>(1024);// reserve GPU memory for at least 1024 characters.
+    if (!data->empty()) { reserveMemory = gpu_mem_required_for_quads<TextVertex>(data->size()); }
     auto vao = VAO::make(GL_ARRAY_BUFFER, reserveMemory);
     auto font = FontLibrary::get_default_font();
     auto shader = ShaderLibrary::get_text_shader();
@@ -28,7 +29,7 @@ std::unique_ptr<View> View::create(TextData *data, const std::string &name, int 
     v->vao = std::move(vao);
     v->data = data;
     v->vertexCapacity = reserveMemory / sizeof(TextVertex);
-
+    v->cursor = ViewCursor::create_from(v);
     return v;
 }
 std::unique_ptr<CommandView> CommandView::create(const std::string &name, int width, int height, int x, int y) {
@@ -49,7 +50,10 @@ std::unique_ptr<CommandView> CommandView::create(const std::string &name, int wi
 
 //! --------------------------------------------------------
 
-void View::set_projection(glm::mat4 view_projection) { this->projection = std::move(view_projection); }
+void View::set_projection(glm::mat4 view_projection) {
+    this->cursor->set_projection(view_projection);
+    this->projection = view_projection;
+}
 void View::set_dimensions(int w, int h) {
     this->width = w;
     this->height = h;
@@ -76,17 +80,19 @@ void View::draw() {
     font->t->bind();
     // projection = glm::ortho(0.0f, static_cast<float>(ww), 0.0f, static_cast<float>(wh));
     shader->set_projection(projection);
+    cursor->set_projection(projection);
     auto vao_ = vao.get();
     auto text_size = data->size();
     if (text_size > this->vertexCapacity) { this->vao->reserve_gpu_size(text_size * 2); }
 
     if (data->is_pristine()) {
         vao->draw();
+        this->cursor->draw();
     } else {
-        auto data_view = data->to_string_view();
-        font->emplace_source_text_gpu_data(vao_, data_view, this->x + View::TEXT_LENGTH_FROM_EDGE,
+        font->emplace_source_text_gpu_data(vao_, this, this->x + View::TEXT_LENGTH_FROM_EDGE,
                                            this->y - font->get_row_advance());
         vao->flush_and_draw();
+        this->cursor->forced_draw();
     }
 }
 
@@ -95,12 +101,15 @@ void View::forced_draw() {
     vao->bind_all();
     shader->use();
     font->t->bind();
+    shader->set_projection(projection);
+    cursor->set_projection(projection);
     auto data_view = data->to_string_view();
     auto text_size = data->size();
     if (text_size > this->vertexCapacity) { this->vao->reserve_gpu_size(text_size * 2); }
-    font->emplace_source_text_gpu_data(vao.get(), data_view, this->x + View::TEXT_LENGTH_FROM_EDGE,
+    font->emplace_source_text_gpu_data(vao.get(), this, this->x + View::TEXT_LENGTH_FROM_EDGE,
                                        this->y - font->get_row_advance());
     vao->flush_and_draw();
+    this->cursor->forced_draw();
 }
 
 void View::forced_draw_with_prefix_colorized(const std::string &prefix,
@@ -123,6 +132,7 @@ void View::forced_draw_with_prefix_colorized(const std::string &prefix,
     // font->emplace_source_text_gpu_data(vao.get(), textToRender, this->x + View::TEXT_LENGTH_FROM_EDGE,this->y - font->get_row_advance());
     vao->flush_and_draw();
 }
+ViewCursor *View::get_cursor() { return cursor.get(); }
 
 void CommandView::draw() {
     glEnable(GL_SCISSOR_TEST);

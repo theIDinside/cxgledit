@@ -4,6 +4,7 @@
 #include "shader.hpp"
 #include <fmt/core.h>
 #include <glad/glad.h>
+#include <core/core.hpp>
 
 Shader::Shader(const char *vertexPath, const char *fragmentPath, const char *geometryPath) noexcept {
     // 1. retrieve the vertex/fragment source code from filePath
@@ -284,5 +285,13 @@ Shader Shader::load_shader(fs::path vertexPath, fs::path fragmentPath, fs::path 
     fflush(stdout);
     return Shader(shaderID);
 }
-void Shader::setup() { projection = glGetUniformLocation(ID, "projection"); }
+void Shader::setup() {
+    projection = glGetUniformLocation(ID, "projection");
+}
 void Shader::set_projection(const glm::mat4 &mat) { glUniformMatrix4fv(projection, 1, GL_FALSE, &mat[0][0]); }
+void Shader::setup_fillcolor_id() {
+    fillcolor = glGetUniformLocation(ID, "fillcolor");
+}
+void Shader::set_fillcolor(glm::vec3 color) {
+    glUniform3fv(fillcolor, 1, &color[0]);
+}

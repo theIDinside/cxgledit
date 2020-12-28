@@ -36,11 +36,19 @@ void CommandInterpreter::validate(const std::string &input) {
     }
 }
 
-void CommandInterpreter::cycle_current_command_arguments() {
-    if (current_command) {
-        current_command->next_arg();
-        util::println("cmd rep: [{}]", current_command->as_auto_completed());
+void CommandInterpreter::cycle_current_command_arguments(Cycle direction) {
+    if(direction == Cycle::Forward) {
+        if (current_command) {
+            current_command->next_arg();
+            util::println("cmd rep: [{}]", current_command->as_auto_completed());
+        }
+    } else if(direction == Cycle::Backward) {
+        if (current_command) {
+            current_command->prev_arg();
+            util::println("cmd rep: [{}]", current_command->as_auto_completed());
+        }
     }
+
 }
 void CommandInterpreter::destroy_current_command() {
     if (current_command) {

@@ -10,56 +10,62 @@
 
 using usize = std::size_t;
 
+struct CursorVertex {
+    GLfloat x, y;
+};
+
 struct TextVertex {
     GLfloat x{}, y{}, u{}, v{};
     GLfloat r{}, g{}, b{};
 };
 
-constexpr auto gpu_mem_required(std::size_t characterCount) -> std::size_t {
-    return sizeof(TextVertex) * 6 * characterCount;
+template<typename T>
+constexpr auto gpu_mem_required_for_quads(std::size_t quads) -> std::size_t {
+    return sizeof(T) * 6 * quads;
 }
 
-struct TextVertices {
-    explicit TextVertices(usize vertexCount);
+template <typename T>
+using LocalStore = std::vector<T>;
 
-    static TextVertices init_from_string(const std::string &text);
-    void destroy();
 
-    TextVertex *data;
-    usize vertex_count;
-    usize current_quad_index{0};
-    void push_quad_then_delete(TextVertex *data);
-    [[nodiscard]] bool complete() const;
-    [[nodiscard]] auto bytes_size() const -> int;
+struct CursorVertexBufferObject {
+    CursorVertexBufferObject(GLuint id, GLenum bufferType, LocalStore<CursorVertex> &&reservedMemory);
+    static std::unique_ptr<CursorVertexBufferObject> create(GLuint vboId, GLenum bufferType, usize reservedSize = 0);
+    void bind();
+    int upload_to_gpu(bool clear_on_upload = true);
+    void reserve_gpu_memory(std::size_t quadsCount);
+    GLuint id{0};
+    GLenum type;
+    LocalStore<CursorVertex> data;
+    usize reservedGPUMemory{0};
+    bool created{false};
+    /// flag indicating whether GPU has equal representation of data uploaded. if !pristine, GPU needs an upload to have the same
+    bool pristine{false};
 };
 
-struct TSTextVertices {
-    explicit TSTextVertices(usize vertexCount);
-
-    static TSTextVertices init_from_string(const std::string &text);
-    void destroy();
-
-    TextVertex *data;
-    usize vertex_count;
-    usize current_quad_index{0};
-    void push_quad_then_delete(TextVertex *data);
-    [[nodiscard]] bool complete() const;
-    [[nodiscard]] auto bytes_size() const -> int;
+struct CursorVAO {
+    static std::unique_ptr<CursorVAO> make(GLenum VBOType, usize reservedVertexSpace = 0);
+    void bind_all();
+    void flush_and_draw();
+    void draw();
+    void reserve_gpu_size(std::size_t quads_count);
+    GLuint vao_id;
+    std::unique_ptr<CursorVertexBufferObject> vbo;
+    int last_items_rendered;
 };
 
 using byte = unsigned char;
 using usize = std::size_t;
-using LocalStore = std::vector<TextVertex>;
 
-struct VertexBufferObject {
-    VertexBufferObject(GLuint id, GLenum bufferType, LocalStore &&reservedMemory);
-    static std::unique_ptr<VertexBufferObject> create(GLuint vboId, GLenum bufferType, usize reservedSize = 0);
+struct TextVertexBufferObject {
+    TextVertexBufferObject(GLuint id, GLenum bufferType, LocalStore<TextVertex> &&reservedMemory);
+    static std::unique_ptr<TextVertexBufferObject> create(GLuint vboId, GLenum bufferType, usize reservedSize = 0);
     void bind();
     int upload_to_gpu(bool clear_on_upload = true);
     void reserve_gpu_memory(std::size_t text_character_count);
     GLuint id{0};
     GLenum type;
-    LocalStore data;
+    LocalStore<TextVertex> data;
     usize reservedGPUMemory{0};
     bool created{false};
     /// flag indicating whether GPU has equal representation of data uploaded. if !pristine, GPU needs an upload to have the same
@@ -72,7 +78,8 @@ struct VAO {
     void flush_and_draw();
     void draw();
     void reserve_gpu_size(std::size_t text_character_count);
+    void push_quad(std::array<TextVertex, 4> quad);
     GLuint vao_id;
-    std::unique_ptr<VertexBufferObject> vbo;
+    std::unique_ptr<TextVertexBufferObject> vbo;
     int last_items_rendered;
 };

@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "view_cursor.hpp"
 #include <core/text_data.hpp>
 #include <ui/render/font.hpp>
 #include <ui/render/shader.hpp>
@@ -14,6 +15,8 @@ enum class ViewType {
     Command,
     List,
 };
+
+struct ColorizeTextRange;
 
 class View {
 public:
@@ -32,6 +35,8 @@ public:
     SimpleFont *get_font();
     [[nodiscard]] TextData *get_text_buffer() const;
 
+    ViewCursor* get_cursor();
+
 private:
     int width{}, height{}, x{}, y{};
     std::unique_ptr<VAO> vao{nullptr};// the graphical representation
@@ -42,8 +47,10 @@ private:
     glm::mat4 projection;
     std::size_t vertexCapacity{0};
     int scroll = 0;
+    std::unique_ptr<ViewCursor> cursor;
     ViewType type = ViewType::Text;
     friend class CommandView;
+    friend class ViewCursor;
 };
 
 class CommandView {
