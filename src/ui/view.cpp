@@ -3,6 +3,7 @@
 //
 
 #include "view.hpp"
+#include <utility>
 #include <vector>
 
 #include <core/commands/command_interpreter.hpp>
@@ -127,10 +128,42 @@ void View::forced_draw_with_prefix_colorized(const std::string &prefix,
     font->t->bind();
 
     textToRender.append(cmd_rep);
-    font->emplace_colorized_text_gpu_data(vao.get(), textToRender, this->x + View::TEXT_LENGTH_FROM_EDGE,
-                                          this->y - font->get_row_advance(), cInfo);
-    // font->emplace_source_text_gpu_data(vao.get(), textToRender, this->x + View::TEXT_LENGTH_FROM_EDGE,this->y - font->get_row_advance());
-    vao->flush_and_draw();
+
+    if (cInfo) {
+        auto defaultColor = glm::fvec3{0.2f, 0.325f, 0.75f};
+        auto text_len = textToRender.size();
+        auto &vec = cInfo.value();
+        std::vector<ColorizeTextRange> fully_formatted{};
+        auto index = 0u;
+        for (auto range : vec) {
+            if (index < range.begin) {
+                auto a = ColorizeTextRange{.begin = index, .length = (range.begin) - index, .color = defaultColor};
+                util::println("Adding format for {} -> {} before {} -> {}", a.begin, a.begin+a.length, range.begin, range.begin+range.length);
+                fully_formatted.push_back(a);
+                fully_formatted.push_back(range);
+            } else {
+                fully_formatted.push_back(range);
+            }
+            index += range.begin + range.length;
+        }
+        if (index != text_len) {
+            fully_formatted.push_back(
+                    ColorizeTextRange{.begin = index, .length = (text_len) -index, .color = defaultColor});
+        }
+
+        for(const auto& r : fully_formatted) {
+            util::println("{} -> {} out of {}", r.begin, r.begin+r.length, text_len);
+        }
+
+        font->emplace_colorized_text_gpu_data(vao.get(), textToRender, this->x + View::TEXT_LENGTH_FROM_EDGE,
+                                              this->y - font->get_row_advance(), fully_formatted);
+        vao->flush_and_draw();
+    } else {
+        font->emplace_colorized_text_gpu_data(vao.get(), textToRender, this->x + View::TEXT_LENGTH_FROM_EDGE,
+                                              this->y - font->get_row_advance(), std::move(cInfo));
+        // font->emplace_source_text_gpu_data(vao.get(), textToRender, this->x + View::TEXT_LENGTH_FROM_EDGE,this->y - font->get_row_advance());
+        vao->flush_and_draw();
+    }
 }
 ViewCursor *View::get_cursor() { return cursor.get(); }
 

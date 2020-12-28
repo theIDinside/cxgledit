@@ -381,77 +381,15 @@ void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, std::string_view text
         auto cd = colorData.value();
         auto colorInfo = cd.front();
         auto curr = 0;
-        for (auto &cInfo : cd) {
-            r = defaultColor.x;
-            g = defaultColor.y;
-            b = defaultColor.z;
-            for (auto i = curr; i < colorInfo.begin; i++) {
-                auto &glyph = this->glyph_cache[text[i]];
-                if (text[i] == '\n') {
-                    x = start_x;
-                    y -= row_advance;
-                    continue;
-                }
-                auto xpos = float(x) + glyph.bearing.x;
-                auto ypos = float(y) - static_cast<float>(glyph.size.y - glyph.bearing.y);
-                auto x0 = float(glyph.x0) / float(t->width);
-                auto x1 = float(glyph.x1) / float(t->width);
-                auto y0 = float(glyph.y0) / float(t->height);
-                auto y1 = float(glyph.y1) / float(t->height);
-                auto w = float(glyph.x1 - glyph.x0);
-                auto h = float(glyph.y1 - glyph.y0);
-                /*
-                auto quadData = std::array<TextVertex, 4>{TextVertex{xpos, ypos + h, x0, y0, r, g, b},
-                                                          TextVertex{xpos, ypos, x0, y1, r, g, b},
-                                                          TextVertex{xpos + w, ypos, x1, y1, r, g, b},
-                                                          TextVertex{xpos + w, ypos + h, x1, y0, r, g, b}};
 
-                vao->push_quad(std::move(quadData));
-*/
-                store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-                store.emplace_back(xpos, ypos, x0, y1, r, g, b);
-                store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-                store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-                store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-                store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
-                x += glyph.advance;
-            }
-            auto ce = colorInfo.begin + colorInfo.length;
-            r = colorInfo.color.x;
-            g = colorInfo.color.y;
-            b = colorInfo.color.z;
-            for (auto i = colorInfo.begin; i < ce; i++) {
-                auto &glyph = this->glyph_cache[text[i]];
-                if (text[i] == '\n') {
-                    x = start_x;
-                    y -= row_advance;
-                    continue;
-                }
-                auto xpos = float(x) + glyph.bearing.x;
-                auto ypos = float(y) - static_cast<float>(glyph.size.y - glyph.bearing.y);
-                auto x0 = float(glyph.x0) / float(t->width);
-                auto x1 = float(glyph.x1) / float(t->width);
-                auto y0 = float(glyph.y0) / float(t->height);
-                auto y1 = float(glyph.y1) / float(t->height);
-                auto w = float(glyph.x1 - glyph.x0);
-                auto h = float(glyph.y1 - glyph.y0);
-                store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-                store.emplace_back(xpos, ypos, x0, y1, r, g, b);
-                store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-                store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-                store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-                store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
-                x += glyph.advance;
-            }
-            curr = ce + 1;
-        }
-        if (curr < text.size()) {
-            r = defaultColor.x;
-            g = defaultColor.y;
-            b = defaultColor.z;
-            for (auto i = curr; i < text.size(); i++) {
-                auto &glyph = this->glyph_cache[text[i]];
-                if (text[i] == '\n') {
+        for(auto& cInfo : cd) {
+            r = cInfo.color.x;
+            g = cInfo.color.y;
+            b = cInfo.color.z;
+            auto end = cInfo.begin + cInfo.length;
+            for(auto idx = cInfo.begin; idx < end; idx++) {
+                auto &glyph = this->glyph_cache[text[idx]];
+                if (text[idx] == '\n') {
                     x = start_x;
                     y -= row_advance;
                     continue;
