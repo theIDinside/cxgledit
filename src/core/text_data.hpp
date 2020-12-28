@@ -25,6 +25,10 @@ struct Movement {
     static Movement Char(size_t count, CursorDirection dir) { return Movement{count, TextRep::Char, dir}; }
     static Movement Word(size_t count, CursorDirection dir) { return Movement{count, TextRep::Word, dir}; }
     static Movement Line(size_t count, CursorDirection dir) { return Movement{count, TextRep::Line, dir}; }
+    /* TODO: implement these when it's reasonable to do so
+    static Movement Block(size_t count, CursorDirection dir) { return Movement{count, TextRep::Block, dir}; }
+    static Movement File(CursorDirection dir) { return Movement{0, TextRep::File, dir}; }
+     */
 };
 
 /// Abstract class. This is used here, so we can swap out the horrible std::string
@@ -37,18 +41,7 @@ class TextDataIterator;
 enum DelimiterSize { None, One, Two };
 
 static inline bool is_delimiter(char ch) {
-    if (ch == ' ') {
-        return true;
-    } else if (ch == '\n') {
-        return true;
-    } else if (ch == '-') {
-        return true;
-    } else if (ch == '>') {
-        return true;
-    } else if (ch == '.') {
-        return true;
-    }
-    return false;
+    return ((ch == ' ') || (ch == '\n') || (ch == '-') || (ch == '>') || ch == '.');
 }
 
 namespace fs = std::filesystem;
@@ -57,9 +50,9 @@ class TextData {
 public:
     int id{0};
     struct BufferCursor {
-        std::size_t pos{0};
-        std::size_t line{0};
-        std::size_t col_pos{0};
+        int pos{0};
+        int line{0};
+        int col_pos{0};
         void reset();
     } cursor;
 
@@ -195,6 +188,9 @@ public:
     [[nodiscard]] virtual std::string to_std_string() const = 0;
     [[nodiscard]] virtual std::string_view to_string_view() = 0;
     virtual void load_string(std::string &&data) = 0;
+    void print_cursor_info() const {
+        util::println("Buffer cursor [i:{}, ln: {}, col: {}]", cursor.pos, cursor.line, cursor.col_pos);
+    }
 #endif
 
     virtual bool is_pristine() const { return state_is_pristine; }
@@ -279,4 +275,8 @@ private:
     // This variable is set/checked every time a view wants to display. So once
     // vertex data is generated, this is set to true, until any text is inserted to the buffer
     // at which point it is set to false. This way we don't have to reconstruct vertex data every render cycle.
+    int find_line_begin(int i);
+    int find_line_end(int i);
+    int find_next_delimiter(int i);
+    int find_prev_delimiter(int i);
 };

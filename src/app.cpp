@@ -106,9 +106,6 @@ App *App::create(int app_width, int app_height, const std::string &title) {
 
     glfwSetCharCallback(window, [](auto win, auto codepoint) {
         auto app = get_app_handle(win);
-
-        util::println("QUOTE KEY WAS PRESSED: [{}]", (char)codepoint);
-
         app->active_buffer->insert((char)codepoint);
         if (app->edit_command) {
             // TODO: let CommandInterpreter know to INvalidate any argument cycling of current command, and re-validate the input
@@ -132,7 +129,7 @@ App *App::create(int app_width, int app_height, const std::string &title) {
             if (mods & GLFW_MOD_CONTROL) {
                 app->kb_command(key);
             } else {
-                app->handle_input(key, mods);
+                app->handle_edit_input(key, mods);
             }
         }
     });
@@ -254,6 +251,9 @@ void App::kb_command(int key) {
                     this->graceful_exit();
                 }
             } break;
+            case GLFW_KEY_D:
+                active_buffer->print_cursor_info();
+                break;
         }
     } else {
     }
@@ -281,7 +281,7 @@ void App::set_input_to_command_view(bool toggleOn) {
     }
 }
 void App::input_char(char i) {}
-void App::handle_input(int key, int modifier) {
+void App::handle_edit_input(int key, int modifier) {
     switch (key) {
         case GLFW_KEY_ENTER:
             if (edit_command) {
@@ -332,6 +332,8 @@ void App::handle_input(int key, int modifier) {
                     ci.cycle_current_command_arguments(static_cast<Cycle>(key));
                 }
             } else {
+                active_buffer->move_cursor(Movement::Line(1, CursorDirection::Forward));
+/*
                 auto scrolled_lines = scroll / active_view->get_font()->get_row_advance();
                 if (!(std::abs(scrolled_lines) >= get_active_view()->get_text_buffer()->lines_count() - 1)) {
                     scroll -= active_view->get_font()->get_row_advance();
@@ -339,14 +341,18 @@ void App::handle_input(int key, int modifier) {
                                                            static_cast<float>(scroll),
                                                            static_cast<float>(win_height + scroll)));
                 }
+                */
             }
         } break;
         case GLFW_KEY_UP: {
             if (!edit_command) {
+                active_buffer->move_cursor(Movement::Line(1, CursorDirection::Back));
+                /*
                 auto scroll_pos = scroll + active_view->get_font()->get_row_advance();
                 scroll = std::min(scroll_pos, 0);
                 active_view->set_projection(glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scroll),
                                                        static_cast<float>(win_height + scroll)));
+                */
             } else {
                 auto &ci = CommandInterpreter::get_instance();
                 if (ci.has_command_waiting()) {

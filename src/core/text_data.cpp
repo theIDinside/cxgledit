@@ -5,6 +5,9 @@
 #include "text_data.hpp"
 #include "strops.hpp"
 
+// FIXME: Fix word move forward / backward, so that cursor info data is recorded correctly. It's a mess right now
+// FIXME: Fix line move backward, forward seems to work perfectly fine, line position, column info etc
+
 void TextData::BufferCursor::reset() {
     line = 0;
     col_pos = 0;
@@ -28,6 +31,9 @@ void StdStringBuffer::move_cursor(Movement m) {
     state_is_pristine = false;
 }
 void StdStringBuffer::char_move_forward(std::size_t count) {
+    auto last_col = cursor.col_pos;
+    auto last_line = cursor.line;
+    auto last_pos = cursor.pos;
     if (cursor.pos + count >= size()) {
         auto b = store.begin();
         std::advance(b, cursor.pos);
@@ -54,8 +60,15 @@ void StdStringBuffer::char_move_forward(std::size_t count) {
             cursor.pos++;
         }
     }
+    util::println("Move from [i:{}, ln: {}, col: {}] to [i:{}, ln: {}, col: {}]", last_pos, last_line, last_col,
+                  cursor.pos, cursor.line, cursor.col_pos);
 }
+
 void StdStringBuffer::char_move_backward(std::size_t count) {
+    auto last_col = cursor.col_pos;
+    auto last_line = cursor.line;
+    auto last_pos = cursor.pos;
+    util::println("line: {} col: {}", cursor.line, cursor.col_pos);
     if (static_cast<int>(cursor.pos) - static_cast<int>(count) <= 0) {
         fmt::print("RESETTIGN CURSOR\n");
         cursor.reset();
@@ -76,140 +89,127 @@ void StdStringBuffer::char_move_backward(std::size_t count) {
         }
         if (!found) cursor.col_pos = cursor.pos;
     }
+    util::println("Move from [i:{}, ln: {}, col: {}] to [i:{}, ln: {}, col: {}]", last_pos, last_line, last_col,
+                  cursor.pos, cursor.line, cursor.col_pos);
 }
 
+constexpr auto is_delim = [](auto ch) { return !std::isalpha(ch) && ch != '_'; };
+
 void StdStringBuffer::word_move_forward(std::size_t count) {
-    auto e = store.end();
-    auto b = store.begin() + cursor.pos;
-    if (*b == ' ') {
-        b++;
-        cursor.pos++;
-        cursor.col_pos++;
-    } else if (*b == '\n') {
-        b++;
-        cursor.pos++;
-        cursor.line++;
-        cursor.col_pos = 0;
+    auto sz = size();
+    if (cursor.pos + 1 >= sz) {
+        step_cursor_to(sz);
+        return;
     }
-    while (b < e && count > 0) {
-        if (*b == ' ' || *b == '\n' || *b == '-' || *b == '.') {
-            auto cit = b;
-            cit++;
-            auto cols = cursor.col_pos;
-            auto lines = 0;
-            auto positions = 0;
-            bool consecutive = false;
-            while (cit < e && std::isspace(*cit)) {
-                if (*cit == ' ') {
-                    cols++;
-                    positions++;
-                    consecutive = true;
-                }
-                if (*cit == '\n') {
-                    cols = 0;
-                    positions++;
-                    lines++;
-                    consecutive = true;
-                }
-                cit++;
-            }
-            if (consecutive) {
-                cursor.pos += positions;
-                cursor.col_pos = cols;
-                cursor.line += lines;
-            } else {
-                if (auto deref_token_it = b; *b == '-' && ++deref_token_it != e) {
-                    if (*deref_token_it == '>') {
-                        cursor.pos++;
-                        cursor.col_pos++;
-                        b = deref_token_it;
-                    }
-                }
-                --count;
-            }
-        }
-        cursor.pos++;
-        cursor.col_pos++;
-        b++;
-    }
+    auto new_pos = find_next_delimiter(cursor.pos);
+    count--;
+    for (; count > 0; --count) { new_pos = find_next_delimiter(new_pos); }
+    step_cursor_to(new_pos);
 }
+
 void StdStringBuffer::word_move_backward(std::size_t count) {
-    auto pos_from_end = store.size() - cursor.pos;
-    auto e = store.rend();
-    auto b = store.rbegin() + pos_from_end;
-    if (*b == ' ') {
-        b++;
-        cursor.pos--;
-    } else if (*b == '\n') {
-        b++;
-        cursor.pos--;
-        cursor.line--;
+    if (cursor.pos - 1 <= 0) {
+        step_cursor_to(0);
+        return;
     }
-    while (b < e && count > 0) {
-        if (*b == ' ' || *b == '\n' || *b == '-' || *b == '>' || *b == '.') {
-            auto cit = b;
-            cit++;
-            auto lines = 0;
-            auto positions = 0;
-            bool consecutive = false;
-            while (cit < e && std::isspace(*cit)) {
-                if (*cit == ' ') {
-                    positions--;
-                    consecutive = true;
-                }
-                if (*cit == '\n') {
-                    positions--;
-                    lines--;
-                    consecutive = true;
-                }
-                cit++;
-            }
-            if (consecutive) {
-                cursor.pos += positions;
-                cursor.line += lines;
-            } else {
-                if (auto deref_token_it = b; *b == '>' && ++deref_token_it != e) {
-                    if (*deref_token_it == '-') {
-                        cursor.pos--;
-                        cursor.col_pos--;
-                        b = deref_token_it;
-                    }
-                }
-                --count;
-            }
-        }
-        cursor.pos--;
-        b++;
+    int new_pos = this->find_prev_delimiter(cursor.pos);
+    count--;
+    for (; count > 0; --count) { new_pos = find_prev_delimiter(new_pos); }
+    step_cursor_to(new_pos);
+}
+
+int StdStringBuffer::find_line_end(int i) {
+    auto sz = size();
+    for (; i < sz; i++) {
+        if (store[i] == '\n') { break; }
     }
-    auto prior = store.rfind('\n', cursor.pos);
-    if (prior == std::string::npos) {
-        cursor.col_pos = cursor.pos;
+    return std::min(i, int(size()));
+}
+
+int StdStringBuffer::find_line_begin(int i) {
+    if (i <= 0) return 0;
+    if (store[i] == '\n') {
+        return i;
     } else {
-        cursor.col_pos = cursor.pos - prior;
+        for (; i > 0; --i) {
+            if (store[i] == '\n') { break; }
+        }
+        return std::max(0, i);
     }
 }
 
 void StdStringBuffer::line_move_forward(std::size_t count) {
+    auto last_col = cursor.col_pos;
+    auto last_line = cursor.line;
+    auto last_pos = cursor.pos;
     auto curr_column = cursor.col_pos;
     auto pos = cursor.pos;
     auto sz = size();
     for (; pos < sz && count > 0; pos++) {
         if (store[pos] == '\n') count--;
     }
-    for (; pos < sz && store[pos] != '\n' && curr_column > 0; pos++, --curr_column)
-        ;
-    step_cursor_to(pos);
+    if (pos + last_col < sz) {
+        auto line_end = this->find_line_end(pos);
+        if (pos + last_col > line_end) {
+            step_cursor_to(line_end);
+        } else {
+            step_cursor_to(pos + last_col);
+        }
+    } else {
+        step_cursor_to(sz);
+    }
+    util::println("Move from [i:{}, ln: {}, col: {}] to [i:{}, ln: {}, col: {}]", last_pos, last_line, last_col,
+                  cursor.pos, cursor.line, cursor.col_pos);
 }
+
+void StdStringBuffer::line_move_backward(std::size_t count) {
+    auto last_col = cursor.col_pos;
+    auto last_line = cursor.line;
+    auto last_pos = cursor.pos;
+
+    int curr_column = cursor.col_pos;
+    auto pos = cursor.pos;
+    auto line_end{0};
+    auto line_found{false};
+
+    if(store[pos] == '\n') count++;
+
+    for (; pos > 0 && count > 0; pos--) {
+        if (store[pos] == '\n') {
+            count--;
+        }
+    }
+    line_end = pos;
+    if (line_end > 0) {
+        auto line_begin = find_line_begin(line_end);
+        if(line_begin != 0) line_begin++;
+        auto line_length = (line_end+1) - line_begin;
+        if (line_length > curr_column) {
+            auto new_pos = line_begin + curr_column;
+            step_cursor_to(new_pos);
+        } else {
+            step_cursor_to(line_end+1);
+        }
+    } else {
+        step_cursor_to(0);
+    }
+    util::println("Move from [i:{}, ln: {}, col: {}] to [i:{}, ln: {}, col: {}]", last_pos, last_line, last_col,
+                  cursor.pos, cursor.line, cursor.col_pos);
+}
+
+/*
 void StdStringBuffer::line_move_backward(std::size_t count) {
     int curr_column = cursor.col_pos;
     auto pos = cursor.pos;
-    auto line_end = 0;
-    int cnt = count;
-    for (; pos > 0 && (cnt + 1) > 0; pos--) {
+    auto line_end{0};
+    auto line_found{false};
 
+    for (; pos > 0 && (count + 1) > 0; pos--) {
         if (store[pos] == '\n') {
-            cnt--;
-            if (cnt == 0) line_end = pos;
+            count--;
+            if (count == 0) {
+                line_end = pos;
+            }
         }
     }
     auto sz = size();
@@ -217,6 +217,7 @@ void StdStringBuffer::line_move_backward(std::size_t count) {
         ;
     step_cursor_to(pos);
 }
+ */
 
 void StdStringBuffer::remove() {
     assert(cursor.pos != 0 && "you have fucked up the index... out of bounds");
@@ -348,8 +349,9 @@ void StdStringBuffer::remove_ch_forward(size_t i) {
 }
 void StdStringBuffer::remove_ch_backward(size_t i) {
     if ((int) cursor.pos - (int) i >= 0) {
-        store.erase(cursor.pos - i, i);
-        cursor.pos -= i;
+        auto pos = cursor.pos;
+        step_cursor_to(cursor.pos - i);
+        store.erase(pos - i, i);
     }
 }
 // TODO(simon): MAJOR CLEAN UP NEEDED!
@@ -420,31 +422,38 @@ std::optional<size_t> StdStringBuffer::get_item_pos_from(const Movement &m) {
 char *StdStringBuffer::get_at_ptr(std::size_t pos) { return store.data() + pos; }
 void StdStringBuffer::step_cursor_to(size_t pos) {
     if (empty() || pos == cursor.pos) return;
-    fmt::print("step to {} from {}\n", pos, cursor.pos);
-    assert(pos <= size());
-    if (pos > cursor.pos) {// moving cursor forward
-        for (; cursor.pos < pos; cursor.pos++) {
-            if (get_value_at_safe(cursor.pos).value_or('\0') == '\n') {
-                cursor.line++;
-                cursor.col_pos = 0;
-            } else {
-                cursor.col_pos++;
-            }
+    assert(pos <= size() && pos >= 0);
+    auto old_pos = cursor.pos;
+    auto new_column_index = 0;
+    if(store[pos] == '\n') {
+        if(store[pos-1] == '\n') {
+            new_column_index = 0;
+        } else {
+            new_column_index = pos - find_line_begin(pos-1);
+        }
+    }
+
+    if(pos > cursor.pos) {
+        while(cursor.pos != pos) {
+            if(store[cursor.pos] == '\n') cursor.line++;
+            cursor.pos++;
         }
     } else {
-        if (cursor.pos == size()) {
+        while(cursor.pos != pos) {
             cursor.pos--;
-            cursor.col_pos--;
+            if(store[cursor.pos] == '\n') cursor.line--;
         }
-        for (; cursor.pos > pos; cursor.pos--) {
-            if (get_at(cursor.pos) == '\n') {
-                cursor.line--;
-                auto prior_line_end = store.rfind('\n', cursor.pos - 1);
-                cursor.col_pos = cursor.pos - prior_line_end;
-            } else {
-                cursor.col_pos--;
-            }
+    }
+    if(store[pos] != '\n') {
+        util::println("pos: {} - find_line_begin(pos): '{}'", pos, find_line_begin(pos));
+        new_column_index = (pos - find_line_begin(pos)) - 1;
+        if(old_pos < pos) {
+
+        } else {
+
         }
+    } else {
+        cursor.col_pos = new_column_index - 1;
     }
 }
 
@@ -462,6 +471,30 @@ void StdStringBuffer::load_string(std::string &&data) {
 }
 size_t StdStringBuffer::lines_count() const {
     return map_or(count_elements(this->store, '\n'), 0, [](auto &&el) { return el.size(); });
+}
+int StdStringBuffer::find_next_delimiter(int i) {
+    auto sz = size();
+    if (i + 1 < sz) {
+        i++;
+        for (; i < sz; i++) {
+            if (is_delimiter(store[i])) { return i; }
+        }
+        return i;
+    } else {
+        return sz;
+    }
+}
+
+int StdStringBuffer::find_prev_delimiter(int i) {
+    if (i - 1 > 0) {
+        --i;
+        for (; i > 0; --i) {
+            if (is_delimiter(store[i])) { return i; }
+        }
+        return i;
+    } else {
+        return 0;
+    }
 }
 
 #endif

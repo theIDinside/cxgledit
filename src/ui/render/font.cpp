@@ -372,7 +372,7 @@ void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, std::string_view text
     auto start_y = yPos;
     auto x = start_x;
     auto y = start_y;
-    auto defaultColor = glm::fvec3{0.2f, 0.325f, 0.75f};
+    auto defaultColor = glm::fvec3{0.74f, 0.425f, 0.46f};
     auto r = defaultColor.x;
     auto g = defaultColor.y;
     auto b = defaultColor.z;
@@ -380,7 +380,6 @@ void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, std::string_view text
     if (colorData) {
         auto cd = colorData.value();
         auto colorInfo = cd.front();
-        auto curr = 0;
 
         for(auto& cInfo : cd) {
             r = cInfo.color.x;

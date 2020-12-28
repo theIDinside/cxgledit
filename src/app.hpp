@@ -54,5 +54,5 @@ private:
     bool exit_command_requested;
     bool edit_command = false;
     void input_char(char ch);
-    void handle_input(int i, int i1);
+    void handle_edit_input(int i, int i1);
 };

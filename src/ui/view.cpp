@@ -130,7 +130,7 @@ void View::forced_draw_with_prefix_colorized(const std::string &prefix,
     textToRender.append(cmd_rep);
 
     if (cInfo) {
-        auto defaultColor = glm::fvec3{0.2f, 0.325f, 0.75f};
+        auto defaultColor = glm::fvec3{0.74f, 0.425f, 0.46f};
         auto text_len = textToRender.size();
         auto &vec = cInfo.value();
         std::vector<ColorizeTextRange> fully_formatted{};
@@ -138,7 +138,6 @@ void View::forced_draw_with_prefix_colorized(const std::string &prefix,
         for (auto range : vec) {
             if (index < range.begin) {
                 auto a = ColorizeTextRange{.begin = index, .length = (range.begin) - index, .color = defaultColor};
-                util::println("Adding format for {} -> {} before {} -> {}", a.begin, a.begin+a.length, range.begin, range.begin+range.length);
                 fully_formatted.push_back(a);
                 fully_formatted.push_back(range);
             } else {
@@ -149,10 +148,6 @@ void View::forced_draw_with_prefix_colorized(const std::string &prefix,
         if (index != text_len) {
             fully_formatted.push_back(
                     ColorizeTextRange{.begin = index, .length = (text_len) -index, .color = defaultColor});
-        }
-
-        for(const auto& r : fully_formatted) {
-            util::println("{} -> {} out of {}", r.begin, r.begin+r.length, text_len);
         }
 
         font->emplace_colorized_text_gpu_data(vao.get(), textToRender, this->x + View::TEXT_LENGTH_FROM_EDGE,

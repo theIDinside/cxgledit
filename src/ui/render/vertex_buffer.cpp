@@ -100,12 +100,6 @@ std::unique_ptr<CursorVertexBufferObject> CursorVertexBufferObject::create(GLuin
 void CursorVertexBufferObject::bind() { glBindBuffer(this->type, this->id); }
 int CursorVertexBufferObject::upload_to_gpu(bool clear_on_upload) {
     auto vertices = data.size();
-    util::println("Vertices in Cursor buffer: {}", vertices);
-    if(vertices != 6)
-    {
-        PANIC("VERTEX COUNT FOR CURSOR MUST BE 6, but is {}", vertices);
-    }
-
     glBufferSubData(GL_ARRAY_BUFFER, 0, this->data.size() * sizeof(CursorVertex), data.data());
     if (clear_on_upload) { data.clear(); }
     return vertices;

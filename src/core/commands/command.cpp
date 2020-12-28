@@ -37,7 +37,7 @@ OpenFile::OpenFile(const std::string &argInput) : Command("OpenFile"), file{argI
 
     constexpr auto to_path = [](auto &dirEntry) { return dirEntry.path(); };
 
-    if (fs::exists(path)) {
+    if (fs::exists(path) && fs::is_directory(path)) {
         auto begin = fs::directory_iterator(path);
         auto end = fs::end(fs::directory_iterator(path));
 
