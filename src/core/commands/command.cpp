@@ -6,6 +6,7 @@
 #include "command_interpreter.hpp"
 #include <fmt/format.h>
 #include <ranges>
+#include <fstream>
 
 constexpr auto is_dir = [](const auto &path) { return fs::exists(path) && path.filename().empty(); };
 
@@ -16,7 +17,6 @@ void OpenFile::exec(App *app) {
         util::println("No file selected or found with that name: {}", file.string());
     }
 }
-void OpenFile::tab_handle() {}
 
 OpenFile::OpenFile(const std::string &argInput) : Command("OpenFile"), file{argInput}, withSamePrefix{} {
     auto path = file.parent_path();
@@ -90,7 +90,7 @@ void OpenFile::prev_arg() {
         if (!fileNameSelected) {
             fileNameSelected = true;
         } else {
-            if(curr_file_index <= 0) {
+            if (curr_file_index <= 0) {
                 curr_file_index = withSamePrefix.size() - 1;
             } else {
                 curr_file_index--;
@@ -114,8 +114,6 @@ std::string OpenFile::as_auto_completed() const {
 }
 std::string OpenFile::actual_input() const { return "open " + file.string(); }
 
-
-
 std::optional<std::unique_ptr<Command>> parse_command(std::string input) {
     auto str_parts = util::str::list_split_string(input);
     if (str_parts.empty()) return {};
@@ -124,10 +122,37 @@ std::optional<std::unique_ptr<Command>> parse_command(std::string input) {
     return {};
 }
 void ErrorCommand::exec(App *app) {}
-void ErrorCommand::tab_handle() {}
 
 bool ErrorCommand::validate() { return true; }
 
 ErrorCommand::ErrorCommand(std::string message) : Command("ErrorCommand"), msg(std::move(message)) {}
 std::string ErrorCommand::as_auto_completed() const { return "ERROR"; }
 std::string ErrorCommand::actual_input() const { return "ERROR: " + msg; }
+
+void WriteFile::exec(App *app) {
+    if(!over_write && fs::exists(fileName)) {
+        util::println("File exists and write protection is on");
+    } else {
+        std::ofstream outf{fileName};
+        auto write_data = app->get_active_view()->get_text_buffer()->to_string_view();
+        outf << write_data;
+        outf.close();
+
+        auto checked_bytes_written = file_size(fileName.string().c_str());
+        if(checked_bytes_written) {
+            util::println("Wrote {} bytes to file", checked_bytes_written.value());
+        } else {
+            util::println("Could not retrieve file size");
+        }
+    }
+}
+bool WriteFile::validate() { return Command::validate(); }
+void WriteFile::next_arg() { Command::next_arg(); }
+void WriteFile::prev_arg() { Command::prev_arg(); }
+
+
+std::string WriteFile::as_auto_completed() const { return "write " + fileName.string(); }
+std::string WriteFile::actual_input() const { return as_auto_completed(); }
+
+WriteFile::WriteFile(const std::string &file, bool over_write)
+    : Command("WriteFile"), fileName(file), over_write(over_write) {}

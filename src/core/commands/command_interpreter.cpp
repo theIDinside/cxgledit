@@ -31,7 +31,19 @@ void CommandInterpreter::validate(const std::string &input) {
             } else {
                 current_command = new OpenFile{""};
             }
+        } else if(cmd_str == "w" || cmd_str == "write") {
+            parts.pop_front();
+            if(!parts.empty()) {
+                auto f = parts.front();
+                if(f != "." && f != "..") {
+                    std::string fileName{f};
+                    current_command = new WriteFile{fileName};
+
+                }
+                util::println("Validated an open command");
+            }
         } else {
+
         }
     }
 }

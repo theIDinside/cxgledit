@@ -8,6 +8,9 @@
 // FIXME: Fix word move forward / backward, so that cursor info data is recorded correctly. It's a mess right now
 // FIXME: Fix line move backward, forward seems to work perfectly fine, line position, column info etc
 
+#undef min
+#undef max
+
 void TextData::BufferCursor::reset() {
     line = 0;
     col_pos = 0;

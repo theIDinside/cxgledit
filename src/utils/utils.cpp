@@ -39,3 +39,15 @@ namespace util::file {
         return result;
     }
 }// namespace util::file
+#ifdef WIN32
+#include <windows.h>
+
+auto file_size(const char *file_path) -> std::optional<int> {
+    if (fs::exists(file_path)) {
+        WIN32_FILE_ATTRIBUTE_DATA fInfo{};
+        GetFileAttributesEx(file_path, GetFileExInfoStandard, (void *) &fInfo);
+        return (fInfo.nFileSizeHigh << 16) | (fInfo.nFileSizeLow);
+    }
+    return {};
+}
+#endif

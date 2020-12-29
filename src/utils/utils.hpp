@@ -2,6 +2,7 @@
 #pragma once
 #include <filesystem>
 #include <fmt/core.h>
+#include <optional>
 
 #ifdef DEBUG
 #include <array>
@@ -92,3 +93,8 @@ void safe_delete(T *&t) {
     if (t) { delete t; }
     t = nullptr;
 }
+
+
+#ifdef WIN32
+auto file_size(const char* file_path) -> std::optional<int>;
+#endif

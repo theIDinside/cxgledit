@@ -19,7 +19,6 @@ struct Command {
     virtual ~Command() = default;
     std::string name;
     virtual void exec(App *) = 0;
-    virtual void tab_handle() = 0;
     virtual bool validate() { return true; }
     virtual void next_arg() {}
     virtual void prev_arg() {}
@@ -32,7 +31,6 @@ struct ErrorCommand : public Command {
     explicit ErrorCommand(std::string message);
     ~ErrorCommand() override = default;
     void exec(App *app) override;
-    void tab_handle() override;
 
     bool validate() override;
     [[nodiscard]] std::string actual_input() const override;
@@ -43,7 +41,6 @@ struct ErrorCommand : public Command {
 struct OpenFile : public Command {
     explicit OpenFile(const std::string &argInput);
     void exec(App *app) override;
-    void tab_handle() override;
     ~OpenFile() override = default;
     std::string actual_input() const override;
     bool validate() override;
@@ -55,6 +52,19 @@ struct OpenFile : public Command {
     std::vector<fs::path> withSamePrefix;
     std::size_t curr_file_index = 0;
     bool fileNameSelected = false;
+};
+
+struct WriteFile : public Command {
+    explicit WriteFile(const std::string& file, bool over_write = false);
+    ~WriteFile() override = default;
+    void exec(App *app) override;
+    bool validate() override;
+    void next_arg() override;
+    void prev_arg() override;
+    [[nodiscard]] std::string as_auto_completed() const override;
+    [[nodiscard]] std::string actual_input() const override;
+    fs::path fileName;
+    bool over_write{false};
 };
 
 std::optional<std::unique_ptr<Command>> parse_command(std::string input);
