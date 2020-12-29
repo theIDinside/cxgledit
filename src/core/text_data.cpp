@@ -104,7 +104,8 @@ void StdStringBuffer::word_move_forward(std::size_t count) {
     auto new_pos = find_next_delimiter(cursor.pos);
     count--;
     for (; count > 0; --count) { new_pos = find_next_delimiter(new_pos); }
-    step_cursor_to(new_pos);
+    char_move_forward(new_pos - cursor.pos);
+    // step_cursor_to(new_pos);
 }
 
 void StdStringBuffer::word_move_backward(std::size_t count) {
@@ -115,7 +116,8 @@ void StdStringBuffer::word_move_backward(std::size_t count) {
     int new_pos = this->find_prev_delimiter(cursor.pos);
     count--;
     for (; count > 0; --count) { new_pos = find_prev_delimiter(new_pos); }
-    step_cursor_to(new_pos);
+    // step_cursor_to(new_pos);
+    char_move_backward(cursor.pos - new_pos);
 }
 
 int StdStringBuffer::find_line_end(int i) {
@@ -135,6 +137,25 @@ int StdStringBuffer::find_line_begin(int i) {
             if (store[i] == '\n') { break; }
         }
         return std::max(0, i);
+    }
+}
+
+/**
+ * Returns the character *after* the newline which exists in the line prior to the line where position i is. Contrast
+ * that with find_line_begin, which returs the index of the newline character of the prior line
+ * @param i
+ * @return
+ */
+int StdStringBuffer::find_line_start(int i) {
+    if (i <= 0) return 0;
+    if (store[i] == '\n') {
+        return i + 1;
+    } else {
+        for (; i > 0; --i) {
+            if (store[i] == '\n') { break; }
+        }
+        if(i <= 0) return 0; // BOF - Beginning of file
+        else return i+1;     // BOL - Beginning of line
     }
 }
 
@@ -163,38 +184,24 @@ void StdStringBuffer::line_move_forward(std::size_t count) {
 }
 
 void StdStringBuffer::line_move_backward(std::size_t count) {
-    auto last_col = cursor.col_pos;
-    auto last_line = cursor.line;
-    auto last_pos = cursor.pos;
-
     int curr_column = cursor.col_pos;
     auto pos = cursor.pos;
-    auto line_end{0};
-    auto line_found{false};
-
     if(store[pos] == '\n') count++;
-
     for (; pos > 0 && count > 0; pos--) {
         if (store[pos] == '\n') {
             count--;
+            if(count == 0) break;
         }
     }
-    line_end = pos;
-    if (line_end > 0) {
-        auto line_begin = find_line_begin(line_end);
-        if(line_begin != 0) line_begin++;
-        auto line_length = (line_end+1) - line_begin;
-        if (line_length > curr_column) {
-            auto new_pos = line_begin + curr_column;
-            step_cursor_to(new_pos);
-        } else {
-            step_cursor_to(line_end+1);
-        }
+    auto line_length = (pos - find_line_start(pos-1));
+    util::println("found line start: {} - end of line: {}, cursor pos: {}", find_line_start(pos-1), pos, cursor.pos);
+    if(curr_column > line_length) {
+        char_move_backward(cursor.pos - pos);
     } else {
-        step_cursor_to(0);
+        auto p = find_line_start(pos-1) + curr_column;
+        util::println("cursor.pos={}, p={}, moving to index {} - found line begin: {}", cursor.pos, p, cursor.pos - (cursor.pos - p), find_line_start(pos-1));
+        char_move_backward(cursor.pos - p);
     }
-    util::println("Move from [i:{}, ln: {}, col: {}] to [i:{}, ln: {}, col: {}]", last_pos, last_line, last_col,
-                  cursor.pos, cursor.line, cursor.col_pos);
 }
 
 /*
@@ -319,6 +326,7 @@ void StdStringBuffer::remove(const Movement &m) {
             break;
         case Word:
             // TODO: m.dir == CursorDirection::Forward ? this->remove_word_forward(m.count) : this->remove_word_backward(m.count);
+            m.dir == CursorDirection::Forward ? this->remove_word_forward(m.count) : this->remove_word_backward(m.count);
             break;
         case Line:
             // TODO: m.dir == CursorDirection::Forward ? this->remove_line_forward(m.count) : this->remove_line_backward(m.count);
@@ -354,6 +362,40 @@ void StdStringBuffer::remove_ch_backward(size_t i) {
         store.erase(pos - i, i);
     }
 }
+
+void StdStringBuffer::remove_word_forward(size_t count) {
+    auto sz = size();
+    if (cursor.pos + 1 >= sz) {
+        store.erase(cursor.pos);
+        return;
+    }
+    auto new_pos = find_next_delimiter(cursor.pos);
+    count--;
+    for (; count > 0; --count) { new_pos = find_next_delimiter(new_pos); }
+    store.erase(cursor.pos, new_pos - cursor.pos);
+}
+
+void StdStringBuffer::remove_word_backward(size_t count) {
+    if (cursor.pos - 1 <= 0) {
+        remove_ch_backward(1);
+        return;
+    }
+    if(find_prev_delimiter(cursor.pos) == cursor.pos - 1) {
+        remove_ch_backward(1);
+        return;
+    }
+    auto new_pos = find_prev_delimiter(cursor.pos);
+    count--;
+    for (; count > 0; --count) { new_pos = find_prev_delimiter(new_pos); }
+    auto distance = cursor.pos - new_pos;
+    if(new_pos != 0) {
+        remove_ch_backward(distance - 1);
+    } else {
+        remove_ch_backward(distance);
+    }
+
+}
+
 // TODO(simon): MAJOR CLEAN UP NEEDED!
 std::optional<size_t> StdStringBuffer::get_item_pos_from(const Movement &m) {
     if (empty()) return {};
@@ -496,5 +538,6 @@ int StdStringBuffer::find_prev_delimiter(int i) {
         return 0;
     }
 }
+
 
 #endif

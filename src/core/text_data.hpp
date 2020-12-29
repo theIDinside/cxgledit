@@ -271,6 +271,10 @@ private:
     void line_move_backward(std::size_t count) override;
     void remove_ch_forward(size_t i);
     void remove_ch_backward(size_t i);
+    void remove_word_forward(size_t i);
+    void remove_word_backward(size_t i);
+    void remove_line_forward(size_t i);
+    void remove_line_backward(size_t i);
     std::string store;
     // This variable is set/checked every time a view wants to display. So once
     // vertex data is generated, this is set to true, until any text is inserted to the buffer
@@ -279,4 +283,5 @@ private:
     int find_line_end(int i);
     int find_next_delimiter(int i);
     int find_prev_delimiter(int i);
+    int find_line_start(int i);
 };

@@ -243,6 +243,12 @@ void App::kb_command(int key) {
                 active_view->set_projection(glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scroll),
                                                        static_cast<float>(win_height + scroll)));
             } break;
+            case GLFW_KEY_DELETE:
+                active_buffer->remove(Movement::Word(1, CursorDirection::Forward));
+                break;
+            case GLFW_KEY_BACKSPACE:
+                active_buffer->remove(Movement::Word(1, CursorDirection::Back));
+                break;
             case GLFW_KEY_Q: {
                 util::println("Ctrl+Q was pressed");
                 if (!active_buffer->empty()) {
