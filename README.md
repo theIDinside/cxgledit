@@ -14,6 +14,17 @@ all the vertex data for a line, or even the entire file, upload that to the gpu 
 for a file with 500 lines and 30 character per line average.
 
 ![First render](initial.PNG)
+### Features on display:
+- Split editor windows
+- Command input & auto completion (the grayed out part is what it can auto-complete to). If the user hits tab, 
+it fills out, if the user hits key up/down it will cycle through the alternatives. This command bar, should probably be in a separate
+  panel instead, so that the entire list could be shown and cycled through
+  
+
+Syntax highlighting is just hacked to gether for now, and it obviously isn't working with string literals. 
+Shouldn't be that hard to fix though, so I've put that on hold for now, dealing with the more interesting stuff.
+
+
 
 ## Dependencies
 Project has a few dependencies on 3rd party libraries. Most of which I've made it so CMake automatically handles
