@@ -46,11 +46,10 @@ public:
     [[nodiscard]] View *get_active_view() const;
     void set_input_to_command_view(bool toggleOn);
     void set_error_message(std::string msg);
-
     void new_editor_window(SplitStrategy ss = SplitStrategy::Stack);
+
     void editor_win_selected(EditorWindow* window);
     static WindowDimensions get_window_dimension();
-
 private:
     void cleanup();
     GLFWwindow *window;

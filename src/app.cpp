@@ -14,15 +14,18 @@ static auto BUFFERS_COUNT = 0;
 
 void framebuffer_callback(GLFWwindow *window, int width, int height) {
     fmt::print("New width: {}\t New height: {}\n", width, height);
-    auto app = get_app_handle(window);
-    auto dim = app->get_window_dimension();
-    float wratio = float(width) / float(dim.w);
-    float hratio = float(height) / float(dim.h);
+    // if w & h == 0, means we minimized. Do nothing. Because when we un-minimize, means we restore the prior size
+    if(width != 0 && height != 0) {
+        auto app = get_app_handle(window);
+        auto dim = app->get_window_dimension();
+        float wratio = float(width) / float(dim.w);
+        float hratio = float(height) / float(dim.h);
+        app->set_dimensions(width, height);
+        app->update_views_dimensions(wratio, hratio);
+        app->draw_all(true);
+        glViewport(0, 0, width, height);
+    }
 
-    app->set_dimensions(width, height);
-    app->update_views_dimensions(wratio, hratio);
-    app->draw_all(true);
-    glViewport(0, 0, width, height);
 }
 
 App *App::initialize(int app_width, int app_height, const std::string &title) {
@@ -482,6 +485,7 @@ static auto layout_id = 1;
 
 void App::new_editor_window(SplitStrategy splitStrategy) {
     if (splitStrategy == SplitStrategy::VerticalSplit) {
+        active_window->active = false;
         auto active_layout_id = active_window->ui_layout_id;
         auto l = find_by_id(root_layout, active_layout_id);
         push_node(l, layout_id, LayoutType::Horizontal);
@@ -495,6 +499,7 @@ void App::new_editor_window(SplitStrategy splitStrategy) {
         active_view = e->view;
         active_window = editor_views.back();
         active_editor_win->update_layout(l->left->dimInfo);
+        active_window->active = true;
     } else {
         auto ew = EditorWindow::create({}, projection, layout_id, DimInfo{0, win_height, win_width, win_height});
         ew->view->set_projection(projection);
@@ -503,6 +508,7 @@ void App::new_editor_window(SplitStrategy splitStrategy) {
         auto &e = editor_views.back();
         active_buffer = e->get_text_buffer();
         active_view = e->view;
+        ew->active = true;
     }
     active_window = editor_views.back();
     util::println("Editor window created");
