@@ -15,9 +15,6 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb/stb_image_write.h>
 
-#undef min
-#undef max
-
 using u64 = std::size_t;
 
 SyntaxColor red{.r = 1.0f};

@@ -15,12 +15,14 @@
 class TextData;
 enum CursorDirection { Forward, Back };
 enum TextRep { Char, Word, Line, Block, File };
+enum Boundary { Inside, Outside };
 
 struct Movement {
     Movement(size_t count, TextRep elem_type, CursorDirection dir) : count(count), construct(elem_type), dir(dir) {}
     size_t count;
     TextRep construct;
     CursorDirection dir;
+    Boundary boundary;
 
     static Movement Char(size_t count, CursorDirection dir) { return Movement{count, TextRep::Char, dir}; }
     static Movement Word(size_t count, CursorDirection dir) { return Movement{count, TextRep::Word, dir}; }
@@ -46,6 +48,15 @@ static inline bool is_delimiter(char ch) {
 
 namespace fs = std::filesystem;
 
+
+
+struct TextMetaData {
+    std::vector<int> line_begins{};
+    std::string buf_name{};
+};
+
+
+
 class TextData {
 public:
     int id{0};
@@ -53,110 +64,19 @@ public:
         int pos{0};
         int line{0};
         int col_pos{0};
+        int buffer_id{0};
         void reset();
     } cursor;
-
-    class TextDataIterator {
-    public:
-        using self = TextDataIterator;
-        using reference = char &;
-        using value_type = char;
-        using pointer = char *;
-        using difference_type = size_t;
-        using iterator_category = std::input_iterator_tag;
-
-        explicit TextDataIterator(TextData *buf, size_t index = 0) : ptr_buf(buf), m_index(index) {}
-
-        TextDataIterator(const TextDataIterator &) = default;
-        /// post increment
-        self operator++() {
-            auto it = *this;
-            m_index++;
-            return it;
-        }
-        /// pre-increment
-        self operator++(int) {
-            this->m_index++;
-            return *this;
-        }
-
-        self operator+(std::size_t i) {
-            auto it = *this;
-            it.m_index += i;
-            return it;
-        }
-
-        value_type operator*() const { return ptr_buf->get_at(m_index); }
-        reference operator*() { return ptr_buf->get_at(m_index); }
-
-        size_t get_buffer_index() const { return m_index; }
-
-        SPACE_SHIP(TextDataIterator, m_index)
-    private:
-        TextData *ptr_buf;
-        size_t m_index;
-    };
-    class RTextDataIterator {
-    public:
-        using self = RTextDataIterator;
-        using reference = char &;
-        using value_type = char;
-        using pointer = char *;
-        using difference_type = size_t;
-        using iterator_category = std::input_iterator_tag;
-
-        explicit RTextDataIterator(TextData *buf, int index, size_t it_count = 1)
-            : ptr_buf(buf), m_index(index), iterated_count(it_count) {
-            assert(index != buf->size());
-        }
-
-        RTextDataIterator(const RTextDataIterator &) = default;
-        self operator++() {
-            // fmt::print("?? {}/{}\n", m_index, iterated_count);
-            auto it = *this;
-            iterated_count++;
-            m_index--;
-            return it;
-        }
-        self &operator++(int) {
-            this->iterated_count++;
-            this->m_index--;
-            return *this;
-        }
-
-        self &operator+(int i) {
-            m_index -= i;
-            iterated_count += i;
-            return *this;
-        }
-
-        value_type operator*() const {
-            assert(m_index >= 0);
-            return ptr_buf->get_at(m_index);
-        }
-        reference operator*() {
-            assert(m_index >= 0);
-            return ptr_buf->get_at(m_index);
-        }
-
-        size_t get_buffer_index() const { return m_index; }
-
-        SPACE_SHIP(RTextDataIterator, iterated_count)
-    private:
-        TextData *ptr_buf;
-        int m_index;
-        size_t iterated_count;
-    };
 
     TextData() = default;
     virtual ~TextData() = default;
     virtual void insert(char ch) = 0;
-    virtual void insert(const std::string_view &data) = 0;
+    virtual void insert_str(const std::string_view &data) = 0;
     virtual void clear() = 0;
     virtual void remove() = 0;
     virtual void remove(const Movement &m) = 0;
     virtual void erase() = 0;
-    virtual std::optional<size_t> get_item_pos_from(const Movement &m) = 0;
+
     virtual void set_cursor(std::size_t pos) = 0;
     virtual void set_line(std::size_t pos) = 0;
     virtual char &get_at(std::size_t pos) = 0;
@@ -178,26 +98,53 @@ public:
     virtual void step_cursor_to(size_t pos) = 0;
     virtual void move_cursor(Movement movement) = 0;
 
-    virtual TextDataIterator begin() { return TextDataIterator{this}; }
-    virtual TextDataIterator end() { return TextDataIterator{this, size()}; }
+    virtual void step_to_line_end(Boundary boundary) = 0;
+    virtual void step_to_line_begin(Boundary boundary) = 0;
 
-    virtual RTextDataIterator rbegin() { return RTextDataIterator{this, (int) size() - 1, 0}; }
-    virtual RTextDataIterator rend() { return RTextDataIterator{this, 0, size()}; }
+    virtual void set_file(const std::string& file_path) {
+        file_name = file_path;
+        meta_data.buf_name = file_name.filename().string();
+    }
+
+    virtual void set_file(fs::path p) {
+        file_name = p;
+        meta_data.buf_name = p.filename().string();
+    }
+
+    virtual std::string fileName() { return meta_data.buf_name; }
 
 #ifdef DEBUG
     [[nodiscard]] virtual std::string to_std_string() const = 0;
     [[nodiscard]] virtual std::string_view to_string_view() = 0;
     virtual void load_string(std::string &&data) = 0;
+
+    // Brute force rebuild meta data. Not really optimized but will work for now
+    virtual void rebuild_metadata() = 0;
+
+
     void print_cursor_info() const {
         util::println("Buffer cursor [i:{}, ln: {}, col: {}]", cursor.pos, cursor.line, cursor.col_pos);
     }
+
+    void print_line_meta_data() const {
+        util::println("meta data - line begin: {}", meta_data.line_begins[cursor.line]);
+    }
+
+    virtual void clear_metadata() {
+        cursor.pos = 0;
+        cursor.col_pos = 0;
+        cursor.line = 0;
+        meta_data.line_begins.clear();
+        meta_data.buf_name.clear();
+    }
+
 #endif
 
     virtual bool is_pristine() const { return state_is_pristine; }
-
+    bool has_meta_data{false};
+    fs::path file_name;
+    TextMetaData meta_data;
 protected:
-    std::size_t m_lines;
-
     /**
      * Changed this to "state_is_pristine" to also communicate that, not only the text data
      * is represented by this variable, but the entire state of this text buffer, which includes the
@@ -213,7 +160,7 @@ private:
     virtual void word_move_backward(std::size_t count) = 0;
     virtual void line_move_forward(std::size_t count) = 0;
     virtual void line_move_backward(std::size_t count) = 0;
-    fs::path file_name;
+
 };
 
 class StdStringBuffer : public TextData {
@@ -223,14 +170,13 @@ public:
 
     /// EDITING
     void insert(char ch) override;
-    void insert(const std::string_view &data) override;
+    void insert_str(const std::string_view &data) override;
     void clear() override;
     void remove() override;
     void remove(const Movement &m) override;
     void erase() override;
 
     /// CURSOR OPS
-    std::optional<size_t> get_item_pos_from(const Movement &m) override;
     void set_cursor(std::size_t pos) override;
     [[nodiscard]] size_t get_cursor_pos() const override;
     [[nodiscard]] std::size_t size() const override;
@@ -241,8 +187,6 @@ public:
 
     /// INIT CALLS
     static std::unique_ptr<TextData> make_handle();
-    static std::unique_ptr<TextData> make_handle(std::string data);
-    static TextData *make_buffer();
 
     /// SEARCH OPS
     [[nodiscard]] size_t rfind_from(size_t pos, char ch) const override;
@@ -250,6 +194,9 @@ public:
     [[nodiscard]] size_t rfind_from(size_t pos, std::string_view v) const override;
     [[nodiscard]] size_t find_from(size_t pos, std::string_view v) const override;
     size_t lines_count() const override;
+
+    void step_to_line_end(Boundary boundary) override;
+    void step_to_line_begin(Boundary boundary) override;
 
     char &get_at(std::size_t pos) override;
     std::optional<char> get_value_at_safe(std::size_t pos) override;
@@ -261,6 +208,8 @@ public:
     [[nodiscard]] std::string_view to_string_view() override;
     void load_string(std::string &&data) override;
 #endif
+
+    void rebuild_metadata() override;
 
 private:
     void char_move_forward(std::size_t count) override;

@@ -10,11 +10,12 @@
 #include <string>
 #include <vector>
 
-#include <map>
 #include <core/text_data.hpp>
+#include <map>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
+
 #include "texture.hpp"
 #include "vertex_buffer.hpp"
 
@@ -96,7 +97,6 @@ struct Words {
     std::size_t begin, end;
 };
 
-
 std::vector<Words> text_elements(std::string_view text);
 
 enum Ident {
@@ -130,11 +130,9 @@ public:
                CharacterRange charRange = CharacterRange{.from = 32, .to = 255});
     SimpleFont(int pixelSize, std::unique_ptr<Texture> &&texture, std::vector<glyph_info> &&glyphs);
 
-    void emplace_source_text_gpu_data(VAO *vao, View* view, int xPos, int yPos);
+    void emplace_source_text_gpu_data(VAO *vao, View *view, int xPos, int yPos);
 
-
-
-    void emplace_colorized_text_gpu_data(VAO *vao, TextData* text, int xPos, int yPos,
+    void emplace_colorized_text_gpu_data(VAO *vao, TextData *text, int xPos, int yPos,
                                          std::optional<std::vector<ColorizeTextRange>> colorData);
 
     void emplace_colorized_text_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos,

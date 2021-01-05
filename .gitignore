@@ -5,3 +5,5 @@ deps/glfw
 .idea/
 bin/
 cmake-build-relwithdebinfo/
+tags
+runctags.sh

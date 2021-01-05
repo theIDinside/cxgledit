@@ -27,11 +27,12 @@ struct ViewCursor {
     /// as it will use this pointer to query the TextData buffer object where it's cursor is located at
     /// within the buffer
     static std::unique_ptr<ViewCursor> create_from(std::unique_ptr<View>& owning_view);
+    static std::unique_ptr<ViewCursor> create_from(View& owning_view);
 
 
     void setup_dimensions(int width, int height);
     void update_cursor_data(GLfloat x, GLfloat y);
-    void draw();
+    void draw(bool isActive = false);
     void forced_draw();
     void set_projection(glm::mat4 orthoProjection);
 };

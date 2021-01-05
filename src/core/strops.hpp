@@ -19,11 +19,11 @@ u64 newline_count_64bit(const char *data, std::size_t len);
 
 #else
 
-u64 naive_newline_count(const char *data, std::size_t len);
+std::vector<int> make_lines_indices(const char *data, std::size_t len);
 
 #endif
 namespace str {
-    u64 count_newlines(const char *data, std::size_t length);
+    std::vector<int> count_newlines(const char *data, std::size_t length);
 }
 
 namespace util::str {

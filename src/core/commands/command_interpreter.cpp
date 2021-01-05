@@ -4,6 +4,7 @@
 
 #include "command_interpreter.hpp"
 #include <utils/utils.hpp>
+#include <core/core.hpp>
 
 CommandInterpreter &CommandInterpreter::get_instance() {
     static CommandInterpreter ci;
@@ -14,8 +15,13 @@ void CommandInterpreter::validate(const std::string &input) {
     util::println("Attempting to validate in CI, input: [{}]", input);
     auto parts = util::str::list_split_string(input, ' ');
     util::println("input split into {} parts:", parts.size());
+
     if (!parts.empty()) {
         auto cmd_str = parts.front();
+        auto force = cmd_str[0] == '!';
+        if(force) {
+            cmd_str.remove_prefix(1);
+        }
         if (cmd_str == "open") {
             parts.pop_front();
             if (!parts.empty()) {
@@ -37,7 +43,7 @@ void CommandInterpreter::validate(const std::string &input) {
                 auto f = parts.front();
                 if(f != "." && f != "..") {
                     std::string fileName{f};
-                    current_command = new WriteFile{fileName};
+                    current_command = new WriteFile{fileName, force};
 
                 }
                 util::println("Validated an open command");

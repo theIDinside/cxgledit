@@ -8,8 +8,7 @@
 // FIXME: Fix word move forward / backward, so that cursor info data is recorded correctly. It's a mess right now
 // FIXME: Fix line move backward, forward seems to work perfectly fine, line position, column info etc
 
-#undef min
-#undef max
+#include <core/data_manager.hpp>
 
 void TextData::BufferCursor::reset() {
     line = 0;
@@ -34,9 +33,11 @@ void StdStringBuffer::move_cursor(Movement m) {
     state_is_pristine = false;
 }
 void StdStringBuffer::char_move_forward(std::size_t count) {
+    /*
     auto last_col = cursor.col_pos;
     auto last_line = cursor.line;
     auto last_pos = cursor.pos;
+*/
     if (cursor.pos + count >= size()) {
         auto b = store.begin();
         std::advance(b, cursor.pos);
@@ -63,17 +64,16 @@ void StdStringBuffer::char_move_forward(std::size_t count) {
             cursor.pos++;
         }
     }
-    util::println("Move from [i:{}, ln: {}, col: {}] to [i:{}, ln: {}, col: {}]", last_pos, last_line, last_col,
-                  cursor.pos, cursor.line, cursor.col_pos);
+    // util::println("Move from [i:{}, ln: {}, col: {}] to [i:{}, ln: {}, col: {}]", last_pos, last_line, last_col, cursor.pos, cursor.line, cursor.col_pos);
 }
 
 void StdStringBuffer::char_move_backward(std::size_t count) {
+    /*
     auto last_col = cursor.col_pos;
     auto last_line = cursor.line;
     auto last_pos = cursor.pos;
-    util::println("line: {} col: {}", cursor.line, cursor.col_pos);
+*/
     if (static_cast<int>(cursor.pos) - static_cast<int>(count) <= 0) {
-        fmt::print("RESETTIGN CURSOR\n");
         cursor.reset();
     } else {
         auto next_pos = cursor.pos - count;
@@ -92,8 +92,7 @@ void StdStringBuffer::char_move_backward(std::size_t count) {
         }
         if (!found) cursor.col_pos = cursor.pos;
     }
-    util::println("Move from [i:{}, ln: {}, col: {}] to [i:{}, ln: {}, col: {}]", last_pos, last_line, last_col,
-                  cursor.pos, cursor.line, cursor.col_pos);
+    // util::println("Move from [i:{}, ln: {}, col: {}] to [i:{}, ln: {}, col: {}]", last_pos, last_line, last_col, cursor.pos, cursor.line, cursor.col_pos);
 }
 
 constexpr auto is_delim = [](auto ch) { return !std::isalpha(ch) && ch != '_'; };
@@ -157,8 +156,9 @@ int StdStringBuffer::find_line_start(int i) {
         for (; i > 0; --i) {
             if (store[i] == '\n') { break; }
         }
-        if(i <= 0) return 0; // BOF - Beginning of file
-        else return i+1;     // BOL - Beginning of line
+        if (i <= 0) return 0;// BOF - Beginning of file
+        else
+            return i + 1;// BOL - Beginning of line
     }
 }
 
@@ -182,52 +182,27 @@ void StdStringBuffer::line_move_forward(std::size_t count) {
     } else {
         step_cursor_to(sz);
     }
-    util::println("Move from [i:{}, ln: {}, col: {}] to [i:{}, ln: {}, col: {}]", last_pos, last_line, last_col,
-                  cursor.pos, cursor.line, cursor.col_pos);
+    // util::println("Move from [i:{}, ln: {}, col: {}] to [i:{}, ln: {}, col: {}]", last_pos, last_line, last_col, cursor.pos, cursor.line, cursor.col_pos);
 }
 
 void StdStringBuffer::line_move_backward(std::size_t count) {
     int curr_column = cursor.col_pos;
     auto pos = cursor.pos;
-    if(store[pos] == '\n') count++;
+    if (store[pos] == '\n') count++;
     for (; pos > 0 && count > 0; pos--) {
         if (store[pos] == '\n') {
             count--;
-            if(count == 0) break;
+            if (count == 0) break;
         }
     }
-    auto line_length = (pos - find_line_start(pos-1));
-    util::println("found line start: {} - end of line: {}, cursor pos: {}", find_line_start(pos-1), pos, cursor.pos);
-    if(curr_column > line_length) {
+    auto line_length = (pos - find_line_start(pos - 1));
+    if (curr_column > line_length) {
         char_move_backward(cursor.pos - pos);
     } else {
-        auto p = find_line_start(pos-1) + curr_column;
-        util::println("cursor.pos={}, p={}, moving to index {} - found line begin: {}", cursor.pos, p, cursor.pos - (cursor.pos - p), find_line_start(pos-1));
+        auto p = find_line_start(pos - 1) + curr_column;
         char_move_backward(cursor.pos - p);
     }
 }
-
-/*
-void StdStringBuffer::line_move_backward(std::size_t count) {
-    int curr_column = cursor.col_pos;
-    auto pos = cursor.pos;
-    auto line_end{0};
-    auto line_found{false};
-
-    for (; pos > 0 && (count + 1) > 0; pos--) {
-        if (store[pos] == '\n') {
-            count--;
-            if (count == 0) {
-                line_end = pos;
-            }
-        }
-    }
-    auto sz = size();
-    for (; pos < sz && pos <= line_end && curr_column > 0; pos++, --curr_column)
-        ;
-    step_cursor_to(pos);
-}
- */
 
 void StdStringBuffer::remove() {
     assert(cursor.pos != 0 && "you have fucked up the index... out of bounds");
@@ -245,7 +220,8 @@ void StdStringBuffer::remove() {
     store.erase(cursor.pos, 1);
 }
 void StdStringBuffer::erase() { store.erase(cursor.pos, 1); }
-void StdStringBuffer::insert(const std::string_view &data) {
+
+void StdStringBuffer::insert_str(const std::string_view &data) {
     store.insert(cursor.pos, data);
     auto inc = data.size();
     cursor.pos += inc;
@@ -260,42 +236,49 @@ void StdStringBuffer::insert(const std::string_view &data) {
     } else {
         cursor.col_pos += inc;
     }
-    this->state_is_pristine = false;
+    // FIXME: do this more optimally. Since we don't what the data contains, we just rebuild entire meta data for now
+    rebuild_metadata();
 }
 void StdStringBuffer::clear() {
     store.clear();
-    cursor.pos = 0;
-    cursor.col_pos = 0;
-    cursor.line = 0;
+    file_name.clear();
     state_is_pristine = false;
+    clear_metadata();
 }
 void StdStringBuffer::insert(char ch) {
-    if (cursor.pos == store.capacity() || store.size() == store.capacity()) {
-        fmt::print("buffer resized from {};{} to", store.length(), store.capacity());
-        store.reserve(store.capacity() * 2);
-        fmt::print(" {};{}\n", store.length(), store.capacity());
-    }
+    if (cursor.pos == store.capacity() || store.size() == store.capacity()) { store.reserve(store.capacity() * 2); }
     store.insert(store.begin() + cursor.pos, ch);
-    cursor.pos++;
-    cursor.col_pos++;
+
     if (ch == '\n') {
+        if (has_meta_data) {
+            meta_data.line_begins.insert(meta_data.line_begins.begin() + cursor.line, cursor.pos);
+            std::for_each(meta_data.line_begins.begin() + cursor.line+1, meta_data.line_begins.end(),
+                          [](auto &e) { e += 1; });
+        }
         cursor.line++;
         cursor.col_pos = 0;
+    } else {
+        if (has_meta_data) {
+            std::for_each(meta_data.line_begins.begin() + cursor.line+1, meta_data.line_begins.end(),
+                          [](auto &e) { e += 1; });
+        }
+        cursor.col_pos++;
     }
+    cursor.pos++;
     this->state_is_pristine = false;
 }
 void StdStringBuffer::set_cursor(std::size_t pos) { cursor.pos = pos; }
 size_t StdStringBuffer::get_cursor_pos() const { return cursor.pos; }
 std::size_t StdStringBuffer::size() const { return store.size(); }
 
-std::unique_ptr<TextData> StdStringBuffer::make_handle() { return std::make_unique<StdStringBuffer>(); }
-std::unique_ptr<TextData> StdStringBuffer::make_handle(std::string data) {
-    auto buf = std::unique_ptr<StdStringBuffer>();
-
+std::unique_ptr<TextData> StdStringBuffer::make_handle() {
+    auto new_buffer_id = DataManager::get_instance().get_new_id();
+    auto buf = std::make_unique<StdStringBuffer>();
+    buf->id = new_buffer_id;
+    buf->cursor.buffer_id = buf->id;
     return buf;
 }
 
-TextData *StdStringBuffer::make_buffer() { return new StdStringBuffer; }
 size_t StdStringBuffer::rfind_from(size_t pos, char ch) const { return store.rfind(ch, pos); }
 std::optional<size_t> StdStringBuffer::find_from(size_t pos, char ch) const {
     auto res = store.find(ch, pos);
@@ -329,7 +312,8 @@ void StdStringBuffer::remove(const Movement &m) {
             break;
         case Word:
             // TODO: m.dir == CursorDirection::Forward ? this->remove_word_forward(m.count) : this->remove_word_backward(m.count);
-            m.dir == CursorDirection::Forward ? this->remove_word_forward(m.count) : this->remove_word_backward(m.count);
+            m.dir == CursorDirection::Forward ? this->remove_word_forward(m.count)
+                                              : this->remove_word_backward(m.count);
             break;
         case Line:
             // TODO: m.dir == CursorDirection::Forward ? this->remove_line_forward(m.count) : this->remove_line_backward(m.count);
@@ -340,16 +324,16 @@ void StdStringBuffer::remove(const Movement &m) {
     this->state_is_pristine = false;
 }
 void StdStringBuffer::remove_ch_forward(size_t i) {
+    auto lines_deleted = 0;
+
     if (cursor.pos + i < store.size()) {
         auto e = cursor.pos + i;
-        auto lines_deleted = 0;
         for (auto index = cursor.pos; index <= e; index++) {
             if (store[index] == '\n') lines_deleted++;
         }
         store.erase(cursor.pos, i);
         cursor.line -= lines_deleted;
     } else {
-        auto lines_deleted = 0;
         auto sz = store.size();
         for (auto index = cursor.pos; index < sz; index++) {
             if (store[index] == '\n') lines_deleted++;
@@ -357,12 +341,23 @@ void StdStringBuffer::remove_ch_forward(size_t i) {
         store.erase(cursor.pos);
         cursor.line -= lines_deleted;
     }
+
+    if (lines_deleted != 0) {
+        rebuild_metadata();
+    } else {
+        if (has_meta_data) {
+            std::for_each(meta_data.line_begins.begin() + cursor.line, meta_data.line_begins.end(),
+                          [i](auto &e) { e -= i; });
+        }
+    }
 }
 void StdStringBuffer::remove_ch_backward(size_t i) {
     if ((int) cursor.pos - (int) i >= 0) {
         auto pos = cursor.pos;
         step_cursor_to(cursor.pos - i);
         store.erase(pos - i, i);
+        rebuild_metadata();
+        this->state_is_pristine = false;
     }
 }
 
@@ -383,7 +378,7 @@ void StdStringBuffer::remove_word_backward(size_t count) {
         remove_ch_backward(1);
         return;
     }
-    if(find_prev_delimiter(cursor.pos) == cursor.pos - 1) {
+    if (find_prev_delimiter(cursor.pos) == cursor.pos - 1) {
         remove_ch_backward(1);
         return;
     }
@@ -391,115 +386,35 @@ void StdStringBuffer::remove_word_backward(size_t count) {
     count--;
     for (; count > 0; --count) { new_pos = find_prev_delimiter(new_pos); }
     auto distance = cursor.pos - new_pos;
-    if(new_pos != 0) {
+    if (new_pos != 0) {
         remove_ch_backward(distance - 1);
     } else {
         remove_ch_backward(distance);
     }
-
 }
 
 // TODO(simon): MAJOR CLEAN UP NEEDED!
-std::optional<size_t> StdStringBuffer::get_item_pos_from(const Movement &m) {
-    if (empty()) return {};
-    assert(m.count != 0);
-    auto amount = m.count;
-    auto result_pos = cursor.pos;
-    switch (m.construct) {
-        case Char:
-            break;
-        case Word:
-            if (m.dir == CursorDirection::Forward) {
-                if (cursor.pos == size()) return {};
-                auto it = begin();
-                std::advance(it, cursor.pos);
-                if (it == end()) { return size(); }
-                if (is_delimiter(*it)) {
-                    ++it;
-                    amount--;
-                    if (amount == 0) {
-                        fmt::print("Returning {}\n", it.get_buffer_index());
-                        return it.get_buffer_index();
-                    }
-                }
-                for (; it < end() && amount > 0; it++) {
-                    if (is_delimiter(*it)) {
-                        if (*it == '-') {
-                            auto n = it;
-                            n++;
-                            if (*n == '>') {
-                                result_pos++;
-                                ++it;
-                            }
-                        }
-                        amount--;
-                        if (amount == 0) return it.get_buffer_index();
-                    }
-                }
-                return {};
-            } else {
-                if (cursor.pos == 0) return {};
-                int i = std::max(0, (int) cursor.pos - 1);
-                for (; i > 0 && amount > 0; --i) {
-                    const auto &c = store[i];
-                    if (is_delimiter(c)) {
-                        if (c == '>') {
-                            auto look_ahead = i - 1;
-                            if (store[look_ahead] == '-') {
-                                result_pos--;
-                                --i;
-                            }
-                        }
-                        amount--;
-                        if (amount == 0) return i;
-                    }
-                }
-                return {};
-            }
-        case Line:
-            break;
-        case Block:
-            break;
-        case File:
-            break;
-    }
-}
+
 char *StdStringBuffer::get_at_ptr(std::size_t pos) { return store.data() + pos; }
 void StdStringBuffer::step_cursor_to(size_t pos) {
     if (empty() || pos == cursor.pos) return;
     assert(pos <= size() && pos >= 0);
-    auto old_pos = cursor.pos;
-    auto new_column_index = 0;
-    if(store[pos] == '\n') {
-        if(store[pos-1] == '\n') {
-            new_column_index = 0;
-        } else {
-            new_column_index = pos - find_line_begin(pos-1);
-        }
-    }
-
-    if(pos > cursor.pos) {
-        while(cursor.pos != pos) {
-            if(store[cursor.pos] == '\n') cursor.line++;
+    if (pos > cursor.pos) {
+        while (cursor.pos != pos) {
+            if (store[cursor.pos] == '\n') cursor.line++;
             cursor.pos++;
         }
     } else {
-        while(cursor.pos != pos) {
+        while (cursor.pos != pos) {
             cursor.pos--;
-            if(store[cursor.pos] == '\n') cursor.line--;
+            if (store[cursor.pos] == '\n') { cursor.line--; }
         }
     }
-    if(store[pos] != '\n') {
-        util::println("pos: {} - find_line_begin(pos): '{}'", pos, find_line_begin(pos));
-        new_column_index = (pos - find_line_begin(pos)) - 1;
-        if(old_pos < pos) {
-
-        } else {
-
-        }
-    } else {
-        cursor.col_pos = new_column_index - 1;
-    }
+    // this actually beautifully solves nightmarish edge cases where you are at the beginning of the file and
+    // ONLY when you are at the beginning. It's only there col_pos can be set to -1, which we just tell it "nope. you can't have -1"
+    auto col_pos_res = cursor.pos - find_line_start(cursor.pos - 1);
+    cursor.col_pos = std::max(0, col_pos_res);
+    state_is_pristine = false;
 }
 
 #ifdef DEBUG
@@ -509,8 +424,8 @@ std::string_view StdStringBuffer::to_string_view() {
     return store;
 }
 void StdStringBuffer::load_string(std::string &&data) {
-    m_lines = str::count_newlines(data.data(), data.size());
-    util::println("Read {} lines of text", m_lines);
+    auto line_indices = str::count_newlines(data.data(), data.size());
+    this->meta_data = TextMetaData{std::move(line_indices)};
     store = std::move(data);
     state_is_pristine = false;
 }
@@ -541,6 +456,51 @@ int StdStringBuffer::find_prev_delimiter(int i) {
         return 0;
     }
 }
+void StdStringBuffer::step_to_line_end(Boundary boundary) {
+    int sz = size();
+    bool found = false;
+    auto newpos = cursor.pos;
+    for (auto i = cursor.pos; i < sz && !found; i++) {
+        if (store[i] == '\n') {
+            switch (boundary) {
+                case Inside:
+                    found = true;
+                    newpos = i - 1;
+                    break;
+                case Outside:
+                    found = true;
+                    newpos = i;
+                    break;
+            }
+        }
+    }
+    step_cursor_to(std::min(newpos, sz));
+}
 
+void StdStringBuffer::step_to_line_begin(Boundary boundary) {
+    auto found = false;
+
+    for (auto i = cursor.pos - 1; i >= 0 && !found; --i) {
+        if (store[i] == '\n') {
+            switch (boundary) {
+                case Inside:
+                    step_cursor_to(i + 1);
+                    return;
+                case Outside:
+                    step_cursor_to(i);
+                    return;
+            }
+        }
+    }
+    step_cursor_to(0);
+}
+
+void StdStringBuffer::rebuild_metadata() {
+    if (has_meta_data) {
+        auto line_indices = str::count_newlines(store.data(), store.size());
+        this->meta_data = TextMetaData{std::move(line_indices)};
+    }
+    state_is_pristine = false;
+}
 
 #endif

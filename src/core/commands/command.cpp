@@ -7,14 +7,57 @@
 #include <fmt/format.h>
 #include <ranges>
 #include <fstream>
+#include <core/text_data.hpp>
+#include <app.hpp>
 
 constexpr auto is_dir = [](const auto &path) { return fs::exists(path) && path.filename().empty(); };
 
-void OpenFile::exec(App *app) {
+bool OpenFile::exec(App *app, TextData* buffer) {
     if (fileNameSelected) {
-        app->load_file(withSamePrefix[curr_file_index]);
+        auto load_file = withSamePrefix[curr_file_index];
+        if(buffer->empty()) {
+            if(!fs::exists(load_file)) {
+                return false;
+            } else {
+                auto abspath = fs::absolute(load_file);
+                auto fsz = fs::file_size(load_file);
+                auto askForFileSz = file_size(abspath.string().c_str());
+                util::println("Active text buffer is empty. Filesystem reported file size of {} ({}) bytes. Loading data into it.", askForFileSz.value(), fsz);
+                std::string tmp;
+                if(askForFileSz)
+                    tmp.reserve(askForFileSz.value() * 2);
+
+                std::ifstream f{load_file};
+                tmp.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+                util::println("Loaded {} bytes from file {}", tmp.size(), file.string());
+                auto act_view = app->get_active_view();
+                act_view->set_name(load_file.string());
+                buffer->load_string(std::move(tmp));
+                buffer->set_file(load_file);
+                return true;
+            }
+        } else {
+
+            auto prior_view = app->get_active_view();
+            auto prior_buf = prior_view->get_text_buffer();
+            util::println("Active view name: '{}'. Active buffer: {}", prior_view->name, prior_buf->id);
+
+            app->new_editor_window(SplitStrategy::VerticalSplit);
+            // app->new_buffer_and_view_set_as_active();
+            auto new_view = app->get_active_view();
+            auto buf = new_view->get_text_buffer();
+            new_view->set_name(load_file.string());
+            std::string tmp;
+            std::ifstream f{load_file};
+            tmp.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+            util::println("Loaded {} bytes from file {} and placed it in new view.", tmp.size(), file.string());
+            buf->load_string(std::move(tmp));
+            buf->set_file(load_file);
+            return true;
+        }
     } else {
         util::println("No file selected or found with that name: {}", file.string());
+        return false;
     }
 }
 
@@ -57,8 +100,6 @@ OpenFile::OpenFile(const std::string &argInput) : Command("OpenFile"), file{argI
         util::println("PATH DOES NOT EXIST: {}", path.string());
     }
 }
-
-static bool some_validation_process;
 
 bool OpenFile::validate() {
     if (fs::exists(file)) {
@@ -121,17 +162,28 @@ std::optional<std::unique_ptr<Command>> parse_command(std::string input) {
     str_parts.pop_front();
     return {};
 }
-void ErrorCommand::exec(App *app) {}
+bool ErrorCommand::exec(App *app, TextData* buffer) {
+    util::println("Setting error message");
+    app->set_error_message(msg);
+    app = app;
+    return true;
+}
 
 bool ErrorCommand::validate() { return true; }
 
 ErrorCommand::ErrorCommand(std::string message) : Command("ErrorCommand"), msg(std::move(message)) {}
-std::string ErrorCommand::as_auto_completed() const { return "ERROR"; }
-std::string ErrorCommand::actual_input() const { return "ERROR: " + msg; }
+std::string ErrorCommand::as_auto_completed() const { return msg; }
+std::string ErrorCommand::actual_input() const { return "Error: " + msg; }
 
-void WriteFile::exec(App *app) {
+ErrorCommand::~ErrorCommand() {
+
+}
+
+bool WriteFile::exec(App *app, TextData* buffer) {
     if(!over_write && fs::exists(fileName)) {
         util::println("File exists and write protection is on");
+        CommandInterpreter::get_instance().destroy_cmd_and_set_new(new ErrorCommand{fmt::format("File {} exists [add ! prefix to command to override]", fileName.filename().string())});
+        return false;
     } else {
         std::ofstream outf{fileName};
         auto write_data = app->get_active_view()->get_text_buffer()->to_string_view();
@@ -144,6 +196,7 @@ void WriteFile::exec(App *app) {
         } else {
             util::println("Could not retrieve file size");
         }
+        return true;
     }
 }
 bool WriteFile::validate() { return Command::validate(); }

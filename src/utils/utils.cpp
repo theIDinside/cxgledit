@@ -39,15 +39,30 @@ namespace util::file {
         return result;
     }
 }// namespace util::file
+
 #ifdef WIN32
 #include <windows.h>
 
 auto file_size(const char *file_path) -> std::optional<int> {
     if (fs::exists(file_path)) {
-        WIN32_FILE_ATTRIBUTE_DATA fInfo{};
+        WIN32_FILE_ATTRIBUTE_DATA fInfo;
         GetFileAttributesEx(file_path, GetFileExInfoStandard, (void *) &fInfo);
         return (fInfo.nFileSizeHigh << 16) | (fInfo.nFileSizeLow);
     }
     return {};
 }
+#endif
+
+#ifdef LINUX
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+    auto file_size(const char* file) -> std::optional<int> {
+            struct stat info;
+            if(stat(file, &info) == -1) return {};
+            else {
+                return info.st_size;
+            }
+    }
 #endif

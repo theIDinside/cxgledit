@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <app.hpp>
+
 #include <core/strops.hpp>
 #include <filesystem>
 #include <list>
@@ -14,11 +14,14 @@
 
 namespace fs = std::filesystem;
 
+class App;
+class TextData;
+
 struct Command {
     explicit Command(std::string name) : name(std::move(name)) {}
     virtual ~Command() = default;
     std::string name;
-    virtual void exec(App *) = 0;
+    virtual bool exec(App *, TextData* buffer) = 0;
     virtual bool validate() { return true; }
     virtual void next_arg() {}
     virtual void prev_arg() {}
@@ -29,18 +32,19 @@ struct Command {
 
 struct ErrorCommand : public Command {
     explicit ErrorCommand(std::string message);
-    ~ErrorCommand() override = default;
-    void exec(App *app) override;
+    ~ErrorCommand() override;
+    bool exec(App *app, TextData* buffer) override;
 
     bool validate() override;
     [[nodiscard]] std::string actual_input() const override;
     [[nodiscard]] std::string as_auto_completed() const override;
     std::string msg;
+    App* app;
 };
 
 struct OpenFile : public Command {
     explicit OpenFile(const std::string &argInput);
-    void exec(App *app) override;
+    bool exec(App *app, TextData* buffer) override;
     ~OpenFile() override = default;
     std::string actual_input() const override;
     bool validate() override;
@@ -57,7 +61,7 @@ struct OpenFile : public Command {
 struct WriteFile : public Command {
     explicit WriteFile(const std::string& file, bool over_write = false);
     ~WriteFile() override = default;
-    void exec(App *app) override;
+    bool exec(App *app, TextData* buffer) override;
     bool validate() override;
     void next_arg() override;
     void prev_arg() override;

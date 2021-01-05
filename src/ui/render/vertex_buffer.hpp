@@ -58,11 +58,19 @@ using byte = unsigned char;
 using usize = std::size_t;
 
 struct TextVertexBufferObject {
+
     TextVertexBufferObject(GLuint id, GLenum bufferType, LocalStore<TextVertex> &&reservedMemory);
+    TextVertexBufferObject(TextVertexBufferObject&&) = default;
+    ~TextVertexBufferObject();
+
+
+    TextVertexBufferObject(const TextVertexBufferObject&) = delete;
     static std::unique_ptr<TextVertexBufferObject> create(GLuint vboId, GLenum bufferType, usize reservedSize = 0);
     void bind();
     int upload_to_gpu(bool clear_on_upload = true);
     void reserve_gpu_memory(std::size_t text_character_count);
+
+    void destroy();
     GLuint id{0};
     GLenum type;
     LocalStore<TextVertex> data;
@@ -73,6 +81,10 @@ struct TextVertexBufferObject {
 };
 
 struct VAO {
+    ~VAO();
+    VAO(GLuint vao_id, std::unique_ptr<TextVertexBufferObject>&& vbo);
+    VAO(const VAO&) = delete;
+    VAO(VAO&&) = default;
     static std::unique_ptr<VAO> make(GLenum VBOType, usize reservedVertexSpace = 0);
     void bind_all();
     void flush_and_draw();
@@ -81,5 +93,5 @@ struct VAO {
     void push_quad(std::array<TextVertex, 4> quad);
     GLuint vao_id;
     std::unique_ptr<TextVertexBufferObject> vbo;
-    int last_items_rendered;
+    int last_items_rendered{};
 };

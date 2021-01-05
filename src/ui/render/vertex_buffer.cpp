@@ -33,6 +33,15 @@ void TextVertexBufferObject::reserve_gpu_memory(std::size_t text_character_count
     reservedGPUMemory = gpu_mem_required_for_quads<TextVertex>(
             text_character_count);// text_character_count * sizeof(TextVertex) * 6;
 }
+TextVertexBufferObject::~TextVertexBufferObject() {
+    destroy();
+}
+void TextVertexBufferObject::destroy() {
+    auto ID = this->id;
+    glDeleteBuffers(1, &this->id);
+    util::println("Deleted VBO {}", ID);
+}
+
 void VAO::bind_all() {
     glBindVertexArray(vao_id);
     vbo->bind();
@@ -55,7 +64,8 @@ std::unique_ptr<VAO> VAO::make(GLenum VBOType, usize reservedVertexSpace) {
     glBindVertexArray(0);
 
     auto vbo = TextVertexBufferObject::create(vboID, VBOType, reservedVertexSpace);
-    auto vao = std::make_unique<VAO>(VAO{.vao_id = vaoID, .vbo = std::move(vbo)});
+
+    auto vao = std::make_unique<VAO>(vaoID, std::move(vbo));
     return vao;
 }
 void VAO::flush_and_draw() {
@@ -80,7 +90,13 @@ void VAO::push_quad(std::array<TextVertex, 4> quad) {
     vbo->data.push_back(quad[2]);
     vbo->data.push_back(quad[3]);
 }
+VAO::~VAO() {
+    util::println("Destroying Vertex Array Object and it's resources");
+}
 
+VAO::VAO(GLuint VAO_ID, std::unique_ptr<TextVertexBufferObject>&& VBO) : vao_id(VAO_ID), vbo(std::move(VBO)) {
+
+}
 
 /// ------------------------------------ CURSOR ------------------------------------
 

@@ -10,6 +10,8 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <GLFW/glfw3.h>
+
 
 enum class Cycle : int {
     Forward = GLFW_KEY_DOWN,        // down

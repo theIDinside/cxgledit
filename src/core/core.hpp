@@ -27,3 +27,33 @@ void panic(const char *message, Args... args) {
     friend bool operator!=(const Type &lhs, const Type &rhs) { return !(lhs == rhs); }                                 \
     friend bool operator<(const Type &lhs, const Type &rhs) { return lhs.discriminate_on < rhs.discriminate_on; }      \
     friend bool operator>(const Type &lhs, const Type &rhs) { return lhs.discriminate_on > rhs.discriminate_on; }
+
+template<typename Container>
+concept RevIterable = requires(Container a) {
+    a.begin();
+    a.end();
+    a.rbegin();
+    a.rend();
+    a.size();
+};
+
+/**
+ * Helper function to rotate container.
+ * @param container - Container to be rotated in place, must adhere to constraint RevIterable
+ * @param steps - The amount of steps to rotate. If steps is negative, container will be rotated (in place) left
+ * if steps is positive, it will rotate in place right.
+ */
+template<RevIterable C>
+void rotate_container(C &container, int steps) {
+    if (auto s = std::abs(steps); s > container.size()) {
+        PANIC("Container C size < steps: {} < {}", container.size(), s);
+    }
+
+    if (steps < 0) {
+        auto _steps = std::abs(steps);
+        std::rotate(container.begin(), container.begin() + _steps, container.end());
+    } else {
+        auto _steps = std::abs(steps);
+        std::rotate(container.rbegin(), container.rbegin() + _steps, container.rend());
+    }
+}

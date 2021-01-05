@@ -42,20 +42,27 @@ optimization turned on u64 newline_count_64bit(const char *data, std::size_t len
 }
 
 #else
-u64 naive_newline_count(const char *data, std::size_t len) {
+std::vector<int> make_lines_indices(const char *data, std::size_t len) {
     auto res = 0;
-    for (auto i = 0; i < len; i++)
-        if (data[i] == '\n') res++;
-    return res;
+    std::vector<int> line_begins{};
+    line_begins.push_back(0);
+    line_begins.reserve(1024);// 8 * 1024 = 8kb (or 32, depending on what the compiler defines as "int")
+    for (auto i = 0; i < len; i++) {
+        if (data[i] == '\n') {
+            res++;
+            line_begins.push_back(i + 1);
+        }
+    }
+    return line_begins;
 }
 #endif
 namespace str {
 
-    u64 count_newlines(const char *data, std::size_t length) {
+    std::vector<int> count_newlines(const char *data, std::size_t length) {
 #ifdef INTRINSICS_ENABLED
         return newline_count_64bit(data, length);
 #else
-        return naive_newline_count(data, length);
+        return make_lines_indices(data, length);
 #endif
     }
 }// namespace str

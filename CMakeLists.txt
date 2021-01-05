@@ -56,7 +56,7 @@ set(UI_RENDER_SOURCES
         src/ui/render/shader.cpp src/ui/render/shader.hpp
         src/ui/render/texture.cpp src/ui/render/texture.hpp
         src/ui/render/vertex_buffer.cpp src/ui/render/vertex_buffer.hpp
-        src/ui/view.cpp src/ui/view.hpp src/ui/view_cursor.cpp src/ui/view_cursor.hpp)
+        src/ui/view.cpp src/ui/view.hpp src/ui/view_cursor.cpp src/ui/view_cursor.hpp src/ui/managers/view_manager.cpp src/ui/managers/view_manager.hpp src/ui/layout.cpp src/ui/layout.hpp)
 
 set(UTIL_SOURCES
         src/utils/utils.cpp src/utils/utils.hpp
@@ -66,7 +66,7 @@ set(UTIL_SOURCES
 set(CORE_SOURCE
         src/core/core.hpp
         src/core/strops.cpp src/core/strops.hpp
-        src/core/text_data.cpp src/core/text_data.hpp )
+        src/core/text_data.cpp src/core/text_data.hpp src/core/data_manager.cpp src/core/data_manager.hpp)
 
 set(COMMANDS_SOURCE
         src/core/commands/command.cpp src/core/commands/command.hpp
