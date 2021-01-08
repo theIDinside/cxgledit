@@ -12,6 +12,13 @@
 #include <optional>
 #include <string>
 
+enum class Commands {
+    OpenFile,
+    WriteFile,
+    GotoLine,
+    Fail
+};
+
 namespace fs = std::filesystem;
 
 class App;
@@ -21,7 +28,7 @@ struct Command {
     explicit Command(std::string name) : name(std::move(name)) {}
     virtual ~Command() = default;
     std::string name;
-    virtual bool exec(App *, TextData* buffer) = 0;
+    virtual bool exec(App *) = 0;
     virtual bool validate() { return true; }
     virtual void next_arg() {}
     virtual void prev_arg() {}
@@ -33,20 +40,19 @@ struct Command {
 struct ErrorCommand : public Command {
     explicit ErrorCommand(std::string message);
     ~ErrorCommand() override;
-    bool exec(App *app, TextData* buffer) override;
+    bool exec(App *app) override;
 
     bool validate() override;
     [[nodiscard]] std::string actual_input() const override;
     [[nodiscard]] std::string as_auto_completed() const override;
     std::string msg;
-    App* app;
 };
 
 struct OpenFile : public Command {
     explicit OpenFile(const std::string &argInput);
-    bool exec(App *app, TextData* buffer) override;
+    bool exec(App *app) override;
     ~OpenFile() override = default;
-    std::string actual_input() const override;
+    [[nodiscard]] std::string actual_input() const override;
     bool validate() override;
     void next_arg() override;
     void prev_arg() override;
@@ -59,16 +65,14 @@ struct OpenFile : public Command {
 };
 
 struct WriteFile : public Command {
-    explicit WriteFile(const std::string& file, bool over_write = false);
+    explicit WriteFile(std::optional<const std::string> file, bool over_write = false);
     ~WriteFile() override = default;
-    bool exec(App *app, TextData* buffer) override;
+    bool exec(App *app) override;
     bool validate() override;
     void next_arg() override;
     void prev_arg() override;
     [[nodiscard]] std::string as_auto_completed() const override;
     [[nodiscard]] std::string actual_input() const override;
-    fs::path fileName;
+    std::optional<fs::path> fileName;
     bool over_write{false};
 };
-
-std::optional<std::unique_ptr<Command>> parse_command(std::string input);

@@ -20,7 +20,7 @@ Timer::~Timer() {
 
 namespace util::file {
     std::vector<std::string> read_file_to_lines(const fs::path &filePath) {
-        if (!fs::exists(filePath)) {
+        if (not fs::exists(filePath)) {
             throw std::runtime_error{
                     fmt::format("Error reading file {} to memory, path doesn't exist", filePath.string())};
         }

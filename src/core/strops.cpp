@@ -71,7 +71,7 @@ using Result = std::vector<std::string_view>;
 std::vector<std::string_view> util::str::vec_split_string(const std::string &str, const char delimiter) {
     std::string_view v{str};
     std::vector<std::string_view> res;
-    while (!v.empty()) {
+    while (not v.empty()) {
         auto pos = v.find(delimiter);
         res.push_back(v.substr(0, pos));
         v.remove_prefix(pos);
@@ -83,7 +83,7 @@ std::vector<std::string_view> util::str::vec_split_string(const std::string &str
 std::list<std::string_view> util::str::list_split_string(const std::string &str, const char delimiter) {
     std::string_view v{str};
     std::list<std::string_view> res;
-    while (!v.empty()) {
+    while (not v.empty()) {
         auto pos = v.find(delimiter);
         if (pos == std::string_view::npos) {
             res.push_back(v);

@@ -1,8 +1,8 @@
 #include "fileutil.hpp"
-#include <filesystem>
+#include "utils.hpp"
 #include <fmt/core.h>
+#include <fstream>
 
-namespace fs = std::filesystem;
 
 std::optional<std::string> get_path(const char *path) {
     if (fs::exists(path)) {
@@ -11,4 +11,15 @@ std::optional<std::string> get_path(const char *path) {
     } else {
         return {};
     }
+}
+
+std::optional<int> sv_write_file(fs::path file_path, std::string_view write_data) {
+    try {
+        std::ofstream outf{file_path};
+        outf << write_data;
+        outf.close();
+    } catch(...) {
+        util::println("Failed to write file");
+    }
+    return file_size(file_path.string().c_str());
 }

@@ -10,7 +10,7 @@
 template<typename T>
 using Boxed = std::unique_ptr<T>;
 
-enum BufferType { CodeInput, CommandInput };
+enum class BufferType { CodeInput, CommandInput, StatusBar };
 
 enum ReqResult {
     Ok,

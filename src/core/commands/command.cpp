@@ -4,18 +4,20 @@
 
 #include "command.hpp"
 #include "command_interpreter.hpp"
-#include <fmt/format.h>
-#include <ranges>
-#include <fstream>
-#include <core/text_data.hpp>
 #include <app.hpp>
+#include <core/text_data.hpp>
+#include <fmt/format.h>
+#include <fstream>
+#include <ranges>
+#include <utils/fileutil.hpp>
 
 constexpr auto is_dir = [](const auto &path) { return fs::exists(path) && path.filename().empty(); };
-
-bool OpenFile::exec(App *app, TextData* buffer) {
+/*
+bool OpenFile::exec(App *app) {
     if (fileNameSelected) {
         auto load_file = withSamePrefix[curr_file_index];
-        if(buffer->empty()) {
+        auto act_buf = app->get_active_buffer();
+        if(act_buf->empty()) {
             if(!fs::exists(load_file)) {
                 return false;
             } else {
@@ -32,8 +34,8 @@ bool OpenFile::exec(App *app, TextData* buffer) {
                 util::println("Loaded {} bytes from file {}", tmp.size(), file.string());
                 auto act_view = app->get_active_view();
                 act_view->set_name(load_file.string());
-                buffer->load_string(std::move(tmp));
-                buffer->set_file(load_file);
+                act_buf->load_string(std::move(tmp));
+                act_buf->set_file(load_file);
                 return true;
             }
         } else {
@@ -43,7 +45,6 @@ bool OpenFile::exec(App *app, TextData* buffer) {
             util::println("Active view name: '{}'. Active buffer: {}", prior_view->name, prior_buf->id);
 
             app->new_editor_window(SplitStrategy::VerticalSplit);
-            // app->new_buffer_and_view_set_as_active();
             auto new_view = app->get_active_view();
             auto buf = new_view->get_text_buffer();
             new_view->set_name(load_file.string());
@@ -155,14 +156,7 @@ std::string OpenFile::as_auto_completed() const {
 }
 std::string OpenFile::actual_input() const { return "open " + file.string(); }
 
-std::optional<std::unique_ptr<Command>> parse_command(std::string input) {
-    auto str_parts = util::str::list_split_string(input);
-    if (str_parts.empty()) return {};
-    auto command = str_parts.front();
-    str_parts.pop_front();
-    return {};
-}
-bool ErrorCommand::exec(App *app, TextData* buffer) {
+bool ErrorCommand::exec(App *app) {
     util::println("Setting error message");
     app->set_error_message(msg);
     app = app;
@@ -179,24 +173,47 @@ ErrorCommand::~ErrorCommand() {
 
 }
 
-bool WriteFile::exec(App *app, TextData* buffer) {
-    if(!over_write && fs::exists(fileName)) {
-        util::println("File exists and write protection is on");
-        CommandInterpreter::get_instance().destroy_cmd_and_set_new(new ErrorCommand{fmt::format("File {} exists [add ! prefix to command to override]", fileName.filename().string())});
-        return false;
-    } else {
-        std::ofstream outf{fileName};
-        auto write_data = app->get_active_view()->get_text_buffer()->to_string_view();
-        outf << write_data;
-        outf.close();
-
-        auto checked_bytes_written = file_size(fileName.string().c_str());
-        if(checked_bytes_written) {
-            util::println("Wrote {} bytes to file", checked_bytes_written.value());
+bool WriteFile::exec(App *app) {
+    if(fileName) {
+        auto file_path = fileName.value();
+        if(not over_write && fs::exists(file_path)) {
+            util::println("File exists and write protection is on");
+            CommandInterpreter::get_instance().destroy_cmd_and_set_new(new ErrorCommand{fmt::format("File {} exists [add ! prefix to command to override]", fileName.value().filename().string())});
+            return false;
+        } else if(over_write && fs::exists(file_path)) {
+            auto write_data = app->get_active_view()->get_text_buffer()->to_string_view();
+            auto bytes_written = sv_write_file(file_path, write_data);
+            if(bytes_written) {
+                util::println("Wrote {} bytes to file", bytes_written.value());
+            } else {
+                util::println("Could not retrieve file size");
+            }
         } else {
-            util::println("Could not retrieve file size");
+            auto write_data = app->get_active_view()->get_text_buffer()->to_string_view();
+            auto bytes_written = sv_write_file(file_path, write_data);
+            if(bytes_written) {
+                util::println("Wrote {} bytes to file", bytes_written.value());
+            } else {
+                util::println("Could not retrieve file size");
+            }
+            return true;
         }
-        return true;
+    } else {// this means that user wrote command "write" with no file name parameter. Which means, write open file (if it is a file) to disk
+        auto active_buffer = app->get_active_buffer();
+        auto fName = active_buffer->fileName();
+        util::println("Writing file {} ", fName);
+        if(active_buffer->exist_on_disk() && over_write) { // then we save the file to where it exists on disk
+            auto bytes_written = sv_write_file(active_buffer->file_name, active_buffer->to_string_view());
+            if(bytes_written) {
+                util::println("Wrote {} bytes to file", bytes_written.value());
+            } else {
+                util::println("Could not retrieve file size");
+            }
+            return true;
+        } else { // otherwise we produce a user error
+            CommandInterpreter::get_instance().destroy_cmd_and_set_new(new ErrorCommand{fmt::format("File {} exists [add ! prefix to command to override]", fName)});
+            return false;
+        }
     }
 }
 bool WriteFile::validate() { return Command::validate(); }
@@ -204,8 +221,17 @@ void WriteFile::next_arg() { Command::next_arg(); }
 void WriteFile::prev_arg() { Command::prev_arg(); }
 
 
-std::string WriteFile::as_auto_completed() const { return "write " + fileName.string(); }
+std::string WriteFile::as_auto_completed() const {
+    return "write " + fileName.value_or("").string();
+}
 std::string WriteFile::actual_input() const { return as_auto_completed(); }
 
-WriteFile::WriteFile(const std::string &file, bool over_write)
-    : Command("WriteFile"), fileName(file), over_write(over_write) {}
+WriteFile::WriteFile(std::optional<const std::string> file, bool over_write)
+    : Command("WriteFile"), over_write(over_write) {
+    if(file) {
+        fileName = fs::path{file.value()};
+    } else {
+        fileName = {};
+    }
+}
+*/

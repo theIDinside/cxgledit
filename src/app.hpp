@@ -15,12 +15,19 @@
 #include <core/text_data.hpp>
 #include <ui/managers/font_library.hpp>
 #include <ui/managers/shader_library.hpp>
-#include <ui/view.hpp>
-#include <ui/layout.hpp>
+
+
+#include <ui/core/layout.hpp>
+
+namespace ui {
+    class View;
+    class EditorWindow;
+    class StatusBar;
+    class CommandView;
+}
 
 
 namespace fs = std::filesystem;
-
 enum class Cycle;
 
 struct WindowDimensions {
@@ -41,15 +48,18 @@ public:
     void set_dimensions(int w, int h);
     void load_file(const fs::path &file);
     void draw_all(bool force_redraw = false);
-
     void update_views_dimensions(float wRatio, float hRatio);
-    [[nodiscard]] View *get_active_view() const;
-    void set_input_to_command_view(bool toggleOn);
-    void set_error_message(std::string msg);
+    void command_input(const std::string& prefix, Commands commandInput);
+    void disable_command_input();
+    void set_error_message(const std::string& msg);
     void new_editor_window(SplitStrategy ss = SplitStrategy::Stack);
-
-    void editor_win_selected(EditorWindow* window);
+    void editor_win_selected(ui::EditorWindow* window);
     static WindowDimensions get_window_dimension();
+    [[nodiscard]] ui::CommandView* get_command_view() const;
+
+    void editor_window_goto(int line);
+    void restore_input();
+
 private:
     void cleanup();
     GLFWwindow *window;
@@ -60,19 +70,18 @@ private:
     bool exit_command_requested;
     bool command_edit = false;
     glm::mat4 projection;
-    std::vector<EditorWindow*> editor_views;
-    EditorWindow* active_window;
-    std::unique_ptr<CommandView> command_view;
+    std::vector<ui::EditorWindow*> editor_views;
+    ui::EditorWindow* active_window;
+    std::unique_ptr<ui::CommandView> command_view;
 
     TextData *active_buffer;
-    View *active_view;
+    ui::View *active_view;
 
-    Layout* root_layout;
+    ui::core::Layout* root_layout;
 
     bool no_close_condition();
     void kb_command(int i);
     void graceful_exit();
-    void input_char(char ch);
     void update_all_editor_windows();
 
 
@@ -81,12 +90,9 @@ private:
      * @param i
      * @param i1
      */
-    void handle_edit_input(int i, int i1);
+    void handle_edit_input(int key, int modifier);
     void input_command_or_newline();
     void cycle_command_or_move_cursor(Cycle cycle);
     void print_debug_info();
-
-
     static WindowDimensions win_dimensions;
-
 };

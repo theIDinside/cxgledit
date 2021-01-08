@@ -55,18 +55,27 @@ struct TextMetaData {
     std::string buf_name{};
 };
 
+enum class BufferTypeInfo {
+    CommandInput,
+    StatusBar,
+    EditBuffer
+};
 
+struct BufferCursor {
+    int pos{0};
+    int line{0};
+    int col_pos{0};
+    int buffer_id{0};
+    void reset();
+    void invalidate();
+    BufferCursor clone() const;
+};
 
 class TextData {
 public:
+    BufferTypeInfo info;
     int id{0};
-    struct BufferCursor {
-        int pos{0};
-        int line{0};
-        int col_pos{0};
-        int buffer_id{0};
-        void reset();
-    } cursor;
+    BufferCursor cursor{};
 
     TextData() = default;
     virtual ~TextData() = default;
@@ -111,6 +120,10 @@ public:
         meta_data.buf_name = p.filename().string();
     }
 
+    virtual bool exist_on_disk() const {
+        return (not file_name.empty() && fs::exists(file_name));
+    }
+
     virtual std::string fileName() { return meta_data.buf_name; }
 
 #ifdef DEBUG
@@ -128,6 +141,7 @@ public:
 
     void print_line_meta_data() const {
         util::println("meta data - line begin: {}", meta_data.line_begins[cursor.line]);
+        util::println("Buffer meta data up to date: {}", data_is_pristine);
     }
 
     virtual void clear_metadata() {
@@ -137,8 +151,18 @@ public:
         meta_data.line_begins.clear();
         meta_data.buf_name.clear();
     }
-
 #endif
+
+
+    // virtual void set_mark(int pos) = 0;
+    // virtual void set_mark_range(int begin, int length) = 0;
+    virtual void set_mark_at_cursor() = 0;
+    virtual void set_mark_from_cursor(int length) = 0;
+    virtual void clear_marks() = 0;
+    virtual std::pair<int, int> get_mark_index_range() const = 0;
+    virtual std::pair<BufferCursor, BufferCursor> get_cursor_rect() const = 0;
+    BufferCursor mark;
+    bool mark_set = false;
 
     virtual bool is_pristine() const { return state_is_pristine; }
     bool has_meta_data{false};
@@ -152,6 +176,7 @@ protected:
      * frontend
      */
     bool state_is_pristine{false};
+    bool data_is_pristine{false};
 
 private:
     virtual void char_move_forward(std::size_t count) = 0;
@@ -211,6 +236,14 @@ public:
 
     void rebuild_metadata() override;
 
+    // void set_mark(int pos) override;
+    // void set_mark_range(int begin, int length) override;
+    void set_mark_at_cursor() override;
+    void set_mark_from_cursor(int length) override;
+    void clear_marks() override;
+    std::pair<int, int> get_mark_index_range() const override;
+    std::pair<BufferCursor, BufferCursor> get_cursor_rect() const override;
+
 private:
     void char_move_forward(std::size_t count) override;
     void char_move_backward(std::size_t count) override;
@@ -225,6 +258,9 @@ private:
     void remove_line_forward(size_t i);
     void remove_line_backward(size_t i);
     std::string store;
+
+
+
     // This variable is set/checked every time a view wants to display. So once
     // vertex data is generated, this is set to true, until any text is inserted to the buffer
     // at which point it is set to false. This way we don't have to reconstruct vertex data every render cycle.

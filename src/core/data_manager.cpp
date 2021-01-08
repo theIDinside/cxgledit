@@ -22,15 +22,18 @@ TextData *DataManager::create_managed_buffer(BufferType type) {
     if (reuse_list.empty()) {
         util::println("No available buffers in re-use list. Creating new");
         switch (type) {
-            case CodeInput: {
+            case BufferType::CodeInput: {
                 auto bufHandle = StdStringBuffer::make_handle();
                 bufHandle->has_meta_data = true;
+                bufHandle->info = BufferTypeInfo::EditBuffer;
                 data.push_back(std::move(bufHandle));
                 return data.back().get();
             }
-            case CommandInput: {
+            case BufferType::StatusBar:
+            case BufferType::CommandInput: {
                 auto bufHandle = StdStringBuffer::make_handle();
                 bufHandle->has_meta_data = false;
+                bufHandle->info = (type == BufferType::CommandInput) ? BufferTypeInfo::CommandInput : BufferTypeInfo::StatusBar;
                 data.push_back(std::move(bufHandle));
                 return data.back().get();
             }

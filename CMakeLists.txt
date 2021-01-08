@@ -56,7 +56,7 @@ set(UI_RENDER_SOURCES
         src/ui/render/shader.cpp src/ui/render/shader.hpp
         src/ui/render/texture.cpp src/ui/render/texture.hpp
         src/ui/render/vertex_buffer.cpp src/ui/render/vertex_buffer.hpp
-        src/ui/view.cpp src/ui/view.hpp src/ui/view_cursor.cpp src/ui/view_cursor.hpp src/ui/managers/view_manager.cpp src/ui/managers/view_manager.hpp src/ui/layout.cpp src/ui/layout.hpp)
+        src/ui/view.cpp src/ui/view.hpp src/ui/view_cursor.cpp src/ui/view_cursor.hpp src/ui/managers/view_manager.cpp src/ui/managers/view_manager.hpp src/ui/core/layout.cpp src/ui/core/layout.hpp src/ui/editor_window.cpp src/ui/editor_window.hpp src/ui/status_bar.cpp src/ui/status_bar.hpp)
 
 set(UTIL_SOURCES
         src/utils/utils.cpp src/utils/utils.hpp
@@ -70,10 +70,11 @@ set(CORE_SOURCE
 
 set(COMMANDS_SOURCE
         src/core/commands/command.cpp src/core/commands/command.hpp
-        src/core/commands/command_interpreter.cpp src/core/commands/command_interpreter.hpp)
+        src/core/commands/command_interpreter.cpp src/core/commands/command_interpreter.hpp src/core/commands/file_manager.cpp src/core/commands/file_manager.hpp)
 
 add_executable(cxgledit
-        src/main.cpp src/app.cpp src/app.hpp
+        src/main.cpp
+        src/app.cpp
         ${CORE_SOURCE}
         ${UI_RENDER_SOURCES}
         ${UTIL_SOURCES}

@@ -12,11 +12,16 @@
 #include <string_view>
 #include <GLFW/glfw3.h>
 
-
 enum class Cycle : int {
     Forward = GLFW_KEY_DOWN,        // down
     Backward = GLFW_KEY_UP,       // up
 };
+
+struct EditorCommand {
+    Commands type;
+};
+
+[[maybe_unused]] std::optional<int> goto_is_ok(const std::string& input);
 
 class CommandInterpreter {
 public:
@@ -24,28 +29,30 @@ public:
     static CommandInterpreter &get_instance();
     void validate(const std::string &input);
     void cycle_current_command_arguments(Cycle);
-    void destroy_current_command();
-    Command *finalize();
-
-    std::optional<std::string_view> next_history_input() const;
-    std::optional<std::string_view> prev_history_input() const;
     bool has_command_waiting();
-    Command *get_currently_edited_cmd();
-    void destroy_cmd_and_set_new(Command *cmd);
-    void destroy_current_command_if_no_match(std::string_view view);
-
     void auto_complete();
+    void execute_command();
+    void set_current_command_read(Commands type);
+
+    void register_application(App* pApp);
+    std::string current_input();
+    std::string command_auto_completed();
+    void evaluate_current_input();
+
+    void clear_state();
+
+    void setup_state();
+
+    bool cmd_is_interactive();
 
 private:
     CommandInterpreter() = default;
-    Command *current_command = nullptr;
-
+    App* ctx = nullptr;
+    Commands current_input_command;
+    EditorCommand ecmd;
+    bool getting_input = false;
     /// when you hit <tab> to cycle through options of a typed in command
     /// so typing open /usr/bin/fi and then hitting <tab>, would cycle through
     /// all files in /usr/bin/ with the prefix of fi, but where would we store this data, for the application to know
     /// what state our cycling is in?
-    std::list<std::string> temporary_arguments{};
-    std::array<std::string, 100> input_history{};
-    std::size_t history_length{0};
-    std::size_t current_history_index{0};
 };

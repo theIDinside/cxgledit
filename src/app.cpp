@@ -5,6 +5,10 @@
 #include "app.hpp"
 #include <core/data_manager.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <ui/view.hpp>
+#include <ui/status_bar.hpp>
+#include <ui/editor_window.hpp>
+
 #include <ranges>
 #include <utility>
 
@@ -12,10 +16,16 @@
 
 static auto BUFFERS_COUNT = 0;
 
+using ui::CommandView;
+using ui::EditorWindow;
+using ui::View;
+using ui::core::DimInfo;
+using ui::core::Layout;
+
 void framebuffer_callback(GLFWwindow *window, int width, int height) {
     fmt::print("New width: {}\t New height: {}\n", width, height);
     // if w & h == 0, means we minimized. Do nothing. Because when we un-minimize, means we restore the prior size
-    if(width != 0 && height != 0) {
+    if (width != 0 && height != 0) {
         auto app = get_app_handle(window);
         auto dim = app->get_window_dimension();
         float wratio = float(width) / float(dim.w);
@@ -25,7 +35,6 @@ void framebuffer_callback(GLFWwindow *window, int width, int height) {
         app->draw_all(true);
         glViewport(0, 0, width, height);
     }
-
 }
 
 App *App::initialize(int app_width, int app_height, const std::string &title) {
@@ -42,7 +51,7 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_callback);
-    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) { PANIC("Failed to initialize GLAD\n"); }
+    if (not gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) { PANIC("Failed to initialize GLAD\n"); }
     glEnable(GL_CULL_FACE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -88,20 +97,14 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
     ShaderLibrary::get_instance().load_shader(cursor_shader);
 
     auto text_row_advance = FontLibrary::get_default_font()->get_row_advance() + 2;
-
-    auto sb_height = text_row_advance;
-
     auto cv = CommandView::create("command", app_width, text_row_advance * 1, 0, text_row_advance * 1);
     cv->command_view->set_projection(instance->projection);
 
     instance->command_view = std::move(cv);
 
+    // TODO: remove these, these are just for simplicity when testing UI
     instance->new_editor_window();
-    instance->active_buffer->load_string("FOO");
-    instance->new_editor_window(SplitStrategy::VerticalSplit);
-    instance->active_buffer->load_string("BAR");
-    instance->new_editor_window(SplitStrategy::VerticalSplit);
-    instance->active_buffer->load_string("BAZ");
+    // instance->load_file("main.cpp");
 
     glfwSetWindowUserPointer(window, instance);
     glfwSetCharCallback(window, [](auto window, auto codepoint) {
@@ -111,12 +114,7 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
         if (app->command_edit) {
             // TODO: let CommandInterpreter know to INvalidate any argument cycling of current command, and re-validate the input
             auto &ci = CommandInterpreter::get_instance();
-            if (ci.has_command_waiting()) {
-                auto cmd = ci.get_currently_edited_cmd()->actual_input();
-                ci.destroy_current_command();
-                ci.validate(app->active_buffer->to_std_string());
-                ci.cycle_current_command_arguments(Cycle::Forward);
-            }
+            ci.evaluate_current_input();
         }
     });
 
@@ -125,17 +123,22 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
         auto app = get_app_handle(window);
         glfwGetCursorPos(window, &xpos, &ypos);
         auto &[w, h] = App::win_dimensions;
-        util::println("Mouse click: {}, {} inside [{} x {}]", xpos, ypos, w, h);
 
         auto translate_y = h - (int) ypos;
         auto layout = find_within_leaf_node(app->root_layout, int(xpos), translate_y);
-        auto ew = std::find_if(app->editor_views.begin(), app->editor_views.end(), [id = layout->id](auto ew) {
-            return ew->ui_layout_id == id;
-        });
+        if (layout) {
+            auto ew = std::find_if(app->editor_views.begin(), app->editor_views.end(),
+                                   [id = layout->id](auto ew) { return ew->ui_layout_id == id; });
 
-        if(ew != std::end(app->editor_views)) {
-            EditorWindow* elem = *ew;
-            app->editor_win_selected(elem);
+            if (ew != std::end(app->editor_views)) {
+                EditorWindow *elem = *ew;
+                app->editor_win_selected(elem);
+                auto x = AS(xpos, int);
+                auto y = AS(ypos, int);
+                elem->handle_click(x, y);
+            }
+        } else {
+            PANIC("MOUSE CLICKING FEATURES NOT YET DONE GOOD.");
         }
     });
 
@@ -144,6 +147,7 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
 
     glfwSetKeyCallback(window, [](auto window, int key, int scancode, int action, int mods) {
         auto app = get_app_handle(window);
+        // app->command_view->show_last_message = false;
         if (pressed_or_repeated(action)) {
             if (mods & GLFW_MOD_CONTROL) {
                 app->kb_command(key);
@@ -153,10 +157,13 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
         }
     });
 
+    auto& ci = CommandInterpreter::get_instance();
+    ci.register_application(instance);
+
     return instance;
 }
 
-void App::editor_win_selected(EditorWindow *elem) {
+void App::editor_win_selected(ui::EditorWindow *elem) {
     active_window->active = false;
     editor_views.erase(std::find(editor_views.begin(), editor_views.end(), elem));
     editor_views.push_back(elem);
@@ -177,28 +184,39 @@ void App::set_dimensions(int w, int h) {
     this->projection = glm::ortho(0.0f, static_cast<float>(w), 0.0f, static_cast<float>(h));
 }
 void App::run_loop() {
+    double nowTime = glfwGetTime();
+    auto since_last_update = glfwGetTime();
     while (this->no_close_condition()) {
         // TODO: do stuff.
+        nowTime = glfwGetTime();
+
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         draw_all();
         glfwWaitEventsTimeout(1);
+        if((nowTime - since_last_update) >= 3) {
+            since_last_update = nowTime;
+            active_window->get_text_buffer()->rebuild_metadata();
+        }
     }
 }
 bool App::no_close_condition() { return (!glfwWindowShouldClose(window) && !exit_command_requested); }
 void App::load_file(const fs::path &file) {
-    util::println("Loading file into buffer {}", active_buffer->id);
     if (!fs::exists(file)) { PANIC("File {} doesn't exist. Forced exit.", file.string()); }
-    if (active_buffer->empty()) {
-        util::println("Active text buffer is empty. Loading data into it.");
+    if (active_window->view->get_text_buffer()->empty()) {
         std::string tmp;
         std::ifstream f{file};
         tmp.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
-        util::println("Loaded {} bytes from file {}", tmp.size(), file.string());
-        active_buffer->load_string(std::move(tmp));
+        active_window->get_text_buffer()->load_string(std::move(tmp));
+        active_window->get_text_buffer()->set_file(file);
         assert(!active_buffer->empty());
     } else {
-        PANIC("WE CAN'T HANDLE MULTIPLE FILES OR VIEWS RIGHT NOW.");
+        new_editor_window(SplitStrategy::VerticalSplit);
+        std::string tmp;
+        std::ifstream f{file};
+        tmp.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+        active_window->get_text_buffer()->load_string(std::move(tmp));
+        active_window->get_text_buffer()->set_file(file);
     }
 }
 
@@ -220,15 +238,8 @@ void App::update_views_dimensions(float wRatio, float hRatio) {
     util::println("New root dimension: {}, {}", root_layout->dimInfo.w, root_layout->dimInfo.h);
 
     for (auto e : editor_views) {
-        auto dim = e->dimInfo;
-        auto scaledDim = scale(dim, wRatio, hRatio);
         auto ew_layout = find_by_id(root_layout, e->ui_layout_id);
-
-        /* TODO: this is what it SHOULD look like, since update_layout_tree actually updates all layouts
-         *
-         */
         e->update_layout(ew_layout->dimInfo);
-        // e->update_layout(scaledDim);
         e->set_projection(projection);
     }
 
@@ -236,8 +247,6 @@ void App::update_views_dimensions(float wRatio, float hRatio) {
     command_view->command_view->set_dimensions(win_width, command_view->h);
     command_view->command_view->set_projection(glm::ortho(0.0f, float(win_width), 0.0f, float(win_height)));
 }
-
-View *App::get_active_view() const { return active_view; }
 
 void App::kb_command(int key) {
     if (!command_edit) {
@@ -250,10 +259,7 @@ void App::kb_command(int key) {
                 break;
             case GLFW_KEY_UP:
             case GLFW_KEY_DOWN: {
-                auto scrolled_lines = active_view->scrolled / active_view->get_font()->get_row_advance();
-                if (!(std::abs(scrolled_lines) >= get_active_view()->get_text_buffer()->lines_count() - 2)) {
-                    active_view->scroll(static_cast<Scroll>(key), 3);
-                }
+                active_view->scroll(static_cast<ui::Scroll>(key), 3);
             } break;
             case GLFW_KEY_RIGHT:
                 active_buffer->move_cursor(Movement::Word(1, CursorDirection::Forward));
@@ -268,11 +274,28 @@ void App::kb_command(int key) {
                 active_buffer->remove(Movement::Word(1, CursorDirection::Back));
                 break;
             case GLFW_KEY_Q: {
-                util::println("Ctrl+Q was pressed");
                 auto active_buf = active_view->get_text_buffer();
                 if (!active_buf->empty()) {
                     auto id = active_buf->id;
                     DataManager::get_instance().request_close(id);
+
+                    auto layoutToDestroy = find_by_id(root_layout, active_window->ui_layout_id);
+                    if (layoutToDestroy == layoutToDestroy->parent->left) {
+                        if (layoutToDestroy->parent == root_layout) {
+                            auto new_root = layoutToDestroy->parent->right;
+                            set_new_root(root_layout, new_root);
+                        } else {
+                            promote_node(layoutToDestroy->parent->right);
+                        }
+                    } else {
+                        if (layoutToDestroy->parent == root_layout) {
+                            auto new_root = layoutToDestroy->parent->left;
+                            set_new_root(root_layout, new_root);
+                        } else {
+                            promote_node(layoutToDestroy->parent->left);
+                        }
+                    }
+
                     if (editor_views.back() == active_window) {
                         assert(active_window->view->td_id == id);
                         editor_views.pop_back();
@@ -283,27 +306,9 @@ void App::kb_command(int key) {
                         PANIC("Somehow non-active window was deleted");
                     }
 
-                    auto layout = find_by_id(root_layout, active_window->ui_layout_id);
-                    if (layout == layout->parent->left) {
-                        if (layout->parent == root_layout) {
-                            auto new_root = layout->parent->right;
-                            set_new_root(root_layout, new_root);
-                        } else {
-                            promote_node(layout->parent->right);
-                        }
-                    } else {
-                        if (layout->parent == root_layout) {
-                            auto new_root = layout->parent->left;
-                            set_new_root(root_layout, new_root);
-                        } else {
-                            promote_node(layout->parent->left);
-                        }
-                    }
                     active_view = active_window->view;
                     active_buffer = active_view->get_text_buffer();
                     update_all_editor_windows();
-
-                    dump_layout_tree(root_layout);
                     draw_all(true);
                 } else {
                     this->graceful_exit();
@@ -319,6 +324,12 @@ void App::kb_command(int key) {
                 active_view = active_window->view;
                 break;
             }
+            case GLFW_KEY_G:
+                command_input("goto", Commands::GotoLine);
+                break;
+            case GLFW_KEY_O:
+                command_input("open", Commands::OpenFile);
+                break;
             case GLFW_KEY_D:
                 print_debug_info();
                 break;
@@ -333,25 +344,29 @@ void App::graceful_exit() {
     // TODO: clean up CPU memory resources
     exit_command_requested = true;
 }
-void App::set_input_to_command_view(bool toggleOn) {
-    if (toggleOn) {
-        util::println("Pushing {} to active view stack order", command_view->command_view->name);
-        active_buffer = command_view->command_view->get_text_buffer();
-        active_buffer->clear();
-        if (!command_edit) { command_view->set_prefix("command"); }
-        command_edit = toggleOn;
-        command_view->active = toggleOn;
-    } else {
-        active_buffer->clear();
-        active_buffer = active_view->get_text_buffer();
-        util::println("Buffer id: {}", active_buffer->id);
-        command_edit = toggleOn;
-        command_view->active = toggleOn;
-        // EXECUTE INPUT COMMAND & DESTROY IT
-        CommandInterpreter::get_instance().destroy_current_command();
+
+void App::command_input(const std::string& prefix, Commands commandInput) {
+    auto &ci = CommandInterpreter::get_instance();
+    ci.set_current_command_read(commandInput);
+    active_buffer = command_view->command_view->get_text_buffer();
+    active_buffer->clear();
+    if (!command_edit) {
+        command_view->set_prefix(prefix);
+        active_buffer->insert_str(ci.current_input());
     }
+    command_edit = true;
+    command_view->active = true;
 }
-void App::input_char(char i) {}
+
+void App::disable_command_input() {
+    auto &ci = CommandInterpreter::get_instance();
+    ci.clear_state();
+    active_buffer = command_view->command_view->get_text_buffer();
+    active_buffer->clear();
+    command_edit = false;
+    command_view->active = false;
+}
+
 void App::handle_edit_input(int key, int modifier) {
     switch (key) {
         case GLFW_KEY_HOME:
@@ -361,19 +376,11 @@ void App::handle_edit_input(int key, int modifier) {
             active_buffer->step_to_line_end(Boundary::Outside);
             break;
         case GLFW_KEY_ENTER:
-            this->input_command_or_newline();
+            input_command_or_newline();
             break;
         case GLFW_KEY_TAB: {
             if (command_edit) {
-                auto &ci = CommandInterpreter::get_instance();
-                if (ci.has_command_waiting()) {
-                    ci.auto_complete();
-                    active_buffer->clear();
-                    active_buffer->insert_str(ci.get_currently_edited_cmd()->as_auto_completed());
-                } else {
-                    ci.validate(active_buffer->to_std_string());
-                    ci.cycle_current_command_arguments(Cycle::Forward);
-                }
+                CommandInterpreter::get_instance().auto_complete();
             } else {
                 active_buffer->insert_str("    ");
             }
@@ -384,64 +391,57 @@ void App::handle_edit_input(int key, int modifier) {
             cycle_command_or_move_cursor(static_cast<Cycle>(key));
             break;
         case GLFW_KEY_RIGHT:
+            if(modifier & GLFW_MOD_SHIFT) {
+                if(not active_buffer->mark_set) {
+                    active_buffer->set_mark_at_cursor();
+                }
+            } else {
+                if(active_buffer->mark_set) {
+                    active_buffer->clear_marks();
+                }
+            }
             active_buffer->move_cursor(Movement::Char(1, CursorDirection::Forward));
             break;
         case GLFW_KEY_LEFT:
+            if(modifier & GLFW_MOD_SHIFT) {
+                if(not active_buffer->mark_set) {
+                    active_buffer->set_mark_at_cursor();
+                }
+            } else {
+                if(active_buffer->mark_set) {
+                    active_buffer->clear_marks();
+                }
+            }
             active_buffer->move_cursor(Movement::Char(1, CursorDirection::Back));
             break;
         case GLFW_KEY_ESCAPE:
-            set_input_to_command_view(!command_edit);
+            disable_command_input();
             break;
         case GLFW_KEY_BACKSPACE:
             active_buffer->remove(Movement::Char(1, CursorDirection::Back));
             if (command_edit) {
                 auto &ci = CommandInterpreter::get_instance();
-                ci.destroy_current_command();
+                ci.evaluate_current_input();
             }
             break;
     }
     command_view->active = command_edit;
 }
-void App::set_error_message(std::string msg) {
+
+void App::set_error_message(const std::string& msg) {
+    command_view->last_message = msg;
     command_view->command_view->get_text_buffer()->clear();
-    command_view->command_view->get_text_buffer()->insert_str(command_view->last_message);
+    command_view->command_view->get_text_buffer()->insert_str(msg);
     command_view->show_last_message = true;
     command_view->active = false;
 }
 
 void App::input_command_or_newline() {
     if (command_edit) {
-        auto cmd_input = active_buffer->to_std_string();
-        active_buffer->clear();
-        active_buffer = active_view->get_text_buffer();
-
-        // EXECUTE INPUT COMMAND & DESTROY IT
-        if (CommandInterpreter::get_instance().has_command_waiting()) {
-            auto cmd = CommandInterpreter::get_instance().finalize();
-            if (cmd) cmd->exec(this, active_view->get_text_buffer());
-            CommandInterpreter::get_instance().destroy_current_command();
-        } else {
-            CommandInterpreter::get_instance().validate(cmd_input);
-            auto cmd = CommandInterpreter::get_instance().finalize();
-            if (cmd) {
-                if (!cmd->exec(this, active_view->get_text_buffer())) {
-                    auto &ci = CommandInterpreter::get_instance();
-                    auto error_cmd = dynamic_cast<ErrorCommand *>(ci.get_currently_edited_cmd());
-                    if (error_cmd) {
-                        error_cmd->exec(this, command_view->input_buffer.get());
-                    } else {
-                        if (ci.has_command_waiting()) {
-                            ci.auto_complete();
-                            active_buffer->clear();
-                            active_buffer->insert_str(ci.get_currently_edited_cmd()->as_auto_completed());
-                        }
-                    }
-                }
-            }
-            CommandInterpreter::get_instance().destroy_current_command();
-        }
+        CommandInterpreter::get_instance().execute_command();
         /// Setting active input to text editor again
-        active_buffer = active_view->get_text_buffer();
+        active_buffer = active_window->get_text_buffer();
+        active_view = active_window->view;
         command_edit = false;
     } else {
         active_buffer->insert('\n');
@@ -488,7 +488,7 @@ void App::new_editor_window(SplitStrategy splitStrategy) {
         active_window->active = false;
         auto active_layout_id = active_window->ui_layout_id;
         auto l = find_by_id(root_layout, active_layout_id);
-        push_node(l, layout_id, LayoutType::Horizontal);
+        push_node(l, layout_id, ui::core::LayoutType::Horizontal);
         auto active_editor_win = active_window;
         auto ew = EditorWindow::create({}, projection, layout_id, l->right->dimInfo);
         ew->view->set_projection(projection);
@@ -527,11 +527,42 @@ void App::update_all_editor_windows() {
         if (ew_layout == nullptr) {
             util::println("Could not find {}", e->ui_layout_id);
             dump_layout_tree(root_layout);
+            PANIC("This must not fail");
+        } else {
+            util::println("Updating EW DimInfo for {}: {} \t -> \t {}", e->ui_layout_id, dim.debug_str(),
+                          ew_layout->dimInfo.debug_str());
+            e->update_layout(ew_layout->dimInfo);
+            e->set_projection(projection);
         }
-        util::println("Updating EW DimInfo for {}: {} \t -> \t {}", e->ui_layout_id, dim.debug_str(),
-                      ew_layout->dimInfo.debug_str());
-        e->update_layout(ew_layout->dimInfo);
-        e->set_projection(projection);
     }
+}
+
+ui::CommandView *App::get_command_view() const { return command_view.get(); }
+
+void App::editor_window_goto(int line) {
+    util::println("Goto line {}", line);
+    auto l = active_view->get_cursor()->line;
+
+    auto buf = active_view->get_text_buffer();
+    if (line > buf->meta_data.line_begins.size()) {
+        buf->step_cursor_to(buf->size());
+        auto scroll_amt = buf->meta_data.line_begins.size() - l;
+        active_view->scroll(ui::Scroll::Down, scroll_amt);
+    } else {
+        auto pos = buf->meta_data.line_begins[line];
+        buf->step_cursor_to(pos);
+        if (l < line) {
+            auto scroll_amt = line - l;
+            active_view->scroll(ui::Scroll::Down, scroll_amt);
+        } else {
+            auto scroll_amt = l - line;
+            active_view->scroll(ui::Scroll::Up, scroll_amt);
+        }
+    }
+}
+void App::restore_input() {
+    active_view = active_window->view;
+    active_buffer = active_view->get_text_buffer();
+    command_view->input_buffer->clear();
 }
 

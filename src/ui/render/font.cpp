@@ -53,7 +53,6 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
     auto max_glyph_width = 0u;
     std::vector<glyph_info> glyph_cache;
 
-    // for (int i = 0; i < NUM_GLYPHS; ++i) {
     for (int i = 0; i < charRange.to; ++i) {
 
         FT_Load_Char(face, i, FT_LOAD_RENDER | FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT);
@@ -128,11 +127,22 @@ static int test_count = 0;
 
 int SimpleFont::get_row_advance() const { return row_advance; }
 
-void SimpleFont::emplace_source_text_gpu_data(VAO *vao, View *view, int xPos, int yPos) {
-    // FN_MICRO_BENCH();
+static bool exampleHowToLexVar = false;
+
+
+void SimpleFont::emplace_source_text_gpu_data(VAO *vao, ui::View *view, int xPos, int yPos) {
+    FN_MICRO_BENCH();
     auto text = view->get_text_buffer()->to_string_view();
     auto view_cursor = view->get_cursor();
-    int data_index_pos = view->get_text_buffer()->get_cursor_pos();
+
+    GLfloat cx1, cx2, cy1, cy2;
+    auto bufPtr = view->get_text_buffer();
+
+    auto [idx_curs_b, idx_curs_e] = bufPtr->get_mark_index_range();
+    auto [cursor_a, cursor_b] = bufPtr->get_cursor_rect();
+
+    int data_index_pos = cursor_a.pos;
+    int data_index_pos_end = cursor_b.pos;
 
     vao->vbo->data.clear();
     vao->vbo->data.reserve(text.size() * sizeof(TextVertex));
@@ -148,10 +158,15 @@ void SimpleFont::emplace_source_text_gpu_data(VAO *vao, View *view, int xPos, in
     auto words = text_elements(text);
     std::vector<ColorFormatInfo> keywords_ranges;
 
+    // Some external condition, being set by another context or thread, as a hook, letting us know that, we got new visual data
+    // or meta data concerning this text buffer, perhaps a lexer is finished with it's job and has produced data so we can display it
+    if(exampleHowToLexVar) {
+
+    }
+
     for (const auto &[begin, end] : words) {
         auto rng = text.substr(begin, end - begin);
         if (rng.begin() != rng.end() && *rng.begin() == '"') {
-            // fmt::print("Range of string found: '{}'\n", rng);
             keywords_ranges.emplace_back(ColorFormatInfo{begin, end, DARKER_GREEN});
         } else {
             for (const auto &[word, color] : keywords) {
@@ -162,14 +177,13 @@ void SimpleFont::emplace_source_text_gpu_data(VAO *vao, View *view, int xPos, in
     // iterate through all characters
     auto item_it = keywords_ranges.begin();
     auto pos = 0;
-    auto data_index = 0;
-    bool has_text = !text.empty();
+    bool have_text = !text.empty();
     auto xpos = float(x);
     auto ypos = float(y);
-    if (!has_text) {
+    if (not have_text) {
         view_cursor->update_cursor_data(x, y - 6);
     } else {
-        for (auto c = text.begin(); c != text.end(); c++, pos++, data_index_pos--) {
+        for (auto c = text.begin(); c != text.end(); c++, pos++, data_index_pos--, data_index_pos_end--) {
             if (item_it != keywords_ranges.end()) {
                 auto &kw = *item_it;
                 auto [begin, end, col] = *item_it;
@@ -194,7 +208,15 @@ void SimpleFont::emplace_source_text_gpu_data(VAO *vao, View *view, int xPos, in
             auto &glyph = this->glyph_cache[*c];
             if (*c == '\n') {
                 if (data_index_pos == 0) {
-                    view_cursor->update_cursor_data(x, y - 6);
+                    if(bufPtr->mark_set) {
+                        cx1 = x;
+                        cy1 = y - 6;
+                    } else {
+                        view_cursor->update_cursor_data(x, y - 6);
+                    }
+                }
+                if(data_index_pos_end == 0) {
+                    cx2 = x;
                 }
                 x = start_x;
                 y -= row_advance;
@@ -214,10 +236,26 @@ void SimpleFont::emplace_source_text_gpu_data(VAO *vao, View *view, int xPos, in
             store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
             store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
             store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
-            if (data_index_pos == 0) { view_cursor->update_cursor_data(xpos, y - 6); }
+            if (data_index_pos == 0) {
+                if(bufPtr->mark_set) {
+                    cx1 = x;
+                    cy1 = y - 6;
+                } else {
+                    view_cursor->update_cursor_data(xpos, y - 6);
+                }
+            }
+            if(data_index_pos_end == 0) {
+                cx2 = x;
+            }
             x += glyph.advance;
         }
     }
+
+    if(bufPtr->mark_set) {
+        util::println("Mark set between {} - {}. Screen coords: x1, x2: {} -> {}", cursor_a.pos, cursor_b.pos, cx1, cx2);
+        view_cursor->set_line_rect(cx1, cx2, cy1);
+    }
+
     if (view->get_text_buffer()->get_cursor_pos() == view->get_text_buffer()->size()) {
         xpos = float(x);
         ypos = float(y);
@@ -372,7 +410,7 @@ void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, std::string_view text
     auto start_y = yPos;
     auto x = start_x;
     auto y = start_y;
-    auto defaultColor = glm::fvec3{0.74f, 0.425f, 0.46f};
+    auto defaultColor = glm::fvec3{0.84f, 0.725f, 0.66f};
     auto r = defaultColor.x;
     auto g = defaultColor.y;
     auto b = defaultColor.z;
