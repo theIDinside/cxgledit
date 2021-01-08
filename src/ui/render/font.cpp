@@ -252,7 +252,11 @@ void SimpleFont::emplace_source_text_gpu_data(VAO *vao, ui::View *view, int xPos
     }
 
     if(bufPtr->mark_set) {
-        util::println("Mark set between {} - {}. Screen coords: x1, x2: {} -> {}", cursor_a.pos, cursor_b.pos, cx1, cx2);
+        // TODO: implement multi-line selection. selecting multiple lines on the backend is super-easy as the data
+        //  structure is simply a 1-dimensional stream of characters, displaying it properly isn't as easy
+        //  and there are multiple ways to represent this. We can push "quads" to a vector, one per each line
+        //  or we can do like in some editors and not have the "selection" visualization at all, but just leave kind of like
+        //  an empty [] half-transparent marker where the selection begins (kind of like how 4coder does it)
         view_cursor->set_line_rect(cx1, cx2, cy1);
     }
 
