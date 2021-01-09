@@ -13,3 +13,12 @@ int main(int argc, const char **argv) {
     app->run_loop();
     return 0;
 }
+
+
+
+/*
+ * todos that aren't fixmes or doesn't have some locality somewhere in the code, basically features to implement
+ * TODO: fix syntax highlighting for string literals
+ *
+ *
+ */

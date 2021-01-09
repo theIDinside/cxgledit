@@ -51,8 +51,10 @@ constexpr auto YELLOW = glm::vec3{0.893f, 1.0f, 0.0f};
 constexpr auto RED = glm::vec3{1.0f, 0.0f, 0.0f};
 constexpr auto GREEN = glm::vec3{0.0f, 1.0f, 0.0f};
 constexpr auto DARKER_GREEN = glm::vec3{0.0f, 0.83f, 0.0f};
-constexpr auto BLUE = glm::vec3{0.0f, 0.0f, 1.0f};
+constexpr auto BLUE = glm::vec3{0.0f, 0.034f, 1.0f};
 constexpr auto WHITE = glm::vec3{1.0f, 1.0f, 1.0f};
+constexpr auto GRAY = glm::vec3{0.5f, 0.5f, 0.5f};
+constexpr auto LIGHT_GRAY = glm::vec3{0.65f, 0.65f, 0.65f};
 
 using HighLight = std::pair<const char *, glm::vec3>;
 constexpr std::array keywords{mp("int", c_keyword),        mp("bool", c_keyword),      mp("void", c_keyword),
@@ -95,27 +97,6 @@ static int row_advance = 0;
 
 static glyph_info info[NUM_GLYPHS];
 
-struct Words {
-    std::size_t begin, end;
-};
-
-std::vector<Words> text_elements(std::string_view text);
-
-enum Ident {
-    NONE = 0,
-    COMMENT_BEGIN,
-    LINECOMMENT,
-    BLOCKCOMMENT,
-    BLOCKCOMMENT_END,
-    STRING_BEGIN,
-    STRING_END,
-    NUMBER_BEGIN,
-    MACRO_BEGIN,
-    TYPE,
-    VARIABLE,
-    DELIMITER
-};
-
 struct ColorizeTextRange {
     std::size_t begin, length;
     glm::vec3 color;
@@ -133,9 +114,6 @@ public:
     SimpleFont(int pixelSize, std::unique_ptr<Texture> &&texture, std::vector<glyph_info> &&glyphs);
 
     void emplace_source_text_gpu_data(VAO *vao, ui::View *view, int xPos, int yPos);
-
-    void emplace_colorized_text_gpu_data(VAO *vao, TextData *text, int xPos, int yPos,
-                                         std::optional<std::vector<ColorizeTextRange>> colorData);
 
     void emplace_colorized_text_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos,
                                          std::optional<std::vector<ColorizeTextRange>> colorData);

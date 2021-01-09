@@ -56,7 +56,7 @@ set(UI_RENDER_SOURCES
         src/ui/render/shader.cpp src/ui/render/shader.hpp
         src/ui/render/texture.cpp src/ui/render/texture.hpp
         src/ui/render/vertex_buffer.cpp src/ui/render/vertex_buffer.hpp
-        src/ui/view.cpp src/ui/view.hpp src/ui/view_cursor.cpp src/ui/view_cursor.hpp src/ui/managers/view_manager.cpp src/ui/managers/view_manager.hpp src/ui/core/layout.cpp src/ui/core/layout.hpp src/ui/editor_window.cpp src/ui/editor_window.hpp src/ui/status_bar.cpp src/ui/status_bar.hpp)
+        src/ui/view.cpp src/ui/view.hpp src/ui/view_cursor.cpp src/ui/view_cursor.hpp src/ui/managers/view_manager.cpp src/ui/managers/view_manager.hpp src/ui/core/layout.cpp src/ui/core/layout.hpp src/ui/editor_window.cpp src/ui/editor_window.hpp src/ui/status_bar.cpp src/ui/status_bar.hpp src/ui/syntax_highlighting.cpp src/ui/syntax_highlighting.hpp)
 
 set(UTIL_SOURCES
         src/utils/utils.cpp src/utils/utils.hpp
