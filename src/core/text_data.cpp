@@ -546,6 +546,7 @@ void StdStringBuffer::step_to_line_begin(Boundary boundary) {
 }
 
 void StdStringBuffer::rebuild_metadata() {
+    MICRO_BENCH(fmt::format("text meta data rebuild for {}", id));
     if (has_meta_data && data_is_pristine == false && info == BufferTypeInfo::EditBuffer) {
         util::println("Updating metadata for buffer {}", this->id);
         if (has_meta_data) {

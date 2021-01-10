@@ -161,20 +161,9 @@ void SimpleFont::emplace_source_text_gpu_data(VAO *vao, ui::View *view, int xPos
     std::vector<ColorFormatInfo> keywords_ranges;
 
     // FIXME: write a decent (this is trash) tokenizer/lexer that scans the source code. This will fix the erroneous string literal high lighting issues
-    /*
-    for (const auto &[begin, end] : tokens) {
-        auto rng = text.substr(begin, end - begin);
-        if (rng.begin() != rng.end() && *rng.begin() == '"') {
-            keywords_ranges.emplace_back(ColorFormatInfo{begin, end, DARKER_GREEN});
-        } else {
-            for (const auto &[word, color] : keywords) {
-                if (word == rng) { keywords_ranges.emplace_back(ColorFormatInfo{begin, end, color}); }
-            }
-        }
-    }
-    */
     for (const auto &[begin, end, type] : tokens) {
         switch (type) {
+            case TokenType::Qualifier:
             case TokenType::Keyword:
             case TokenType::Namespace:
             case TokenType::ParameterType:

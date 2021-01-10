@@ -22,6 +22,12 @@ using ui::View;
 using ui::core::DimInfo;
 using ui::core::Layout;
 
+/// FIXME(urgent): When window is resized slowly, there seems to be a big within GLFW
+///  because it doesn't update correctly and starts stretching my internal data layout for whatever
+///  reason. When I min/max it works, when I resize with a fast pull on an edge, no problems show up
+///  but if one slowly pulls the edge, problems pop up. Looks horrible. It could very well have something
+///  to do with how I resize in this function (a ratio) which doesn't update correctly between
+///  subsequent calls to framebuffer_callback
 void framebuffer_callback(GLFWwindow *window, int width, int height) {
     fmt::print("New width: {}\t New height: {}\n", width, height);
     // if w & h == 0, means we minimized. Do nothing. Because when we un-minimize, means we restore the prior size

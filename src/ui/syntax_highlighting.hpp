@@ -20,7 +20,8 @@ enum class TokenType {
     Comment,
     Include,
     Macro,
-    Qualifier, // const, consteval, constexpr, static, volatile
+    Qualifier,
+    Statement// const, consteval, constexpr, static, volatile
 };
 
 struct Token {

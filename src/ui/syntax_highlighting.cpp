@@ -4,9 +4,12 @@
 
 #include "syntax_highlighting.hpp"
 #include <cctype>
-
+#include <utils/utils.hpp>
 static Context lex_ctx = Context::Block;
+
 static TokenType last_lexed;
+static bool using_keyword_preceded = false;
+static bool using_namespace_found = false;
 
 #ifdef DEBUG
 std::string token_ident_to_string(TokenType type) {
@@ -31,6 +34,14 @@ std::string token_ident_to_string(TokenType type) {
             return "Comment";
         case TokenType::Illegal:
             return "Illegal";
+        case TokenType::Statement:
+            return "Statement";
+        case TokenType::Include:
+            return "Include";
+        case TokenType::Macro:
+            return "Macro";
+        case TokenType::Qualifier:
+            return "Qualifier";
     }
 }
 #endif
@@ -64,7 +75,6 @@ std::optional<Token> string_literal(std::string_view &text, std::size_t pos) {
     auto begin = pos;
     auto quotes = 2;
     for (auto i = pos; i < sz; i++) {
-        auto ch = text[i];
         if (text[i] == '"') quotes--;
         if (text[i] == '"' && text[i - 1] != '\\' && quotes == 0) {
             lex_ctx = Context::Free;
@@ -83,22 +93,37 @@ std::optional<Token> string_literal(std::string_view &text, std::size_t pos) {
 
 constexpr auto named_ch_ok = [](auto ch) { return std::isalpha(ch) || (ch == '_') || (std::isdigit(ch)); };
 
+// This doesn't just return true for qualifiers, but keywords that live in qualifier-ish space, meaning, their
+// locality in the text source code is similar to that of a qualifier, such as the keyword "using" which always comes before
+// a type, namespace or something like that
+static bool is_qualifier_ish(std::string_view token) {
+    return (token == "const" || token == "constexpr" || token == "consteval" || token == "static" ||
+            token == "volatile" || token == "unsigned" || token == "using");
+}
+
 std::optional<Token> named(std::string_view &text, std::size_t pos) {
     auto sz = text.size();
     auto begin = pos;
     for (auto i = pos; i < sz; i++) {
         if (not named_ch_ok(text[i])) {
+            if (is_qualifier_ish(text.substr(begin, i - begin))) {
+                last_lexed = TokenType::Qualifier;
+                if(text.substr(begin, i -begin) == "using") using_keyword_preceded = true;
+                return Token{begin, i, last_lexed};
+            }
             if (text[i] == '(') {
                 lex_ctx = Context::FunctionSignature;
                 last_lexed = TokenType::Function;
                 return Token{begin, i, TokenType::Function};
             } else if (text[i] == ':' && text[i + 1] == ':') {
+                if(using_keyword_preceded)
+                    using_namespace_found = true;
                 last_lexed = TokenType::Namespace;
                 lex_ctx = Context::Type;
                 return Token{begin, i, TokenType::Namespace};
             } else {
                 if (lex_ctx == Context::FunctionSignature) {
-                    if (last_lexed == TokenType::Function || last_lexed == TokenType::Parameter) {
+                    if (last_lexed == TokenType::Function || last_lexed == TokenType::Parameter || last_lexed == TokenType::Qualifier) {
                         last_lexed = TokenType::ParameterType;
                         return Token{begin, i, TokenType::ParameterType};
                     } else {
@@ -108,8 +133,17 @@ std::optional<Token> named(std::string_view &text, std::size_t pos) {
                 } else if (lex_ctx == Context::Type) {
                     auto l = (last_lexed == TokenType::Namespace) ? TokenType::Keyword : TokenType::Variable;
                     lex_ctx = (last_lexed == TokenType::Namespace) ? Context::Type : Context::Free;
-                    last_lexed = l;
-                    return Token{begin, i, l};
+                    if(using_namespace_found) {
+                        using_keyword_preceded = false;
+                        using_namespace_found = false;
+                        lex_ctx = Context::Free;
+                        l = TokenType::Keyword;
+                        last_lexed = l;
+                        return Token{begin, i, l};
+                    } else {
+                        last_lexed = l;
+                        return Token{begin, i, l};
+                    }
                 } else {
                     lex_ctx = Context::Type;
                     last_lexed = TokenType::Keyword;
@@ -135,10 +169,18 @@ std::optional<Token> line_comment(std::string_view &text, std::size_t pos) {
 std::optional<Token> block_comment(std::string_view &text, std::size_t pos) {
     auto sz = text.size();
     auto begin = pos;
-    for (auto i = pos; i < sz; i++) {
+    auto closing_delim_found = false;
+    for (auto i = pos; i < sz-2; i++) {
         last_lexed = TokenType::Comment;
         lex_ctx = Context::Block;
-        if (text[i] == '\n') { return Token{begin, i, TokenType::Comment}; }
+        if(text[i] == '*') closing_delim_found = true;
+        else if(text[i] == '/') {
+            if(closing_delim_found) {
+                return Token{begin, i+1, TokenType::Comment};
+            } else {
+                closing_delim_found = false;
+            }
+        }
     }
     return Token{begin, sz, TokenType::Comment};
 }
@@ -171,8 +213,10 @@ std::optional<Token> macro(std::string_view &text, std::size_t pos) {
 }
 
 std::vector<Token> tokenize(std::string_view text) {
+    FN_MICRO_BENCH();
     std::vector<Token> result;
     auto sz = text.size();
+    result.reserve(sz / 3);// if we guess that a token average length is 3 characters, we get this reserved number
     if (sz < 2) return result;
     for (auto i = 0u; i < sz - 1; i++) {
         if (text[i] == '/') {
@@ -227,6 +271,10 @@ std::vector<Token> tokenize(std::string_view text) {
             }
         }
         if (text[i] == ')' && lex_ctx == Context::FunctionSignature) { lex_ctx = Context::Block; }
+        if(text[i] == ';') {
+            lex_ctx = Context::Free;
+            last_lexed = TokenType::Statement;
+        }
     }
     return result;
 }
