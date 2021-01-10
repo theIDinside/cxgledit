@@ -11,6 +11,17 @@ constexpr auto SWEDISH_LAST_ALPHA_CHAR_UNICODE = 0x00f6u;
 
 #define AS(value, type) static_cast<type>(value)
 
+
+template<typename T> concept FloatingPoint = requires(T t) {
+    std::is_floating_point_v<T>;
+};
+
+
+template <FloatingPoint FP>
+constexpr int as_int(FP value) {
+    return AS(std::round(value), int);
+}
+
 /// Boxed = owned & RAII'd
 template<typename T>
 using Boxed = std::unique_ptr<T>;

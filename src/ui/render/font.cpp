@@ -131,7 +131,7 @@ int SimpleFont::get_row_advance() const { return row_advance; }
 static bool exampleHowToLexVar = false;
 
 void SimpleFont::emplace_source_text_gpu_data(VAO *vao, ui::View *view, int xPos, int yPos) {
-    FN_MICRO_BENCH();
+    // FN_MICRO_BENCH();
     auto text = view->get_text_buffer()->to_string_view();
     auto view_cursor = view->get_cursor();
 
@@ -206,8 +206,6 @@ void SimpleFont::emplace_source_text_gpu_data(VAO *vao, ui::View *view, int xPos
         //  and check again
         for (auto c = text.begin(); c != text.end(); c++, pos++, data_index_pos--, data_index_pos_end--) {
             if (item_it != keywords_ranges.end()) {
-                auto CHAR = text[pos];
-                auto d = CHAR;
                 auto &kw = *item_it;
                 auto [begin, end, col] = *item_it;
                 if (pos > end) {

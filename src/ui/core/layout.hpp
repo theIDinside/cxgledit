@@ -42,6 +42,7 @@ namespace ui::core {
     Layout *find_by_id(Layout *root, int id);
     void push_node(Layout *n, int assignedId, LayoutType t);
     void update_layout_tree(Layout* root, float wRatio, float hRatio);
+    void root_resize_to(Layout* root, int width, int height);
     void promote_node(Layout*& node);
     void dump_layout_tree(Layout* root);
     void set_new_root(Layout*& old_root, Layout* new_root);

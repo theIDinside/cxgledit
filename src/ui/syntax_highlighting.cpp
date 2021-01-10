@@ -213,7 +213,7 @@ std::optional<Token> macro(std::string_view &text, std::size_t pos) {
 }
 
 std::vector<Token> tokenize(std::string_view text) {
-    FN_MICRO_BENCH();
+    // FN_MICRO_BENCH();
     std::vector<Token> result;
     auto sz = text.size();
     result.reserve(sz / 3);// if we guess that a token average length is 3 characters, we get this reserved number

@@ -13,6 +13,7 @@
 #include <utility>
 
 #define get_app_handle(window) (App *) glfwGetWindowUserPointer(window)
+#include <thread>
 
 static auto BUFFERS_COUNT = 0;
 
@@ -33,14 +34,16 @@ void framebuffer_callback(GLFWwindow *window, int width, int height) {
     // if w & h == 0, means we minimized. Do nothing. Because when we un-minimize, means we restore the prior size
     if (width != 0 && height != 0) {
         auto app = get_app_handle(window);
-        auto dim = app->get_window_dimension();
-        float wratio = float(width) / float(dim.w);
-        float hratio = float(height) / float(dim.h);
+        float wratio = float(width) / float(app->win_width);
+        float hratio = float(height) / float(app->win_height);
         app->set_dimensions(width, height);
         app->update_views_dimensions(wratio, hratio);
-        app->draw_all(true);
         glViewport(0, 0, width, height);
     }
+}
+
+auto size_changed_callback(GLFWwindow* window, int width, int height) {
+    framebuffer_callback(window, width, height);
 }
 
 App *App::initialize(int app_width, int app_height, const std::string &title) {
@@ -57,6 +60,12 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_callback);
+    glfwSetWindowSizeCallback(window, size_changed_callback);
+    glfwSetWindowRefreshCallback(window, [](auto window) {
+        auto app = get_app_handle(window);
+        app->draw_all(true);
+
+    });
     if (not gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) { PANIC("Failed to initialize GLAD\n"); }
     glEnable(GL_CULL_FACE);
     glEnable(GL_BLEND);
@@ -188,6 +197,7 @@ void App::set_dimensions(int w, int h) {
     root_layout->dimInfo.y = h;
     win_dimensions = WindowDimensions{w, h};
     this->projection = glm::ortho(0.0f, static_cast<float>(w), 0.0f, static_cast<float>(h));
+    util::println("New dimension set to {} x {}", w, h);
 }
 void App::run_loop() {
     double nowTime = glfwGetTime();
@@ -470,6 +480,9 @@ void App::cycle_command_or_move_cursor(Cycle cycle) {
 }
 
 void App::print_debug_info() {
+    util::println("----- App Debug Info -----");
+    util::println("Window Size: {} x {}", win_width, win_height);
+    util::println("---------------------------");
     util::println("----- View Debug Info -----");
     util::println("Views currently open: {}", editor_views.size());
     assert(active_window->view == active_view);

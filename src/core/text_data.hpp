@@ -48,18 +48,12 @@ static inline bool is_delimiter(char ch) {
 
 namespace fs = std::filesystem;
 
-
-
 struct TextMetaData {
     std::vector<int> line_begins{};
     std::string buf_name{};
 };
 
-enum class BufferTypeInfo {
-    CommandInput,
-    StatusBar,
-    EditBuffer
-};
+enum class BufferTypeInfo { CommandInput, StatusBar, EditBuffer };
 
 struct BufferCursor {
     int pos{0};
@@ -110,7 +104,7 @@ public:
     virtual void step_to_line_end(Boundary boundary) = 0;
     virtual void step_to_line_begin(Boundary boundary) = 0;
 
-    virtual void set_file(const std::string& file_path) {
+    virtual void set_file(const std::string &file_path) {
         file_name = file_path;
         meta_data.buf_name = file_name.filename().string();
     }
@@ -120,9 +114,7 @@ public:
         meta_data.buf_name = p.filename().string();
     }
 
-    virtual bool exist_on_disk() const {
-        return (not file_name.empty() && fs::exists(file_name));
-    }
+    virtual bool exist_on_disk() const { return (not file_name.empty() && fs::exists(file_name)); }
 
     virtual std::string fileName() { return meta_data.buf_name; }
 
@@ -133,12 +125,8 @@ public:
 
     // Brute force rebuild meta data. Not really optimized but will work for now
     virtual void rebuild_metadata() = 0;
-
-
-    void print_cursor_info() const {
-        util::println("Buffer cursor [i:{}, ln: {}, col: {}]", cursor.pos, cursor.line, cursor.col_pos);
-    }
-
+    virtual bool has_metadata() { return this->has_meta_data && not meta_data.line_begins.empty(); }
+    void print_cursor_info() const { util::println("Buffer cursor [i:{}, ln: {}, col: {}]", cursor.pos, cursor.line, cursor.col_pos); }
     void print_line_meta_data() const {
         util::println("meta data - line begin: {}", meta_data.line_begins[cursor.line]);
         util::println("Buffer meta data up to date: {}", data_is_pristine);
@@ -153,7 +141,6 @@ public:
     }
 #endif
 
-
     // virtual void set_mark(int pos) = 0;
     // virtual void set_mark_range(int begin, int length) = 0;
     virtual void set_mark_at_cursor() = 0;
@@ -161,10 +148,9 @@ public:
     virtual void clear_marks() = 0;
     virtual std::pair<int, int> get_mark_index_range() const = 0;
     virtual std::pair<BufferCursor, BufferCursor> get_cursor_rect() const = 0;
+    virtual bool is_pristine() const { return state_is_pristine; }
     BufferCursor mark;
     bool mark_set = false;
-
-    virtual bool is_pristine() const { return state_is_pristine; }
     bool has_meta_data{false};
     fs::path file_name;
     TextMetaData meta_data;
@@ -185,7 +171,6 @@ private:
     virtual void word_move_backward(std::size_t count) = 0;
     virtual void line_move_forward(std::size_t count) = 0;
     virtual void line_move_backward(std::size_t count) = 0;
-
 };
 
 class StdStringBuffer : public TextData {
@@ -258,8 +243,6 @@ private:
     void remove_line_forward(size_t i);
     void remove_line_backward(size_t i);
     std::string store;
-
-
 
     // This variable is set/checked every time a view wants to display. So once
     // vertex data is generated, this is set to true, until any text is inserted to the buffer

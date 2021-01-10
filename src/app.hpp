@@ -59,13 +59,12 @@ public:
 
     void editor_window_goto(int line);
     void restore_input();
-
+    int win_height;
+    int win_width;
 private:
     void cleanup();
     GLFWwindow *window;
     std::string title;
-    int win_height;
-    int win_width;
     int scroll;
     bool exit_command_requested;
     bool command_edit = false;
