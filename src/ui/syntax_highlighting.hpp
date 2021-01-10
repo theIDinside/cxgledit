@@ -8,6 +8,7 @@
 #include <string_view>
 
 enum class TokenType {
+    Illegal,
     Keyword,
     Namespace,
     Variable,

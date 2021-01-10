@@ -237,8 +237,7 @@ void StdStringBuffer::insert_str(const std::string_view &data) {
         cursor.col_pos += inc;
     }
     // FIXME: do this more optimally. Since we don't what the data contains, we just rebuild entire meta data for now
-    if(has_meta_data)
-        rebuild_metadata();
+    if (has_meta_data) rebuild_metadata();
 }
 void StdStringBuffer::clear() {
     store.clear();
@@ -248,21 +247,22 @@ void StdStringBuffer::clear() {
     clear_metadata();
 }
 void StdStringBuffer::insert(char ch) {
+    auto &md_lines = meta_data.line_begins;
     if (cursor.pos == store.capacity() || store.size() == store.capacity()) { store.reserve(store.capacity() * 2); }
     store.insert(store.begin() + cursor.pos, ch);
 
     if (ch == '\n') {
         if (has_meta_data) {
-            meta_data.line_begins.insert(meta_data.line_begins.begin() + cursor.line, cursor.pos);
-            std::for_each(meta_data.line_begins.begin() + cursor.line+1, meta_data.line_begins.end(),
-                          [](auto &e) { e += 1; });
+            md_lines.insert(md_lines.begin() + cursor.line, cursor.pos);
+            std::for_each(md_lines.begin() + cursor.line + 1, md_lines.end(), [](auto &e) { e += 1; });
         }
         cursor.line++;
         cursor.col_pos = 0;
     } else {
         if (has_meta_data) {
-            std::for_each(meta_data.line_begins.begin() + cursor.line+1, meta_data.line_begins.end(),
-                          [](auto &e) { e += 1; });
+            if (cursor.line + 1 < md_lines.size()) {
+                std::for_each(md_lines.begin() + cursor.line + 1, md_lines.end(), [](auto &e) { e += 1; });
+            }
         }
         cursor.col_pos++;
     }
@@ -405,14 +405,14 @@ void StdStringBuffer::step_cursor_to(size_t pos) {
     if (empty() || pos == cursor.pos) return;
     assert(pos <= size() && pos >= 0);
     auto distance = std::abs(AS(pos, int) - cursor.pos);
-    if(distance > 30) {
-        if(has_meta_data && data_is_pristine) {
+    if (distance > 30) {
+        if (has_meta_data && data_is_pristine) {
             util::println("Using meta data to move cursor");
-            if(pos < cursor.pos) {
+            if (pos < cursor.pos) {
                 auto i = 0;
                 auto lineToGoTo = 0;
-                for(; i <= cursor.line; i++) {
-                    if(pos >= meta_data.line_begins[i] && pos <= meta_data.line_begins[i+1]) {
+                for (; i <= cursor.line; i++) {
+                    if (pos >= meta_data.line_begins[i] && pos <= meta_data.line_begins[i + 1]) {
                         lineToGoTo = i;
                         break;
                     }
@@ -423,13 +423,13 @@ void StdStringBuffer::step_cursor_to(size_t pos) {
                 auto i = cursor.line;
                 auto lns = meta_data.line_begins.size();
                 auto lineToGoTo = 0;
-                for(; i < lns - 1; i++) {
-                    if(pos >= meta_data.line_begins[i] && pos <= meta_data.line_begins[i+1]) {
+                for (; i < lns - 1; i++) {
+                    if (pos >= meta_data.line_begins[i] && pos <= meta_data.line_begins[i + 1]) {
                         lineToGoTo = i;
                         break;
                     }
                 }
-                if(i == lns) lineToGoTo = meta_data.line_begins.size() - 1;
+                if (i == lns) lineToGoTo = meta_data.line_begins.size() - 1;
                 cursor.line = lineToGoTo;
                 cursor.pos = AS(pos, int);
             }
@@ -546,7 +546,7 @@ void StdStringBuffer::step_to_line_begin(Boundary boundary) {
 }
 
 void StdStringBuffer::rebuild_metadata() {
-    if(has_meta_data && data_is_pristine == false && info == BufferTypeInfo::EditBuffer) {
+    if (has_meta_data && data_is_pristine == false && info == BufferTypeInfo::EditBuffer) {
         util::println("Updating metadata for buffer {}", this->id);
         if (has_meta_data) {
             auto line_indices = str::count_newlines(store.data(), store.size());
@@ -576,7 +576,7 @@ void StdStringBuffer::set_mark_at_cursor() {
     mark_set = true;
 }
 std::pair<int, int> StdStringBuffer::get_mark_index_range() const {
-    if(mark_set) {
+    if (mark_set) {
         if (mark.pos < cursor.pos) {
             return std::make_pair(mark.pos, cursor.pos);
         } else {
@@ -587,8 +587,8 @@ std::pair<int, int> StdStringBuffer::get_mark_index_range() const {
     }
 }
 std::pair<BufferCursor, BufferCursor> StdStringBuffer::get_cursor_rect() const {
-    if(mark_set) {
-        if(mark.pos < cursor.pos) {
+    if (mark_set) {
+        if (mark.pos < cursor.pos) {
             return std::make_pair(mark.clone(), cursor.clone());
         } else {
             return std::make_pair(cursor.clone(), mark.clone());

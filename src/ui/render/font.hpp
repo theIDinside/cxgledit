@@ -49,9 +49,10 @@ constexpr glm::vec3 c_keyword{0.820f, 0.500f, 0.000f};
 
 constexpr auto YELLOW = glm::vec3{0.893f, 1.0f, 0.0f};
 constexpr auto RED = glm::vec3{1.0f, 0.0f, 0.0f};
-constexpr auto GREEN = glm::vec3{0.0f, 1.0f, 0.0f};
-constexpr auto DARKER_GREEN = glm::vec3{0.0f, 0.83f, 0.0f};
-constexpr auto BLUE = glm::vec3{0.0f, 0.034f, 1.0f};
+constexpr auto GREEN = glm::vec3{0.0f, .70f, 0.0f};
+constexpr auto DARKER_GREEN = glm::vec3{0.0f, 0.73f, 0.0f};
+constexpr auto BLUEISH = glm::vec3{0.0f, 0.034f, .90f};
+constexpr auto BLUE = glm::vec3{0.0f, 0.0f, .790f};
 constexpr auto WHITE = glm::vec3{1.0f, 1.0f, 1.0f};
 constexpr auto GRAY = glm::vec3{0.5f, 0.5f, 0.5f};
 constexpr auto LIGHT_GRAY = glm::vec3{0.65f, 0.65f, 0.65f};

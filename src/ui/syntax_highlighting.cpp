@@ -8,6 +8,7 @@
 static Context lex_ctx = Context::Block;
 static TokenType last_lexed;
 
+#ifdef DEBUG
 std::string token_ident_to_string(TokenType type) {
     switch (type) {
         case TokenType::Keyword:
@@ -28,14 +29,28 @@ std::string token_ident_to_string(TokenType type) {
             return "NumberLiteral";
         case TokenType::Comment:
             return "Comment";
+        case TokenType::Illegal:
+            return "Illegal";
     }
 }
+#endif
 
 std::optional<Token> number_literal(std::string_view &text, std::size_t pos) {
     auto sz = text.size();
     auto begin = pos;
+
     for (auto i = pos; i < sz; i++) {
-        if (not std::isdigit(text[i])) {
+        if (text[i] == 'x' || text[i] == 'X') {
+            for (auto j = i + 1; j < sz; j++) {
+                if (not std::isxdigit(text[j])) {
+                    lex_ctx = Context::Free;
+                    last_lexed = TokenType::NumberLiteral;
+                    return Token{begin, j, TokenType::NumberLiteral};
+                }
+            }
+        }
+
+        if (not std::isdigit(text[i]) && not(text[i] == '.' || text[i] == 'f' || text[i] == 'l')) {
             lex_ctx = Context::Free;
             last_lexed = TokenType::NumberLiteral;
             return Token{begin, i, TokenType::NumberLiteral};
@@ -56,7 +71,7 @@ std::optional<Token> string_literal(std::string_view &text, std::size_t pos) {
             last_lexed = TokenType::StringLiteral;
             return Token{begin, i + 1, TokenType::StringLiteral};
         }
-        if(text[i] == '>' && last_lexed == TokenType::Macro) {
+        if (text[i] == '>' && last_lexed == TokenType::Macro) {
             lex_ctx = Context::Block;
             last_lexed = TokenType::Include;
             std::string res{text.substr(begin, i - begin)};
@@ -150,7 +165,6 @@ std::optional<Token> macro(std::string_view &text, std::size_t pos) {
         std::string s{text.substr(pos, kw_inc_length)};
         lex_ctx = Context::Macro;
         last_lexed = TokenType::Macro;
-        auto end = begin+kw_inc_length;
         return Token{begin, begin + kw_inc_length, last_lexed};
     }
     return {};
@@ -161,15 +175,14 @@ std::vector<Token> tokenize(std::string_view text) {
     auto sz = text.size();
     if (sz < 2) return result;
     for (auto i = 0u; i < sz - 1; i++) {
-        auto ch = text[i];
         if (text[i] == '/') {
-            if(text[i + 1] == '/') {
+            if (text[i + 1] == '/') {
                 auto token = line_comment(text, i);
                 if (token) {
                     result.push_back(*token);
                     i = token->end;
                 }
-            } else if(text[i + 1] == '*') {
+            } else if (text[i + 1] == '*') {
                 auto token = block_comment(text, i);
                 if (token) {
                     result.push_back(*token);
@@ -194,7 +207,7 @@ std::vector<Token> tokenize(std::string_view text) {
                 result.push_back(*token);
                 i = token->end;
             }
-        } else if(std::isalpha(text[i]) && last_lexed == TokenType::Namespace) {
+        } else if (std::isalpha(text[i]) && last_lexed == TokenType::Namespace) {
             auto token = named(text, i);
             if (token) {
                 result.push_back(*token);
@@ -206,9 +219,9 @@ std::vector<Token> tokenize(std::string_view text) {
                 result.push_back(*token);
                 i = token->end;
             }
-        } else if(text[i] == '#') {
+        } else if (text[i] == '#') {
             auto token = macro(text, i);
-            if(token) {
+            if (token) {
                 result.push_back(*token);
                 i = token->end;
             }
