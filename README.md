@@ -14,6 +14,11 @@ all the vertex data for a line, or even the entire file, upload that to the gpu 
 for a file with 500 lines and 30 character per line average.
 
 ![First render](initial.PNG)
+
+Syntax highlighting has improved slightly
+
+![Broader syntax highlighting](syntax_highlighting.PNG)
+
 ### Features on display:
 - Split editor windows
 - Command input & auto completion (the grayed out part is what it can auto-complete to). If the user hits tab, 
