@@ -310,7 +310,7 @@ void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, std::string_view text
             r = cInfo.color.x;
             g = cInfo.color.y;
             b = cInfo.color.z;
-            auto end = cInfo.begin + cInfo.length;
+            auto end = std::min(cInfo.begin + cInfo.length, text.size());
             for (auto idx = cInfo.begin; idx < end; idx++) {
                 auto &glyph = this->glyph_cache[text[idx]];
                 if (text[idx] == '\n') {
