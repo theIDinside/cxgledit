@@ -267,7 +267,6 @@ namespace ui {
         } else {
             font->emplace_colorized_text_gpu_data(vao.get(), textToRender, AS(this->x + View::TEXT_LENGTH_FROM_EDGE, int),
                                                   this->y - font->get_row_advance(), std::move(colorInfo));
-            // font->emplace_source_text_gpu_data(vao.get(), textToRender, this->x + View::TEXT_LENGTH_FROM_EDGE,this->y - font->get_row_advance());
             vao->flush_and_draw();
         }
     }

@@ -108,7 +108,7 @@ std::optional<Token> named(std::string_view &text, std::size_t pos) {
         if (not named_ch_ok(text[i])) {
             if (is_qualifier_ish(text.substr(begin, i - begin))) {
                 last_lexed = TokenType::Qualifier;
-                if(text.substr(begin, i -begin) == "using") using_keyword_preceded = true;
+                if (text.substr(begin, i - begin) == "using") using_keyword_preceded = true;
                 return Token{begin, i, last_lexed};
             }
             if (text[i] == '(') {
@@ -116,14 +116,14 @@ std::optional<Token> named(std::string_view &text, std::size_t pos) {
                 last_lexed = TokenType::Function;
                 return Token{begin, i, TokenType::Function};
             } else if (text[i] == ':' && text[i + 1] == ':') {
-                if(using_keyword_preceded)
-                    using_namespace_found = true;
+                if (using_keyword_preceded) using_namespace_found = true;
                 last_lexed = TokenType::Namespace;
                 lex_ctx = Context::Type;
                 return Token{begin, i, TokenType::Namespace};
             } else {
                 if (lex_ctx == Context::FunctionSignature) {
-                    if (last_lexed == TokenType::Function || last_lexed == TokenType::Parameter || last_lexed == TokenType::Qualifier) {
+                    if (last_lexed == TokenType::Function || last_lexed == TokenType::Parameter ||
+                        last_lexed == TokenType::Qualifier) {
                         last_lexed = TokenType::ParameterType;
                         return Token{begin, i, TokenType::ParameterType};
                     } else {
@@ -133,7 +133,7 @@ std::optional<Token> named(std::string_view &text, std::size_t pos) {
                 } else if (lex_ctx == Context::Type) {
                     auto l = (last_lexed == TokenType::Namespace) ? TokenType::Keyword : TokenType::Variable;
                     lex_ctx = (last_lexed == TokenType::Namespace) ? Context::Type : Context::Free;
-                    if(using_namespace_found) {
+                    if (using_namespace_found) {
                         using_keyword_preceded = false;
                         using_namespace_found = false;
                         lex_ctx = Context::Free;
@@ -170,13 +170,13 @@ std::optional<Token> block_comment(std::string_view &text, std::size_t pos) {
     auto sz = text.size();
     auto begin = pos;
     auto closing_delim_found = false;
-    for (auto i = pos; i < sz-2; i++) {
+    for (auto i = pos; i < sz - 2; i++) {
         last_lexed = TokenType::Comment;
         lex_ctx = Context::Block;
-        if(text[i] == '*') closing_delim_found = true;
-        else if(text[i] == '/') {
-            if(closing_delim_found) {
-                return Token{begin, i+1, TokenType::Comment};
+        if (text[i] == '*') closing_delim_found = true;
+        else if (text[i] == '/') {
+            if (closing_delim_found) {
+                return Token{begin, i + 1, TokenType::Comment};
             } else {
                 closing_delim_found = false;
             }
@@ -218,7 +218,7 @@ std::vector<Token> tokenize(std::string_view text) {
     auto sz = text.size();
     result.reserve(sz / 3);// if we guess that a token average length is 3 characters, we get this reserved number
     if (sz < 2) return result;
-    for (auto i = 0u; i < sz - 1; i++) {
+    for (auto i = 0u; i < sz - 2; i++) {
         if (text[i] == '/') {
             if (text[i + 1] == '/') {
                 auto token = line_comment(text, i);
@@ -269,9 +269,9 @@ std::vector<Token> tokenize(std::string_view text) {
                 result.push_back(*token);
                 i = token->end;
             }
-        }
-        if (text[i] == ')' && lex_ctx == Context::FunctionSignature) { lex_ctx = Context::Block; }
-        if(text[i] == ';') {
+        } else if (text[i] == ')' && lex_ctx == Context::FunctionSignature) {
+            lex_ctx = Context::Block;
+        } else if (text[i] == ';') {
             lex_ctx = Context::Free;
             last_lexed = TokenType::Statement;
         }
