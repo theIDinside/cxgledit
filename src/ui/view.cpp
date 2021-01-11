@@ -121,7 +121,11 @@ namespace ui {
         cursor->set_projection(projection);
         auto vao_ = vao.get();
         auto text_size = data->size();
-        if (text_size > this->vertexCapacity) { this->vao->reserve_gpu_size(text_size * 2); }
+
+        if (text_size * 6 > this->vertexCapacity) {
+            this->vao->reserve_gpu_size(text_size * 2 + 2);
+            this->vertexCapacity = (text_size * 6 * 2 + 2);
+        }
 
         if (data->is_pristine()) {
             vao->draw();
@@ -151,7 +155,10 @@ namespace ui {
         shader->set_projection(projection);
         cursor->set_projection(projection);
         auto text_size = data->size();
-        if (text_size > this->vertexCapacity) { this->vao->reserve_gpu_size(text_size * 2); }
+        if (text_size * 6 > this->vertexCapacity) {
+            this->vao->reserve_gpu_size(text_size * 2 + 2);
+            this->vertexCapacity = (text_size * 6 * 2 + 2);
+        }
         font->emplace_source_text_gpu_data(vao.get(), this, AS(this->x + View::TEXT_LENGTH_FROM_EDGE, int),
                                            this->y - font->get_row_advance());
         vao->flush_and_draw();
@@ -310,10 +317,11 @@ namespace ui {
     }
 
     View *View::create(TextData *data, const std::string &name, int w, int h, int x, int y, ViewType type) {
-        auto reserveMemory =
+        auto reserveMemory_Quads =
                 gpu_mem_required_for_quads<TextVertex>(1024);// reserve GPU memory for at least 1024 characters.
-        if (!data->empty()) { reserveMemory = gpu_mem_required_for_quads<TextVertex>(data->size()); }
-        auto vao = VAO::make(GL_ARRAY_BUFFER, reserveMemory);
+        if (!data->empty()) { reserveMemory_Quads = gpu_mem_required_for_quads<TextVertex>(data->size() * 2);
+        }
+        auto vao = VAO::make(GL_ARRAY_BUFFER, reserveMemory_Quads);
         auto v = new View{};
         v->td_id = data->id;
         v->type = type;
@@ -325,7 +333,7 @@ namespace ui {
         v->shader = ShaderLibrary::get_text_shader();
         v->vao = std::move(vao);
         v->data = data;
-        v->vertexCapacity = reserveMemory / sizeof(TextVertex);
+        v->vertexCapacity = reserveMemory_Quads / sizeof(TextVertex);
         v->cursor = ViewCursor::create_from(*v);
         v->name = name;
         return v;

@@ -144,7 +144,7 @@ void SimpleFont::emplace_source_text_gpu_data(VAO *vao, ui::View *view, int xPos
     int data_index_pos_end = cursor_b.pos;
 
     vao->vbo->data.clear();
-    vao->vbo->data.reserve(text.size() * sizeof(TextVertex));
+    vao->vbo->data.reserve(gpu_mem_required_for_quads<TextVertex>(text.size()));
     auto &store = vao->vbo->data;
     auto start_x = xPos;
     auto start_y = yPos;
@@ -290,7 +290,7 @@ void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, std::string_view text
     // FN_MICRO_BENCH();
 
     vao->vbo->data.clear();
-    vao->vbo->data.reserve(text.size() * sizeof(TextVertex));
+    vao->vbo->data.reserve(gpu_mem_required_for_quads<TextVertex>(text.size()));
     auto &store = vao->vbo->data;
     auto start_x = xPos;
     auto start_y = yPos;

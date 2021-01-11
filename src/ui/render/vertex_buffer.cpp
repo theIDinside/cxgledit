@@ -10,7 +10,7 @@ std::unique_ptr<TextVertexBufferObject> TextVertexBufferObject::create(GLuint vb
     LocalStore<TextVertex> data;
     data.reserve(reservedSize > 0 ? reservedSize : 1024);
     auto vbo = std::make_unique<TextVertexBufferObject>(vboId, type, std::move(data));
-    vbo->reservedGPUMemory = reservedSize * sizeof(TextVertex);
+    vbo->reservedMemInQuadCount = reservedSize * sizeof(TextVertex);
     vbo->created = true;
     return vbo;
 }
@@ -22,16 +22,24 @@ void TextVertexBufferObject::bind() { glBindBuffer(this->type, this->id); }
 
 int TextVertexBufferObject::upload_to_gpu(bool clear_on_upload) {
     auto vertices = data.size();
+    if(vertices == 0) {
+        reserve_gpu_memory(1024);
+    } else {
+        auto vertSize = sizeof(TextVertex);
+        auto quadsize = vertSize * 6;
+        if(reservedMemInQuadCount == vertices * quadsize) {
+            PANIC("BOOM");
+        }
+    }
     glBufferSubData(GL_ARRAY_BUFFER, 0, this->data.size() * sizeof(TextVertex), data.data());
     if (clear_on_upload) { data.clear(); }
     return vertices;
 }
 void TextVertexBufferObject::reserve_gpu_memory(std::size_t text_character_count) {
-
-    glBufferData(GL_ARRAY_BUFFER, gpu_mem_required_for_quads<TextVertex>(text_character_count), nullptr,
+    auto vertexCountReserved = gpu_mem_required_for_quads<TextVertex>(text_character_count);
+    glBufferData(GL_ARRAY_BUFFER, vertexCountReserved, nullptr,
                  GL_DYNAMIC_DRAW);
-    reservedGPUMemory = gpu_mem_required_for_quads<TextVertex>(
-            text_character_count);// text_character_count * sizeof(TextVertex) * 6;
+    reservedMemInQuadCount = vertexCountReserved;// text_character_count * sizeof(TextVertex) * 6;
 }
 TextVertexBufferObject::~TextVertexBufferObject() {
     destroy();

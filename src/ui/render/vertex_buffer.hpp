@@ -58,7 +58,6 @@ using byte = unsigned char;
 using usize = std::size_t;
 
 struct TextVertexBufferObject {
-
     TextVertexBufferObject(GLuint id, GLenum bufferType, LocalStore<TextVertex> &&reservedMemory);
     TextVertexBufferObject(TextVertexBufferObject&&) = default;
     ~TextVertexBufferObject();
@@ -74,7 +73,8 @@ struct TextVertexBufferObject {
     GLuint id{0};
     GLenum type;
     LocalStore<TextVertex> data;
-    usize reservedGPUMemory{0};
+    usize reservedMemInQuadCount{0};
+    usize reservedForcharacter = 1024;
     bool created{false};
     /// flag indicating whether GPU has equal representation of data uploaded. if !pristine, GPU needs an upload to have the same
     bool pristine{false};
