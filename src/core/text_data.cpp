@@ -204,21 +204,6 @@ void StdStringBuffer::line_move_backward(std::size_t count) {
     }
 }
 
-void StdStringBuffer::remove() {
-    assert(cursor.pos != 0 && "you have fucked up the index... out of bounds");
-    cursor.pos--;
-    cursor.col_pos--;
-    if (store[cursor.pos] == '\n') {
-        cursor.line--;
-        auto i = store.rfind('\n', cursor.pos);
-        if (i == std::string::npos) {
-            cursor.col_pos = cursor.pos;
-        } else {
-            cursor.col_pos = cursor.pos - AS(i, int);
-        }
-    }
-    store.erase(cursor.pos, 1);
-}
 void StdStringBuffer::erase() { store.erase(cursor.pos, 1); }
 
 void StdStringBuffer::insert_str(const std::string_view &data) {
@@ -270,7 +255,7 @@ void StdStringBuffer::insert(char ch) {
     this->state_is_pristine = false;
     data_is_pristine = false;
 }
-void StdStringBuffer::set_cursor(std::size_t pos) { cursor.pos = pos; }
+
 size_t StdStringBuffer::get_cursor_pos() const { return cursor.pos; }
 std::size_t StdStringBuffer::size() const { return store.size(); }
 
@@ -281,22 +266,6 @@ std::unique_ptr<TextData> StdStringBuffer::make_handle() {
     buf->cursor.buffer_id = buf->id;
     return buf;
 }
-
-void StdStringBuffer::set_line(std::size_t pos) { cursor.line = pos; }
-
-char &StdStringBuffer::get_at(std::size_t pos) {
-    // fmt::print("pos < store.size(): {} < {}\n", pos, store.size());
-    assert(pos < store.size());
-    return store[pos];
-}
-
-std::optional<char> StdStringBuffer::get_value_at_safe(std::size_t pos) {
-    if (pos == store.size()) return {};
-    else {
-        return store[pos];
-    }
-}
-
 BufferCursor &StdStringBuffer::get_cursor() { return cursor; }
 
 void StdStringBuffer::remove(const Movement &m) {
@@ -391,7 +360,6 @@ void StdStringBuffer::remove_word_backward(size_t count) {
 
 // TODO(simon): MAJOR CLEAN UP NEEDED!
 
-char *StdStringBuffer::get_at_ptr(std::size_t pos) { return store.data() + pos; }
 void StdStringBuffer::step_cursor_to(size_t pos) {
     if (empty() || pos == cursor.pos) return;
     assert(pos <= size() && pos >= 0);
@@ -567,17 +535,7 @@ void StdStringBuffer::set_mark_at_cursor() {
     mark = cursor;
     mark_set = true;
 }
-std::pair<int, int> StdStringBuffer::get_mark_index_range() const {
-    if (mark_set) {
-        if (mark.pos < cursor.pos) {
-            return std::make_pair(mark.pos, cursor.pos);
-        } else {
-            return std::make_pair(cursor.pos, mark.pos);
-        }
-    } else {
-        return std::make_pair(cursor.pos, cursor.pos);
-    }
-}
+
 std::pair<BufferCursor, BufferCursor> StdStringBuffer::get_cursor_rect() const {
     if (mark_set) {
         if (mark.pos < cursor.pos) {
@@ -588,4 +546,22 @@ std::pair<BufferCursor, BufferCursor> StdStringBuffer::get_cursor_rect() const {
     } else {
         return std::make_pair(cursor.clone(), cursor.clone());
     }
+}
+
+/// ----------- NON-PURE VIRTUAL ABSTRACT IMPL METHODS ----------------
+
+void TextData::set_file(fs::path p) {
+    file_path = p;
+    meta_data.buf_name = p.filename().string();
+}
+
+bool TextData::exist_on_disk() const { return (not file_path.empty() && fs::exists(file_path)); }
+
+std::string TextData::fileName() { return meta_data.buf_name; }
+void TextData::clear_metadata() {
+    cursor.pos = 0;
+    cursor.col_pos = 0;
+    cursor.line = 0;
+    meta_data.line_begins.clear();
+    meta_data.buf_name.clear();
 }

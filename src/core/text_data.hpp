@@ -76,19 +76,14 @@ public:
     virtual void insert(char ch) = 0;
     virtual void insert_str(const std::string_view &data) = 0;
     virtual void clear() = 0;
-    virtual void remove() = 0;
+
     virtual void remove(const Movement &m) = 0;
     virtual void erase() = 0;
 
-    virtual void set_cursor(std::size_t pos) = 0;
-    virtual void set_line(std::size_t pos) = 0;
-    virtual char &get_at(std::size_t pos) = 0;
-    virtual std::optional<char> get_value_at_safe(std::size_t pos) = 0;
-    virtual char *get_at_ptr(std::size_t pos) = 0;
-    [[nodiscard]] virtual std::size_t get_cursor_pos() const = 0;
+    virtual std::size_t get_cursor_pos() const = 0;
 
-    [[nodiscard]] virtual std::size_t size() const = 0;
-    [[nodiscard]] virtual bool empty() const { return size() == 0; };
+    virtual std::size_t size() const = 0;
+    virtual bool empty() const { return size() == 0; };
     virtual std::size_t lines_count() const = 0;
 
     virtual BufferCursor &get_cursor() = 0;
@@ -99,40 +94,27 @@ public:
     virtual void step_to_line_end(Boundary boundary) = 0;
     virtual void step_to_line_begin(Boundary boundary) = 0;
 
-    virtual void set_file(const std::string &filePath) {
-        file_path = filePath;
-        meta_data.buf_name = file_path.filename().string();
-    }
+    virtual void set_file(fs::path p);
+    virtual bool exist_on_disk() const;
+    virtual std::string fileName();
 
-    virtual void set_file(fs::path p) {
-        file_path = p;
-        meta_data.buf_name = p.filename().string();
-    }
-
-    virtual bool exist_on_disk() const { return (not file_path.empty() && fs::exists(file_path)); }
-
-    virtual std::string fileName() { return meta_data.buf_name; }
-
+    virtual void rebuild_metadata() = 0;
+    virtual void clear_metadata();
+    virtual bool has_metadata() { return has_meta_data && not meta_data.line_begins.empty(); }
+    virtual bool is_pristine() const { return state_is_pristine; }
 #ifdef DEBUG
-    [[nodiscard]] virtual std::string to_std_string() const = 0;
-    [[nodiscard]] virtual std::string_view to_string_view() = 0;
+    virtual std::string to_std_string() const = 0;
+    virtual std::string_view to_string_view() = 0;
     virtual void load_string(std::string &&data) = 0;
 
     // Brute force rebuild meta data. Not really optimized but will work for now
-    virtual void rebuild_metadata() = 0;
-    virtual bool has_metadata() { return this->has_meta_data && not meta_data.line_begins.empty(); }
-    void print_cursor_info() const { util::println("Buffer cursor [i:{}, ln: {}, col: {}]", cursor.pos, cursor.line, cursor.col_pos); }
+
+    void print_cursor_info() const {
+        util::println("Buffer cursor [i:{}, ln: {}, col: {}]", cursor.pos, cursor.line, cursor.col_pos);
+    }
     void print_line_meta_data() const {
         util::println("meta data - line begin: {}", meta_data.line_begins[cursor.line]);
         util::println("Buffer meta data up to date: {}", data_is_pristine);
-    }
-
-    virtual void clear_metadata() {
-        cursor.pos = 0;
-        cursor.col_pos = 0;
-        cursor.line = 0;
-        meta_data.line_begins.clear();
-        meta_data.buf_name.clear();
     }
 #endif
 
@@ -141,14 +123,14 @@ public:
     virtual void set_mark_at_cursor() = 0;
     virtual void set_mark_from_cursor(int length) = 0;
     virtual void clear_marks() = 0;
-    virtual std::pair<int, int> get_mark_index_range() const = 0;
-    virtual std::pair<BufferCursor, BufferCursor> get_cursor_rect() const = 0;
-    virtual bool is_pristine() const { return state_is_pristine; }
+    virtual auto get_cursor_rect() const -> std::pair<BufferCursor, BufferCursor> = 0;
+
     BufferCursor mark;
     bool mark_set = false;
     bool has_meta_data{false};
     fs::path file_path;
     TextMetaData meta_data;
+
 protected:
     /**
      * Changed this to "state_is_pristine" to also communicate that, not only the text data
@@ -177,17 +159,15 @@ public:
     void insert(char ch) override;
     void insert_str(const std::string_view &data) override;
     void clear() override;
-    void remove() override;
+
     void remove(const Movement &m) override;
     void erase() override;
 
     /// CURSOR OPS
-    void set_cursor(std::size_t pos) override;
-    [[nodiscard]] size_t get_cursor_pos() const override;
-    [[nodiscard]] std::size_t size() const override;
+    size_t get_cursor_pos() const override;
+    std::size_t size() const override;
     void move_cursor(Movement m) override;
     void step_cursor_to(size_t pos) override;
-    void set_line(std::size_t pos) override;
     BufferCursor &get_cursor() override;
 
     /// INIT CALLS
@@ -199,13 +179,9 @@ public:
     void step_to_line_end(Boundary boundary) override;
     void step_to_line_begin(Boundary boundary) override;
 
-    char &get_at(std::size_t pos) override;
-    std::optional<char> get_value_at_safe(std::size_t pos) override;
-    char *get_at_ptr(std::size_t pos) override;
-
 #ifdef DEBUG
-    [[nodiscard]] std::string to_std_string() const override;
-    [[nodiscard]] std::string_view to_string_view() override;
+    std::string to_std_string() const override;
+    std::string_view to_string_view() override;
     void load_string(std::string &&data) override;
 #endif
 
@@ -216,7 +192,7 @@ public:
     void set_mark_at_cursor() override;
     void set_mark_from_cursor(int length) override;
     void clear_marks() override;
-    std::pair<int, int> get_mark_index_range() const override;
+
     std::pair<BufferCursor, BufferCursor> get_cursor_rect() const override;
 
 private:
