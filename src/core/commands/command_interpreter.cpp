@@ -6,9 +6,10 @@
 #include "file_manager.hpp"
 #include <algorithm>
 #include <app.hpp>
-#include <ui/view.hpp>
 #include <ranges>
-#include <utility>
+#include <ui/view.hpp>
+#include <ui/editor_window.hpp>
+
 
 CommandInterpreter &CommandInterpreter::get_instance() {
     static CommandInterpreter ci;
@@ -78,8 +79,12 @@ void CommandInterpreter::set_current_command_read(Commands type) {
             fm.clear_state();
             fm.setup_state();
         } break;
-        case Commands::WriteFile:
-            break;
+        case Commands::WriteFile: {
+            auto buffer = ctx->get_active_window()->get_text_buffer();
+            util::println("File name: {} |\nPath: {}", buffer->fileName(), buffer->file_path.string());
+            ctx->get_command_view()->input_buffer->clear();
+            ctx->get_command_view()->input_buffer->insert_str(buffer->file_path.string());
+        } break;
         case Commands::GotoLine:
             break;
         case Commands::Fail:
@@ -102,7 +107,7 @@ void CommandInterpreter::execute_command() {
         case Commands::OpenFile: {
             auto &fm = FileManager::get_instance();
             auto [p, s] = fm.get_suggestion();
-            if(fs::is_regular_file(s.value_or(p))) {
+            if (fs::is_regular_file(s.value_or(p))) {
                 if (s) {
                     ctx->load_file(s.value());
                 } else {
@@ -111,6 +116,8 @@ void CommandInterpreter::execute_command() {
             }
         } break;
         case Commands::WriteFile:
+            ctx->fwrite_active_to_disk(ctx->get_command_view()->input_buffer->to_std_string());
+            break;
         case Commands::Fail:
             PANIC("Not yet implemented command");
             break;
@@ -145,8 +152,10 @@ std::string CommandInterpreter::current_input() {
             auto [prefix, suggestion] = fm.get_suggestion();
             return prefix;
         }
-        case Commands::WriteFile:
-            break;
+        case Commands::WriteFile: {
+            auto file_str_path = ctx->get_active_window()->get_text_buffer()->file_path.string();
+            return file_str_path;
+        }
         case Commands::GotoLine:
             return ctx->get_command_view()->input_buffer->to_std_string();
         case Commands::Fail:
@@ -164,7 +173,7 @@ std::string CommandInterpreter::command_auto_completed() {
             return suggestion.value_or(prefix);
         }
         case Commands::WriteFile:
-            break;
+            return ctx->get_command_view()->input_buffer->to_std_string();
         case Commands::GotoLine:
             return ctx->get_command_view()->input_buffer->to_std_string();
         case Commands::Fail:
