@@ -7,6 +7,7 @@
 #include <ui/editor_window.hpp>
 #include <ui/status_bar.hpp>
 #include <ui/view.hpp>
+#include <ui/core/opengl.hpp>
 #include <utils/fileutil.hpp>
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -65,6 +66,17 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
         app->draw_all(true);
     });
     if (not gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) { PANIC("Failed to initialize GLAD\n"); }
+
+    int flags; glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+    if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
+    {
+        glEnable(GL_DEBUG_OUTPUT);
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // makes sure errors are displayed synchronously
+        glDebugMessageCallback(glDebugOutput, nullptr);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+        util::println("Enabled debug output for OpenGL");
+    }
+
     glEnable(GL_CULL_FACE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -234,6 +246,7 @@ void App::load_file(const fs::path &file) {
         std::string tmp;
         std::ifstream f{file};
         tmp.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+        active_window->get_text_buffer()->set_string(tmp);
         active_window->get_text_buffer()->load_string(std::move(tmp));
         active_window->get_text_buffer()->set_file(file);
     }
@@ -343,6 +356,18 @@ void App::kb_command(int key) {
                 active_view = active_window->view;
                 break;
             }
+            case GLFW_KEY_C: { // cmdcopy
+                if (active_buffer->mark_set) {
+                    auto view = active_buffer->copy_range(active_buffer->get_cursor_rect());
+                    copy_register.push_view(view);
+                }
+            } break;
+            case GLFW_KEY_V: { // cmdpaste
+                auto data = copy_register.get_last();
+                if(data) {
+                    active_buffer->insert_str(*data);
+                }
+            } break;
             case GLFW_KEY_G:
                 command_input("goto", Commands::GotoLine);
                 break;
@@ -383,8 +408,9 @@ void App::command_input(const std::string &prefix, Commands commandInput) {
 void App::disable_command_input() {
     auto &ci = CommandInterpreter::get_instance();
     ci.clear_state();
-    active_buffer = command_view->command_view->get_text_buffer();
-    active_buffer->clear();
+    command_view->command_view->get_text_buffer()->clear();
+    active_buffer = active_window->get_text_buffer();
+    active_view = active_window->view;
     command_edit = false;
     command_view->active = false;
 }
@@ -488,12 +514,17 @@ void App::cycle_command_or_move_cursor(Cycle cycle) {
         }
     } else {
         active_buffer->move_cursor(Movement::Line(1, curs_direction));
+        if (active_buffer->mark_set) { active_buffer->clear_marks(); }
     }
 }
 
 void App::print_debug_info() {
     util::println("----- App Debug Info -----");
     util::println("Window Size: {} x {}", win_width, win_height);
+    util::println("---------------------------");
+
+    util::println("----- Buffer contents -----");
+    util::println("{}", active_buffer->to_string_view());
     util::println("---------------------------");
     util::println("----- View Debug Info -----");
     util::println("Views currently open: {}", editor_views.size());
@@ -617,4 +648,33 @@ void App::fwrite_active_to_disk(const std::string &path) {
         // possibly request a "y/N" from the user, for now we just write to disk
         write_impl(p);
     }
+}
+
+void Register::push_view(std::string_view data) {
+    if (not copies.empty()) [[likely]] {
+        auto last = copies.back();
+        auto taken = (last.begin + last.len) + data.size();
+        if (taken > store.capacity()) { store.reserve(taken * 2); }
+        auto begin = last.begin + last.len;
+        auto len = data.size();
+        std::memcpy(store.data() + begin, data.data(), data.size());
+        copies.emplace_back(begin, len);
+    } else [[unlikely]] {
+        if (data.size() > store.capacity()) { store.reserve(data.size() * 2); }
+        std::memcpy(store.data(), data.data(), data.size());
+        copies.emplace_back(0, data.size());
+    }
+}
+std::optional<std::string_view> Register::get(std::size_t index) {
+    if (index < copies.size()) {
+        auto copy = copies[index];
+
+        return std::string_view{store.data() + copy.begin, copy.len};
+    } else {
+        return {};
+    }
+}
+std::optional<std::string_view> Register::get_last() {
+    if (copies.empty()) return {};
+    return get(copies.size() - 1);
 }

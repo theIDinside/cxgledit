@@ -207,6 +207,9 @@ void StdStringBuffer::line_move_backward(std::size_t count) {
 void StdStringBuffer::erase() { store.erase(cursor.pos, 1); }
 
 void StdStringBuffer::insert_str(const std::string_view &data) {
+    if(store.capacity() <= store.size() + data.size()) {
+        store.reserve(store.capacity() * 2);
+    }
     store.insert(cursor.pos, data);
     auto inc = data.size();
     cursor.pos += inc;
@@ -233,7 +236,9 @@ void StdStringBuffer::clear() {
 }
 void StdStringBuffer::insert(char ch) {
     auto &md_lines = meta_data.line_begins;
-    if (cursor.pos == store.capacity() || store.size() == store.capacity()) { store.reserve(store.capacity() * 2); }
+    if (cursor.pos == store.capacity() || store.size() >= store.capacity()) {
+        store.reserve(store.capacity() * 2);
+    }
     store.insert(store.begin() + cursor.pos, ch);
 
     if (ch == '\n') {
@@ -434,10 +439,21 @@ std::string_view StdStringBuffer::to_string_view() {
 void StdStringBuffer::load_string(std::string &&data) {
     auto line_indices = str::count_newlines(data.data(), data.size());
     this->meta_data = TextMetaData{std::move(line_indices)};
+
     store = std::move(data);
     state_is_pristine = false;
     data_is_pristine = true;
 }
+
+void StdStringBuffer::set_string(std::string &data) {
+    auto line_indices = str::count_newlines(data.data(), data.size());
+    this->meta_data = TextMetaData{std::move(line_indices)};
+    store.reserve(data.size() * 4);
+    for(auto c : data) store.push_back(c);
+    state_is_pristine = false;
+    data_is_pristine = true;
+}
+
 #endif
 
 size_t StdStringBuffer::lines_count() const {
@@ -505,9 +521,7 @@ void StdStringBuffer::step_to_line_begin(Boundary boundary) {
 }
 
 void StdStringBuffer::rebuild_metadata() {
-    MICRO_BENCH(fmt::format("text meta data rebuild for {}", id));
     if (has_meta_data && data_is_pristine == false && info == BufferTypeInfo::EditBuffer) {
-        util::println("Updating metadata for buffer {}", this->id);
         if (has_meta_data) {
             auto line_indices = str::count_newlines(store.data(), store.size());
             auto buf_name = meta_data.buf_name;
@@ -547,6 +561,17 @@ std::pair<BufferCursor, BufferCursor> StdStringBuffer::get_cursor_rect() const {
         return std::make_pair(cursor.clone(), cursor.clone());
     }
 }
+std::string_view StdStringBuffer::copy_range(std::pair<BufferCursor, BufferCursor> selected_range) {
+    auto&[b, e] = selected_range;
+    return {store.data() + b.pos, AS(e.pos - b.pos, size_t)};
+}
+void StdStringBuffer::insert_str_owned(const std::string &ref_data) {
+    for(auto ch : ref_data) {
+        insert(ch);
+    }
+    if (has_meta_data) rebuild_metadata();
+}
+
 
 /// ----------- NON-PURE VIRTUAL ABSTRACT IMPL METHODS ----------------
 

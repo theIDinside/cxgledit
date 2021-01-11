@@ -75,6 +75,7 @@ public:
     virtual ~TextData() = default;
     virtual void insert(char ch) = 0;
     virtual void insert_str(const std::string_view &data) = 0;
+    virtual void insert_str_owned(const std::string& ref_data) = 0;
     virtual void clear() = 0;
 
     virtual void remove(const Movement &m) = 0;
@@ -106,6 +107,7 @@ public:
     virtual std::string to_std_string() const = 0;
     virtual std::string_view to_string_view() = 0;
     virtual void load_string(std::string &&data) = 0;
+    virtual void set_string(std::string& data) = 0;
 
     // Brute force rebuild meta data. Not really optimized but will work for now
 
@@ -130,7 +132,7 @@ public:
     bool has_meta_data{false};
     fs::path file_path;
     TextMetaData meta_data;
-
+    virtual std::string_view copy_range(std::pair<BufferCursor, BufferCursor> selected_range) = 0;
 protected:
     /**
      * Changed this to "state_is_pristine" to also communicate that, not only the text data
@@ -158,6 +160,7 @@ public:
     /// EDITING
     void insert(char ch) override;
     void insert_str(const std::string_view &data) override;
+    void insert_str_owned(const std::string &ref_data) override;
     void clear() override;
 
     void remove(const Movement &m) override;
@@ -183,6 +186,7 @@ public:
     std::string to_std_string() const override;
     std::string_view to_string_view() override;
     void load_string(std::string &&data) override;
+    void set_string(std::string& data) override;
 #endif
 
     void rebuild_metadata() override;
@@ -194,6 +198,7 @@ public:
     void clear_marks() override;
 
     std::pair<BufferCursor, BufferCursor> get_cursor_rect() const override;
+    std::string_view copy_range(std::pair<BufferCursor, BufferCursor> selected_range) override;
 
 private:
     void char_move_forward(std::size_t count) override;

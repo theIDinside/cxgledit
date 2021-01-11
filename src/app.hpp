@@ -40,6 +40,20 @@ enum class SplitStrategy {
     HorizontalSplit
 };
 
+struct DataCopy {
+    std::size_t begin;
+    std::size_t len;
+};
+
+struct Register {
+    Register() : copies{}, store{} { store.reserve(2000); }
+    std::vector<DataCopy> copies;
+    std::vector<char> store;
+    void push_view(std::string_view data);
+    std::optional<std::string_view> get(std::size_t index);
+    std::optional<std::string_view> get_last();
+};
+
 class App {
 public:
     static App *initialize(int app_width, int app_height, const std::string &title = "cxedit");
@@ -82,6 +96,8 @@ private:
 
     TextData *active_buffer;
     ui::View *active_view;
+
+    Register copy_register{};
 
     ui::core::Layout* root_layout;
 
