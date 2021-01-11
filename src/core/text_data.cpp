@@ -241,7 +241,7 @@ void StdStringBuffer::insert_str(const std::string_view &data) {
 }
 void StdStringBuffer::clear() {
     store.clear();
-    file_name.clear();
+    file_path.clear();
     state_is_pristine = false;
     data_is_pristine = false;
     clear_metadata();
@@ -282,15 +282,6 @@ std::unique_ptr<TextData> StdStringBuffer::make_handle() {
     return buf;
 }
 
-size_t StdStringBuffer::rfind_from(size_t pos, char ch) const { return store.rfind(ch, pos); }
-std::optional<size_t> StdStringBuffer::find_from(size_t pos, char ch) const {
-    auto res = store.find(ch, pos);
-    if (res == std::string::npos) return {};
-    else
-        return res;
-}
-size_t StdStringBuffer::rfind_from(size_t pos, std::string_view v) const { return store.rfind(v, pos); }
-size_t StdStringBuffer::find_from(size_t pos, std::string_view v) const { return store.find(v, pos); }
 void StdStringBuffer::set_line(std::size_t pos) { cursor.line = pos; }
 
 char &StdStringBuffer::get_at(std::size_t pos) {
@@ -305,7 +296,7 @@ std::optional<char> StdStringBuffer::get_value_at_safe(std::size_t pos) {
         return store[pos];
     }
 }
-size_t StdStringBuffer::npos() const { return std::string::npos; }
+
 BufferCursor &StdStringBuffer::get_cursor() { return cursor; }
 
 void StdStringBuffer::remove(const Movement &m) {

@@ -87,11 +87,6 @@ public:
     virtual char *get_at_ptr(std::size_t pos) = 0;
     [[nodiscard]] virtual std::size_t get_cursor_pos() const = 0;
 
-    [[nodiscard]] virtual size_t rfind_from(size_t pos, char ch) const = 0;
-    [[nodiscard]] virtual std::optional<size_t> find_from(size_t pos, char ch) const = 0;
-    [[nodiscard]] virtual size_t rfind_from(size_t pos, std::string_view v) const = 0;
-    [[nodiscard]] virtual size_t find_from(size_t pos, std::string_view v) const = 0;
-    [[nodiscard]] virtual size_t npos() const = 0;
     [[nodiscard]] virtual std::size_t size() const = 0;
     [[nodiscard]] virtual bool empty() const { return size() == 0; };
     virtual std::size_t lines_count() const = 0;
@@ -104,17 +99,17 @@ public:
     virtual void step_to_line_end(Boundary boundary) = 0;
     virtual void step_to_line_begin(Boundary boundary) = 0;
 
-    virtual void set_file(const std::string &file_path) {
-        file_name = file_path;
-        meta_data.buf_name = file_name.filename().string();
+    virtual void set_file(const std::string &filePath) {
+        file_path = filePath;
+        meta_data.buf_name = file_path.filename().string();
     }
 
     virtual void set_file(fs::path p) {
-        file_name = p;
+        file_path = p;
         meta_data.buf_name = p.filename().string();
     }
 
-    virtual bool exist_on_disk() const { return (not file_name.empty() && fs::exists(file_name)); }
+    virtual bool exist_on_disk() const { return (not file_path.empty() && fs::exists(file_path)); }
 
     virtual std::string fileName() { return meta_data.buf_name; }
 
@@ -152,7 +147,7 @@ public:
     BufferCursor mark;
     bool mark_set = false;
     bool has_meta_data{false};
-    fs::path file_name;
+    fs::path file_path;
     TextMetaData meta_data;
 protected:
     /**
@@ -199,10 +194,6 @@ public:
     static std::unique_ptr<TextData> make_handle();
 
     /// SEARCH OPS
-    [[nodiscard]] size_t rfind_from(size_t pos, char ch) const override;
-    [[nodiscard]] std::optional<size_t> find_from(size_t pos, char ch) const override;
-    [[nodiscard]] size_t rfind_from(size_t pos, std::string_view v) const override;
-    [[nodiscard]] size_t find_from(size_t pos, std::string_view v) const override;
     size_t lines_count() const override;
 
     void step_to_line_end(Boundary boundary) override;
@@ -211,7 +202,6 @@ public:
     char &get_at(std::size_t pos) override;
     std::optional<char> get_value_at_safe(std::size_t pos) override;
     char *get_at_ptr(std::size_t pos) override;
-    [[nodiscard]] size_t npos() const override;
 
 #ifdef DEBUG
     [[nodiscard]] std::string to_std_string() const override;
