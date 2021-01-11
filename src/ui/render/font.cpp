@@ -5,8 +5,8 @@
 // App headers
 #include "font.hpp"
 #include <core/core.hpp>
-#include <ui/view.hpp>
 #include <ui/syntax_highlighting.hpp>
+#include <ui/view.hpp>
 
 // Sys headers
 #include <algorithm>
@@ -138,7 +138,6 @@ void SimpleFont::emplace_source_text_gpu_data(VAO *vao, ui::View *view, int xPos
     GLfloat cx1, cx2, cy1, cy2;
     auto bufPtr = view->get_text_buffer();
 
-    auto [idx_curs_b, idx_curs_e] = bufPtr->get_mark_index_range();
     auto [cursor_a, cursor_b] = bufPtr->get_cursor_rect();
 
     int data_index_pos = cursor_a.pos;
@@ -151,9 +150,10 @@ void SimpleFont::emplace_source_text_gpu_data(VAO *vao, ui::View *view, int xPos
     auto start_y = yPos;
     auto x = start_x;
     auto y = start_y;
-    auto r = 0.2f;
-    auto g = 0.325f;
-    auto b = 0.75f;
+
+    auto r = 1.0f;
+    auto g = 1.0f;
+    auto b = 1.0f;
 
     // auto words = text_elements(text);
     auto tokens = tokenize(text);
@@ -225,7 +225,7 @@ void SimpleFont::emplace_source_text_gpu_data(VAO *vao, ui::View *view, int xPos
                     g = 1;
                     b = 1;
                 }
-                if(pos >= end && item_it != keywords_ranges.end()) item_it++;
+                if (pos >= end && item_it != keywords_ranges.end()) item_it++;
             }
             auto &glyph = this->glyph_cache[*c];
             if (*c == '\n') {
@@ -270,15 +270,14 @@ void SimpleFont::emplace_source_text_gpu_data(VAO *vao, ui::View *view, int xPos
     }
 
     if (bufPtr->mark_set) {
+        if (cursor_b.pos == text.size()) cx2 = x;
         // TODO: implement multi-line selection. selecting multiple lines on the backend is super-easy as the data
         //  structure is simply a 1-dimensional stream of characters, displaying it properly isn't as easy
         //  and there are multiple ways to represent this. We can push "quads" to a vector, one per each line
         //  or we can do like in some editors and not have the "selection" visualization at all, but just leave kind of like
         //  an empty [] half-transparent marker where the selection begins (kind of like how 4coder does it)
         view_cursor->set_line_rect(cx1, cx2, cy1);
-    }
-
-    if (view->get_text_buffer()->get_cursor_pos() == view->get_text_buffer()->size()) {
+    } else if (view->get_text_buffer()->get_cursor_pos() == view->get_text_buffer()->size()) {
         xpos = float(x);
         ypos = float(y);
         view_cursor->update_cursor_data(xpos, y - 6);
