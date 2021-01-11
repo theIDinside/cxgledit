@@ -4,16 +4,17 @@
 
 #include "app.hpp"
 #include <core/data_manager.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <ui/view.hpp>
-#include <ui/status_bar.hpp>
 #include <ui/editor_window.hpp>
+#include <ui/status_bar.hpp>
+#include <ui/view.hpp>
+#include <utils/fileutil.hpp>
+
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <ranges>
 #include <utility>
 
 #define get_app_handle(window) (App *) glfwGetWindowUserPointer(window)
-#include <thread>
 
 static auto BUFFERS_COUNT = 0;
 
@@ -42,9 +43,7 @@ void framebuffer_callback(GLFWwindow *window, int width, int height) {
     }
 }
 
-auto size_changed_callback(GLFWwindow* window, int width, int height) {
-    framebuffer_callback(window, width, height);
-}
+auto size_changed_callback(GLFWwindow *window, int width, int height) { framebuffer_callback(window, width, height); }
 
 App *App::initialize(int app_width, int app_height, const std::string &title) {
     util::printmsg("Initializing application");
@@ -64,7 +63,6 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
     glfwSetWindowRefreshCallback(window, [](auto window) {
         auto app = get_app_handle(window);
         app->draw_all(true);
-
     });
     if (not gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) { PANIC("Failed to initialize GLAD\n"); }
     glEnable(GL_CULL_FACE);
@@ -121,17 +119,22 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
     instance->new_editor_window();
     // instance->load_file("main.cpp");
 
-    glfwSetWindowUserPointer(window, instance);
-    glfwSetCharCallback(window, [](auto window, auto codepoint) {
+    auto char_input_callback = [](auto window, auto codepoint) {
         auto app = get_app_handle(window);
-        app->active_buffer->insert((char) codepoint);
-        app->command_view->show_last_message = false;
-        if (app->command_edit) {
-            // TODO: let CommandInterpreter know to INvalidate any argument cycling of current command, and re-validate the input
-            auto &ci = CommandInterpreter::get_instance();
-            ci.evaluate_current_input();
+        util::println("Char value: {}", codepoint);
+        // TODO(feature, major, huge maybe): Unicode support. But why would we want that? Source code should and can only use ASCII. If you plan on using something else? Well fuck off then.
+        if (codepoint >= 32 && codepoint <= 126) {
+            app->active_buffer->insert((char) codepoint);
+            app->command_view->show_last_message = false;
+            if (app->command_edit) {
+                // TODO: let CommandInterpreter know to INvalidate any argument cycling of current command, and re-validate the input
+                auto &ci = CommandInterpreter::get_instance();
+                ci.evaluate_current_input();
+            }
         }
-    });
+    };
+    glfwSetWindowUserPointer(window, instance);
+    glfwSetCharCallback(window, char_input_callback);
 
     glfwSetMouseButtonCallback(window, [](auto window, auto button, auto action, auto mods) {
         double xpos, ypos;
@@ -172,7 +175,7 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
         }
     });
 
-    auto& ci = CommandInterpreter::get_instance();
+    auto &ci = CommandInterpreter::get_instance();
     ci.register_application(instance);
 
     return instance;
@@ -210,7 +213,7 @@ void App::run_loop() {
         glClear(GL_COLOR_BUFFER_BIT);
         draw_all();
         glfwWaitEventsTimeout(1);
-        if((nowTime - since_last_update) >= 3) {
+        if ((nowTime - since_last_update) >= 3) {
             since_last_update = nowTime;
             active_window->get_text_buffer()->rebuild_metadata();
         }
@@ -349,6 +352,9 @@ void App::kb_command(int key) {
             case GLFW_KEY_D:
                 print_debug_info();
                 break;
+            case GLFW_KEY_W:
+                command_input("write", Commands::WriteFile);
+                break;
         }
     } else {
     }
@@ -361,7 +367,7 @@ void App::graceful_exit() {
     exit_command_requested = true;
 }
 
-void App::command_input(const std::string& prefix, Commands commandInput) {
+void App::command_input(const std::string &prefix, Commands commandInput) {
     auto &ci = CommandInterpreter::get_instance();
     ci.set_current_command_read(commandInput);
     active_buffer = command_view->command_view->get_text_buffer();
@@ -384,6 +390,7 @@ void App::disable_command_input() {
 }
 
 void App::handle_edit_input(int key, int modifier) {
+
     switch (key) {
         case GLFW_KEY_HOME:
             active_buffer->step_to_line_begin(Boundary::Inside);
@@ -407,26 +414,18 @@ void App::handle_edit_input(int key, int modifier) {
             cycle_command_or_move_cursor(static_cast<Cycle>(key));
             break;
         case GLFW_KEY_RIGHT:
-            if(modifier & GLFW_MOD_SHIFT) {
-                if(not active_buffer->mark_set) {
-                    active_buffer->set_mark_at_cursor();
-                }
+            if (modifier & GLFW_MOD_SHIFT) {
+                if (not active_buffer->mark_set) { active_buffer->set_mark_at_cursor(); }
             } else {
-                if(active_buffer->mark_set) {
-                    active_buffer->clear_marks();
-                }
+                if (active_buffer->mark_set) { active_buffer->clear_marks(); }
             }
             active_buffer->move_cursor(Movement::Char(1, CursorDirection::Forward));
             break;
         case GLFW_KEY_LEFT:
-            if(modifier & GLFW_MOD_SHIFT) {
-                if(not active_buffer->mark_set) {
-                    active_buffer->set_mark_at_cursor();
-                }
+            if (modifier & GLFW_MOD_SHIFT) {
+                if (not active_buffer->mark_set) { active_buffer->set_mark_at_cursor(); }
             } else {
-                if(active_buffer->mark_set) {
-                    active_buffer->clear_marks();
-                }
+                if (active_buffer->mark_set) { active_buffer->clear_marks(); }
             }
             active_buffer->move_cursor(Movement::Char(1, CursorDirection::Back));
             break;
@@ -440,11 +439,24 @@ void App::handle_edit_input(int key, int modifier) {
                 ci.evaluate_current_input();
             }
             break;
+        case GLFW_KEY_DELETE:
+            active_buffer->remove(Movement::Char(1, CursorDirection::Forward));
+            if (command_edit) {
+                auto &ci = CommandInterpreter::get_instance();
+                ci.evaluate_current_input();
+            }
+            break;
+        case GLFW_KEY_INSERT:
+        case GLFW_KEY_PAGE_UP:
+        case GLFW_KEY_PAGE_DOWN:
+            break;
     }
+    // N.B. this was moved from charCallback because typing in ÖÄÅ right now, crashes the application as the textual data lives inside a std::string
+    // which gets passed around through layers of structures, and these characters can't be represented as single bytes.
     command_view->active = command_edit;
 }
 
-void App::set_error_message(const std::string& msg) {
+void App::set_error_message(const std::string &msg) {
     command_view->last_message = msg;
     command_view->command_view->get_text_buffer()->clear();
     command_view->command_view->get_text_buffer()->insert_str(msg);
@@ -584,4 +596,25 @@ void App::restore_input() {
     active_buffer = active_view->get_text_buffer();
     command_view->input_buffer->clear();
 }
+ui::EditorWindow *App::get_active_window() const { return active_window; }
+void App::fwrite_active_to_disk(const std::string &path) {
+    auto p = fs::path{path};
+    // this is just wrapped for now, since the if/else branch are identical
+    auto write_impl = [&](auto path) {
+        auto buf_view = active_window->get_text_buffer()->to_string_view();
+        auto bytes_written = sv_write_file(p, buf_view);
+        if (bytes_written) {// success
+            // TODO: this could be printed on the command view
+            util::println("Wrote {} bytes to file {}", bytes_written.value(), path.string());
+        } else {
+            util::println("Could not retrieve file size");
+        }
+    };
 
+    if (not fs::exists(p)) {
+        write_impl(p);
+    } else {
+        // possibly request a "y/N" from the user, for now we just write to disk
+        write_impl(p);
+    }
+}

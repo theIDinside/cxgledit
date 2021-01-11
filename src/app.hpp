@@ -54,11 +54,18 @@ public:
     void set_error_message(const std::string& msg);
     void new_editor_window(SplitStrategy ss = SplitStrategy::Stack);
     void editor_win_selected(ui::EditorWindow* window);
+
+
+
     static WindowDimensions get_window_dimension();
     [[nodiscard]] ui::CommandView* get_command_view() const;
-
+    [[nodiscard]] ui::EditorWindow* get_active_window() const;
     void editor_window_goto(int line);
     void restore_input();
+
+    void fwrite_active_to_disk(const std::string& path);
+
+
     int win_height;
     int win_width;
 private:
