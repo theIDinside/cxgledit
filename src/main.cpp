@@ -23,8 +23,8 @@ int main(int argc, const char **argv) {
  * TODO(feature, minor): add write file command
  *  - done, but no overwrite affirmation
  * TODO(feature, minor): add copy / paste commands
- * TODO(feature, minor): add select (so one can copy)
- * TODO(feature, minor): add page up / page down scrolling
+        - done, max copy is however single line at this point in time
+         (seeing as how a GapBuffer is about to be implemented, furthering this feature right now is pointless)
  * TODO(feature, minor): add resizing of split windows
  * TODO(feature, minor): add support for layout type vertical
  * TODO(feature, minor): pop up windows / modal dialogs
@@ -33,4 +33,14 @@ int main(int argc, const char **argv) {
  * TODO(feature, minor): search / reverse search
  * TODO(feature, minor): block highlight
  * TODO(feature, major): add intelligence to editor, so that it can "reason" about the lexed and/or "parsed" source code
+ *
+ *
+ * Add some debug code for OpenGL and read up about OpenGL
+ *
+    GLint s;
+    glGetBufferParameteriv(GL_ARRAY_BUFFER,GL_BUFFER_SIZE,&s);
+    GLint s2;
+    glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER,GL_BUFFER_SIZE,&s2);
+    to check if resizing of Array Buffers are done in the way I expect them to be done. This way I'll find out
+    if my calculations which are hellish at points, are wrong or just bad.
  */

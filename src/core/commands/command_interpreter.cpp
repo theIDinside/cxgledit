@@ -81,7 +81,6 @@ void CommandInterpreter::set_current_command_read(Commands type) {
         } break;
         case Commands::WriteFile: {
             auto buffer = ctx->get_active_window()->get_text_buffer();
-            util::println("File name: {} |\nPath: {}", buffer->fileName(), buffer->file_path.string());
             ctx->get_command_view()->input_buffer->clear();
             ctx->get_command_view()->input_buffer->insert_str(buffer->file_path.string());
         } break;

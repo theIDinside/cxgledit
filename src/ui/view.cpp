@@ -9,11 +9,6 @@
 #include <vector>
 
 #include <app.hpp>
-#include <core/commands/command_interpreter.hpp>
-#include <core/data_manager.hpp>
-#include <core/text_data.hpp>
-#include <ui/managers/font_library.hpp>
-#include <ui/managers/shader_library.hpp>
 
 /// ----------------- VIEW FACTORY FUNCTIONS -----------------
 
@@ -129,12 +124,12 @@ namespace ui {
 
         if (data->is_pristine()) {
             vao->draw();
-            this->cursor->draw();
+            cursor->draw();
         } else {
             font->emplace_source_text_gpu_data(vao_, this, AS(this->x + View::TEXT_LENGTH_FROM_EDGE, int),
                                                this->y - font->get_row_advance());
             vao->flush_and_draw();
-            this->cursor->forced_draw();
+            cursor->forced_draw();
         }
         glDisable(GL_SCISSOR_TEST);
     }
@@ -234,7 +229,6 @@ namespace ui {
         auto textToRender = this->data->to_string_view();
         font->emplace_colorized_text_gpu_data(vao.get(), textToRender, AS(this->x + View::TEXT_LENGTH_FROM_EDGE, int),
                                               this->y - font->get_row_advance(), {});
-        // font->emplace_source_text_gpu_data(vao.get(), textToRender, this->x + View::TEXT_LENGTH_FROM_EDGE,this->y - font->get_row_advance());
         vao->flush_and_draw();
     }
     void View::draw_command_view(const std::string &prefix, std::optional<std::vector<ColorizeTextRange>> colorInfo) {
@@ -304,6 +298,10 @@ namespace ui {
                 cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - 3));
             } break;
         }
+        if(data->has_metadata()) {
+            auto pos = data->meta_data.line_begins[cursor->line];
+            data->step_cursor_to(pos);
+        }
         util::println("View cursor line: {}", cursor->line);
     }
 
@@ -356,7 +354,6 @@ namespace ui {
                     // command gets auto completed to:
                     // command: open ./ma|in.cpp|
                     //                      ^- this section gets colored gray
-                    util::println("{} | {}", s, suggestion);
                     auto total_len = infoPrefix.size() + suggestion.size();
                     auto what_should_be_colorized_len = total_len - (infoPrefix.size() + s.size());
                     ColorizeTextRange color{.begin = infoPrefix.size() + s.size(),
@@ -396,7 +393,5 @@ namespace ui {
         assert(not last_message.empty());
         command_view->draw_command_view("error: ", {});
     }
-
-
 
 }// namespace ui

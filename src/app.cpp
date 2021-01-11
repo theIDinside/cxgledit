@@ -4,10 +4,10 @@
 
 #include "app.hpp"
 #include <core/data_manager.hpp>
+#include <ui/core/opengl.hpp>
 #include <ui/editor_window.hpp>
 #include <ui/status_bar.hpp>
 #include <ui/view.hpp>
-#include <ui/core/opengl.hpp>
 #include <utils/fileutil.hpp>
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -67,11 +67,11 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
     });
     if (not gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) { PANIC("Failed to initialize GLAD\n"); }
 
-    int flags; glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
-    if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
-    {
+    int flags;
+    glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+    if (flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
         glEnable(GL_DEBUG_OUTPUT);
-        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // makes sure errors are displayed synchronously
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);// makes sure errors are displayed synchronously
         glDebugMessageCallback(glDebugOutput, nullptr);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
         util::println("Enabled debug output for OpenGL");
@@ -180,7 +180,7 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
         // app->command_view->show_last_message = false;
         if (pressed_or_repeated(action)) {
             if (mods & GLFW_MOD_CONTROL) {
-                app->kb_command(key);
+                app->kb_command(key, mods);
             } else {
                 app->handle_edit_input(key, mods);
             }
@@ -220,12 +220,11 @@ void App::run_loop() {
     while (this->no_close_condition()) {
         // TODO: do stuff.
         nowTime = glfwGetTime();
-
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         draw_all();
         glfwWaitEventsTimeout(1);
-        if ((nowTime - since_last_update) >= 3) {
+        if ((nowTime - since_last_update) >= 2) {
             since_last_update = nowTime;
             active_window->get_text_buffer()->rebuild_metadata();
         }
@@ -280,7 +279,15 @@ void App::update_views_dimensions(float wRatio, float hRatio) {
     command_view->command_view->set_projection(glm::ortho(0.0f, float(win_width), 0.0f, float(win_height)));
 }
 
-void App::kb_command(int key) {
+void App::kb_command(int key, int modifier) {
+    auto modify_movement_op = [this](auto mod) {
+      if (mod & GLFW_MOD_SHIFT) {
+          if (not active_buffer->mark_set) { active_buffer->set_mark_at_cursor(); }
+      } else {
+          if (active_buffer->mark_set) { active_buffer->clear_marks(); }
+      }
+    };
+
     if (!command_edit) {
         switch (key) {
             case GLFW_KEY_ENTER:
@@ -294,16 +301,34 @@ void App::kb_command(int key) {
                 active_view->scroll(static_cast<ui::Scroll>(key), 3);
             } break;
             case GLFW_KEY_RIGHT:
+                modify_movement_op(modifier);
                 active_buffer->move_cursor(Movement::Word(1, CursorDirection::Forward));
                 break;
             case GLFW_KEY_LEFT:
+                modify_movement_op(modifier);
                 active_buffer->move_cursor(Movement::Word(1, CursorDirection::Back));
                 break;
             case GLFW_KEY_DELETE:
-                active_buffer->remove(Movement::Word(1, CursorDirection::Forward));
+                if (not active_buffer->mark_set) {
+                    active_buffer->remove(Movement::Word(1, CursorDirection::Forward));
+                } else {
+                    auto [b, e] = active_buffer->get_cursor_rect();
+                    auto range = e.pos - b.pos;
+                    active_buffer->step_cursor_to(b.pos);
+                    active_buffer->remove(Movement::Char(range, CursorDirection::Forward));
+                    active_buffer->clear_marks();
+                }
                 break;
             case GLFW_KEY_BACKSPACE:
-                active_buffer->remove(Movement::Word(1, CursorDirection::Back));
+                if (not active_buffer->mark_set) {
+                    active_buffer->remove(Movement::Word(1, CursorDirection::Back));
+                } else {
+                    auto [b, e] = active_buffer->get_cursor_rect();
+                    auto range = e.pos - b.pos;
+                    active_buffer->step_cursor_to(b.pos);
+                    active_buffer->remove(Movement::Char(range, CursorDirection::Forward));
+                    active_buffer->clear_marks();
+                }
                 break;
             case GLFW_KEY_Q: {
                 auto active_buf = active_view->get_text_buffer();
@@ -356,17 +381,15 @@ void App::kb_command(int key) {
                 active_view = active_window->view;
                 break;
             }
-            case GLFW_KEY_C: { // cmdcopy
+            case GLFW_KEY_C: {// cmdcopy
                 if (active_buffer->mark_set) {
                     auto view = active_buffer->copy_range(active_buffer->get_cursor_rect());
                     copy_register.push_view(view);
                 }
             } break;
-            case GLFW_KEY_V: { // cmdpaste
+            case GLFW_KEY_V: {// cmdpaste
                 auto data = copy_register.get_last();
-                if(data) {
-                    active_buffer->insert_str(*data);
-                }
+                if (data) { active_buffer->insert_str(*data); }
             } break;
             case GLFW_KEY_G:
                 command_input("goto", Commands::GotoLine);
@@ -417,65 +440,92 @@ void App::disable_command_input() {
 
 void App::handle_edit_input(int key, int modifier) {
 
+    auto modify_movement_op = [this](auto mod) {
+      if (mod & GLFW_MOD_SHIFT) {
+          if (not active_buffer->mark_set) { active_buffer->set_mark_at_cursor(); }
+      } else {
+          if (active_buffer->mark_set) { active_buffer->clear_marks(); }
+      }
+    };
+
     switch (key) {
-        case GLFW_KEY_HOME:
+        case GLFW_KEY_HOME: {
+            modify_movement_op(modifier);
             active_buffer->step_to_line_begin(Boundary::Inside);
-            break;
-        case GLFW_KEY_END:
+        } break;
+        case GLFW_KEY_END: {
+            modify_movement_op(modifier);
             active_buffer->step_to_line_end(Boundary::Outside);
-            break;
-        case GLFW_KEY_ENTER:
+        } break;
+        case GLFW_KEY_ENTER: {
             input_command_or_newline();
-            break;
+        } break;
         case GLFW_KEY_TAB: {
             if (command_edit) {
                 CommandInterpreter::get_instance().auto_complete();
             } else {
                 active_buffer->insert_str("    ");
             }
-            break;
-        }
+        } break;
         case GLFW_KEY_DOWN:
-        case GLFW_KEY_UP:
+        case GLFW_KEY_UP: {
             cycle_command_or_move_cursor(static_cast<Cycle>(key));
-            break;
-        case GLFW_KEY_RIGHT:
-            if (modifier & GLFW_MOD_SHIFT) {
-                if (not active_buffer->mark_set) { active_buffer->set_mark_at_cursor(); }
-            } else {
-                if (active_buffer->mark_set) { active_buffer->clear_marks(); }
-            }
+        } break;
+        case GLFW_KEY_RIGHT: {
+            modify_movement_op(modifier);
             active_buffer->move_cursor(Movement::Char(1, CursorDirection::Forward));
-            break;
-        case GLFW_KEY_LEFT:
-            if (modifier & GLFW_MOD_SHIFT) {
-                if (not active_buffer->mark_set) { active_buffer->set_mark_at_cursor(); }
-            } else {
-                if (active_buffer->mark_set) { active_buffer->clear_marks(); }
-            }
+        } break;
+        case GLFW_KEY_LEFT: {
+            modify_movement_op(modifier);
             active_buffer->move_cursor(Movement::Char(1, CursorDirection::Back));
-            break;
-        case GLFW_KEY_ESCAPE:
+        } break;
+        case GLFW_KEY_ESCAPE: {
             disable_command_input();
-            break;
-        case GLFW_KEY_BACKSPACE:
-            active_buffer->remove(Movement::Char(1, CursorDirection::Back));
+        } break;
+        case GLFW_KEY_BACKSPACE: {
             if (command_edit) {
+                active_buffer->remove(Movement::Char(1, CursorDirection::Back));
                 auto &ci = CommandInterpreter::get_instance();
                 ci.evaluate_current_input();
+            } else {
+                if (not active_buffer->mark_set) {
+                    active_buffer->remove(Movement::Char(1, CursorDirection::Back));
+                } else {
+                    auto [b, e] = active_buffer->get_cursor_rect();
+                    auto range = e.pos - b.pos;
+                    active_buffer->step_cursor_to(b.pos);
+                    active_buffer->remove(Movement::Char(range, CursorDirection::Forward));
+                    active_buffer->clear_marks();
+                }
             }
-            break;
-        case GLFW_KEY_DELETE:
-            active_buffer->remove(Movement::Char(1, CursorDirection::Forward));
+        } break;
+        case GLFW_KEY_DELETE: {
             if (command_edit) {
+                active_buffer->remove(Movement::Char(1, CursorDirection::Forward));
                 auto &ci = CommandInterpreter::get_instance();
                 ci.evaluate_current_input();
+            } else {
+                if (not active_buffer->mark_set) {
+                    active_buffer->remove(Movement::Char(1, CursorDirection::Back));
+                } else {
+                    auto [b, e] = active_buffer->get_cursor_rect();
+                    auto range = e.pos - b.pos;
+                    active_buffer->step_cursor_to(b.pos);
+                    active_buffer->remove(Movement::Char(range, CursorDirection::Forward));
+                    active_buffer->clear_marks();
+                }
             }
-            break;
+
+        } break;
         case GLFW_KEY_INSERT:
-        case GLFW_KEY_PAGE_UP:
-        case GLFW_KEY_PAGE_DOWN:
-            break;
+        case GLFW_KEY_PAGE_UP: {
+            auto rows_per_page = active_view->height / active_view->font->get_row_advance();
+            active_view->scroll(ui::Scroll::Up, rows_per_page);
+        } break;
+        case GLFW_KEY_PAGE_DOWN: {
+            auto rows_per_page = active_view->height / active_view->font->get_row_advance();
+            active_view->scroll(ui::Scroll::Down, rows_per_page);
+        } break;
     }
     // N.B. this was moved from charCallback because typing in ÖÄÅ right now, crashes the application as the textual data lives inside a std::string
     // which gets passed around through layers of structures, and these characters can't be represented as single bytes.
@@ -522,10 +572,13 @@ void App::print_debug_info() {
     util::println("----- App Debug Info -----");
     util::println("Window Size: {} x {}", win_width, win_height);
     util::println("---------------------------");
-
-    util::println("----- Buffer contents -----");
-    util::println("{}", active_buffer->to_string_view());
-    util::println("---------------------------");
+    util::println("----- Text Buffer -----");
+    auto pos = active_buffer->get_cursor().pos;
+    util::println("Current pos: {}: '{}'", active_buffer->get_cursor().pos, active_buffer->to_string_view()[pos]);
+    util::println("Size {}", active_buffer->size());
+    util::println("Lines {}", active_buffer->meta_data.line_begins.size());
+    for (auto i : active_buffer->meta_data.line_begins) { fmt::print("{},", i); }
+    util::println("\n---------------------------");
     util::println("----- View Debug Info -----");
     util::println("Views currently open: {}", editor_views.size());
     assert(active_window->view == active_view);
@@ -534,10 +587,12 @@ void App::print_debug_info() {
     active_window->status_bar->print_debug_info();
     active_buffer->print_cursor_info();
     active_buffer->print_line_meta_data();
+    /*
     fmt::print("\n");
     util::println("---- Layout tree (negative id's are branch nodes, positive leaf nodes ---- ");
     dump_layout_tree(root_layout);
     util::println("---------------------------\n");
+     */
 }
 WindowDimensions App::get_window_dimension() { return win_dimensions; }
 

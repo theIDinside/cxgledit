@@ -102,7 +102,7 @@ private:
     ui::core::Layout* root_layout;
 
     bool no_close_condition();
-    void kb_command(int i);
+    void kb_command(int i, int modifier);
     void graceful_exit();
     void update_all_editor_windows();
 

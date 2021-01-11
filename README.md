@@ -48,3 +48,13 @@ from source)
 - Freetype - The library that reads in a TrueType file and creates data necessary for us to create textures that we can 
   apply to quads, displaying the text. This needs to be manually [download at](https://download.savannah.gnu.org/releases/freetype/ "Get the latest version")
   and placed in the "deps" directory, so for it to work, I've extracted the archive
+  
+### General domain problems / challenges
+Text editing is fairly easy. But it comes with a list of somewhat difficult / interesting challanges,
+such as, what constitutes a line, _where_ in memory does a line begin (does it begin at index_at='\n', or index_after='\n')
+Choosing what to do here will have reverberating effects, which is interesting and a good learning experience
+for beginners. Representing text in a "everything is an index", is not necesarrily good. In fact it's a major
+source of bugs. When you want to delete a line, you don't want to mess with lines before or after it.
+Thus some abstraction is good here, such as "item boundary" or just boundary. This way we can query our datastructure for,
+"find beginning of line", with a parameter of Boundary::Inside or Boundary::Outside, specifying what we mean in that
+specific instance.
