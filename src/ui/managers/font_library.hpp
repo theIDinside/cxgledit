@@ -7,6 +7,7 @@
 #include <map>
 #include <string>
 #include <ui/render/font.hpp>
+#include <set>
 
 struct FontConfig {
     std::string name;
@@ -21,11 +22,11 @@ public:
     static FontLibrary &get_instance();
     void load_font(const FontConfig &config, bool setAsDefault = true);
     SimpleFont *get_font(const std::string &key);
-
+    std::optional<SimpleFont*> get_font_with_size(int size);
     static SimpleFont *get_default_font();
-
 private:
     FontLibrary() {}
     std::string default_font_key;
     std::map<std::string, std::unique_ptr<SimpleFont>> cached_fonts;
+    std::map<int, SimpleFont*> font_sizes;
 };

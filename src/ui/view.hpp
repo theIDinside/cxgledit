@@ -54,8 +54,8 @@ namespace ui {
         void anchor_at(int x, int y);
         void scroll(Scroll direction, int linesToScroll);
         void set_fill(float w, float h, int parent_w, int parent_h);
-
         SimpleFont *get_font();
+        void set_font(SimpleFont* new_font);
         [[nodiscard]] TextData *get_text_buffer() const;
 
         ViewCursor *get_cursor();

@@ -107,17 +107,31 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
         PANIC("Failed to create GLFW Window");
     }
 
-    FontConfig default_font_cfg{.name = "FreeMono",
+    FontConfig default_font_cfg{.name = "FreeMono24",
                                 .path = "assets/fonts/FreeMono.ttf",
                                 .pixel_size = 24,
                                 .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
+    FontConfig default_font_cfg_18{.name = "FreeMono18",
+                                   .path = "assets/fonts/FreeMono.ttf",
+                                   .pixel_size = 18,
+                                   .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
+
+    FontConfig default_font_cfg_13{.name = "FreeMono12",
+                                   .path = "assets/fonts/FreeMono.ttf",
+                                   .pixel_size = 12,
+                                   .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
+
     ShaderConfig text_shader{.name = "text",
                              .vs_path = "assets/shaders/textshader.vs",
                              .fs_path = "assets/shaders/textshader.fs"};
     ShaderConfig cursor_shader{.name = "cursor",
                                .vs_path = "assets/shaders/cursor.vs",
                                .fs_path = "assets/shaders/cursor.fs"};
-    FontLibrary::get_instance().load_font(default_font_cfg);
+
+    FontLibrary::get_instance().load_font(default_font_cfg, false);
+    FontLibrary::get_instance().load_font(default_font_cfg_18, true);
+    FontLibrary::get_instance().load_font(default_font_cfg_13, false);
+
     ShaderLibrary::get_instance().load_shader(text_shader);
     ShaderLibrary::get_instance().load_shader(cursor_shader);
 
@@ -281,11 +295,11 @@ void App::update_views_dimensions(float wRatio, float hRatio) {
 
 void App::kb_command(int key, int modifier) {
     auto modify_movement_op = [this](auto mod) {
-      if (mod & GLFW_MOD_SHIFT) {
-          if (not active_buffer->mark_set) { active_buffer->set_mark_at_cursor(); }
-      } else {
-          if (active_buffer->mark_set) { active_buffer->clear_marks(); }
-      }
+        if (mod & GLFW_MOD_SHIFT) {
+            if (not active_buffer->mark_set) { active_buffer->set_mark_at_cursor(); }
+        } else {
+            if (active_buffer->mark_set) { active_buffer->clear_marks(); }
+        }
     };
 
     if (!command_edit) {
@@ -391,6 +405,9 @@ void App::kb_command(int key, int modifier) {
                 auto data = copy_register.get_last();
                 if (data) { active_buffer->insert_str(*data); }
             } break;
+            case GLFW_KEY_M: {
+                this->modal_popup();
+            } break;
             case GLFW_KEY_G:
                 command_input("goto", Commands::GotoLine);
                 break;
@@ -421,8 +438,9 @@ void App::command_input(const std::string &prefix, Commands commandInput) {
     active_buffer = command_view->command_view->get_text_buffer();
     active_buffer->clear();
     if (!command_edit) {
+        auto current_input = ci.current_input();
         command_view->set_prefix(prefix);
-        active_buffer->insert_str(ci.current_input());
+        active_buffer->insert_str(current_input.value_or(""));
     }
     command_edit = true;
     command_view->active = true;
@@ -441,11 +459,11 @@ void App::disable_command_input() {
 void App::handle_edit_input(int key, int modifier) {
 
     auto modify_movement_op = [this](auto mod) {
-      if (mod & GLFW_MOD_SHIFT) {
-          if (not active_buffer->mark_set) { active_buffer->set_mark_at_cursor(); }
-      } else {
-          if (active_buffer->mark_set) { active_buffer->clear_marks(); }
-      }
+        if (mod & GLFW_MOD_SHIFT) {
+            if (not active_buffer->mark_set) { active_buffer->set_mark_at_cursor(); }
+        } else {
+            if (active_buffer->mark_set) { active_buffer->clear_marks(); }
+        }
     };
 
     switch (key) {
@@ -480,7 +498,11 @@ void App::handle_edit_input(int key, int modifier) {
             active_buffer->move_cursor(Movement::Char(1, CursorDirection::Back));
         } break;
         case GLFW_KEY_ESCAPE: {
-            disable_command_input();
+            if(command_edit)
+                disable_command_input();
+            else {
+                command_input("command: ", Commands::UserCommand);
+            }
         } break;
         case GLFW_KEY_BACKSPACE: {
             if (command_edit) {
@@ -704,6 +726,7 @@ void App::fwrite_active_to_disk(const std::string &path) {
         write_impl(p);
     }
 }
+void App::modal_popup() {}
 
 void Register::push_view(std::string_view data) {
     if (not copies.empty()) [[likely]] {

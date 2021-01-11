@@ -174,12 +174,7 @@ namespace ui {
         glClear(GL_COLOR_BUFFER_BIT);
         auto &ci = CommandInterpreter::get_instance();
         std::string textToRender = prefix;
-        std::string cmd_rep = "";
-        if (ci.has_command_waiting()) {
-            cmd_rep = ci.current_input();
-        } else {
-            cmd_rep = this->data->to_std_string();
-        }
+        std::string cmd_rep = ci.current_input().value_or(data->to_std_string());
         vao->bind_all();
         shader->use();
         shader->set_projection(projection);
@@ -336,6 +331,10 @@ namespace ui {
         v->name = name;
         return v;
     }
+    void View::set_font(SimpleFont* new_font) {
+        font = new_font;
+        forced_draw(true);
+    }
 
     void CommandView::draw() {
         glEnable(GL_SCISSOR_TEST);
@@ -348,7 +347,7 @@ namespace ui {
             auto &ci = CommandInterpreter::get_instance();
             if (ci.has_command_waiting()) {
                 if (ci.cmd_is_interactive()) {
-                    auto s = ci.current_input();
+                    auto s = ci.current_input().value_or(ci.command_auto_completed());
                     auto suggestion = ci.command_auto_completed();
                     // command: open ./ma => hit tab
                     // command gets auto completed to:
@@ -361,7 +360,7 @@ namespace ui {
                                             .color = glm::vec3{0.5f, 0.5f, 0.5f}};
                     this->command_view->draw_command_view(this->infoPrefix, {{color}});
                 } else {
-                    auto s = ci.current_input();
+                    auto s = ci.current_input().value();
                     // command: open ./ma => hit tab
                     // command gets auto completed to:
                     // command: open ./ma|in.cpp|

@@ -126,7 +126,7 @@ SimpleFont::SimpleFont(int pixelSize, std::unique_ptr<Texture> &&texture, std::v
 
 static int test_count = 0;
 
-int SimpleFont::get_row_advance() const { return row_advance; }
+int SimpleFont::get_row_advance() const { return row_height; }
 
 static bool exampleHowToLexVar = false;
 
@@ -239,7 +239,7 @@ void SimpleFont::emplace_source_text_gpu_data(VAO *vao, ui::View *view, int xPos
                 }
                 if (data_index_pos_end == 0) { cx2 = x; }
                 x = start_x;
-                y -= row_advance;
+                y -= row_height;
                 continue;
             }
             xpos = float(x) + glyph.bearing.x;
@@ -314,7 +314,7 @@ void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, std::string_view text
                 auto &glyph = this->glyph_cache[text[idx]];
                 if (text[idx] == '\n') {
                     x = start_x;
-                    y -= row_advance;
+                    y -= row_height;
                     continue;
                 }
                 auto xpos = float(x) + glyph.bearing.x;
@@ -340,7 +340,7 @@ void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, std::string_view text
             auto &glyph = this->glyph_cache[c];
             if (c == '\n') {
                 x = start_x;
-                y -= row_advance;
+                y -= row_height;
                 continue;
             }
             auto xpos = float(x) + glyph.bearing.x;

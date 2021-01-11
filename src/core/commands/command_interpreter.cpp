@@ -9,7 +9,7 @@
 #include <ranges>
 #include <ui/view.hpp>
 #include <ui/editor_window.hpp>
-
+#include <string>
 
 CommandInterpreter &CommandInterpreter::get_instance() {
     static CommandInterpreter ci;
@@ -88,6 +88,8 @@ void CommandInterpreter::set_current_command_read(Commands type) {
             break;
         case Commands::Fail:
             break;
+        case Commands::UserCommand:
+            break;
     }
     getting_input = true;
     ecmd = EditorCommand{.type = type};
@@ -120,6 +122,10 @@ void CommandInterpreter::execute_command() {
         case Commands::Fail:
             PANIC("Not yet implemented command");
             break;
+        case Commands::UserCommand:
+            util::println("User command");
+            parse_command(ctx->get_command_view()->input_buffer->to_std_string());
+            break;
     }
     ctx->restore_input();
     getting_input = false;
@@ -144,7 +150,7 @@ void CommandInterpreter::evaluate_current_input() {
 void CommandInterpreter::register_application(App *pApp) { this->ctx = pApp; }
 
 /// Returns what the user has input so far. It's only partially validated
-std::string CommandInterpreter::current_input() {
+std::optional<std::string> CommandInterpreter::current_input() {
     switch (ecmd.type) {
         case Commands::OpenFile: {
             auto &fm = FileManager::get_instance();
@@ -159,7 +165,10 @@ std::string CommandInterpreter::current_input() {
             return ctx->get_command_view()->input_buffer->to_std_string();
         case Commands::Fail:
             break;
+        case Commands::UserCommand:
+            break;
     }
+    return {};
 }
 
 /// This function returns the full well-formed command, autocompleted by using current user input. If you want
@@ -172,7 +181,7 @@ std::string CommandInterpreter::command_auto_completed() {
             return suggestion.value_or(prefix);
         }
         case Commands::WriteFile:
-            return ctx->get_command_view()->input_buffer->to_std_string();
+        case Commands::UserCommand:
         case Commands::GotoLine:
             return ctx->get_command_view()->input_buffer->to_std_string();
         case Commands::Fail:
@@ -192,10 +201,37 @@ bool CommandInterpreter::cmd_is_interactive() {
     switch (this->ecmd.type) {
         case Commands::OpenFile:
         case Commands::WriteFile:
+        case Commands::UserCommand:
             return true;
         case Commands::GotoLine:
         case Commands::Fail:
             return false;
+            break;
+    }
+}
+using namespace std::string_view_literals;
+
+void CommandInterpreter::parse_command(std::string_view str) {
+    auto delim = str.find(' ');
+    auto cmd_str_rep = str.substr(0, delim);
+    util::println("command: '{}'", cmd_str_rep);
+    if(cmd_str_rep == "font"sv) {
+        str.remove_prefix(delim+1);
+        if(auto pos = str.find(' '); pos == std::string_view::npos) {
+            try {
+                auto v = std::stoi(std::string{str});
+                auto f = FontLibrary::get_instance().get_font_with_size(v);
+                if(f)
+                {
+                    util::println("Font wit size {} found", v);
+                    ctx->get_active_window()->view->set_font(*f);
+                } else {
+                    util::println("Error: No font with size {} found!", v);
+                }
+            } catch(...) {
+                util::println("parsing string to number failed");
+            }
+        }
     }
 }
 

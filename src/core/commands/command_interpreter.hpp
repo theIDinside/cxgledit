@@ -35,7 +35,7 @@ public:
     void set_current_command_read(Commands type);
 
     void register_application(App* pApp);
-    std::string current_input();
+    std::optional<std::string> current_input();
     std::string command_auto_completed();
     void evaluate_current_input();
 
@@ -55,4 +55,5 @@ private:
     /// so typing open /usr/bin/fi and then hitting <tab>, would cycle through
     /// all files in /usr/bin/ with the prefix of fi, but where would we store this data, for the application to know
     /// what state our cycling is in?
+    void parse_command(std::string_view str);
 };

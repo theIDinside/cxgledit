@@ -94,6 +94,8 @@ private:
     ui::EditorWindow* active_window;
     std::unique_ptr<ui::CommandView> command_view;
 
+
+
     TextData *active_buffer;
     ui::View *active_view;
 
@@ -117,4 +119,5 @@ private:
     void cycle_command_or_move_cursor(Cycle cycle);
     void print_debug_info();
     static WindowDimensions win_dimensions;
+    void modal_popup();
 };

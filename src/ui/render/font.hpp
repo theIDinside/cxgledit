@@ -96,8 +96,6 @@ struct glyph_info {
 
 static int row_advance = 0;
 
-static glyph_info info[NUM_GLYPHS];
-
 struct ColorizeTextRange {
     std::size_t begin, length;
     glm::vec3 color;
