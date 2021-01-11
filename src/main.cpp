@@ -1,13 +1,10 @@
 #include "app.hpp"
 // Default Window Width and Window Height
-constexpr auto WW = 1024;
-constexpr auto WH = 768;
+constexpr auto WW = 1920;
+constexpr auto WH = 1080;
 
 
 int main(int argc, const char **argv) {
-
-
-
     auto app = App::initialize(WW, WH);
     if (argc > 1) { app->load_file(argv[1]); }
     app->run_loop();
@@ -22,7 +19,9 @@ int main(int argc, const char **argv) {
  * Features to add. The feature description minor/major does not mean to say anything about it's importance, or necessity nor it's urgency
  * but is simply meant to give a hint about what works need to be put behind it and how much other features it might spawn. Minor features are not features which will
  * father other features so to speak.
+ * TODO(cosmetic, minor): Add delay to syntax highlighting / lexing, so that the entire text doesn't flicker about
  * TODO(feature, minor): add write file command
+ *  - done, but no overwrite affirmation
  * TODO(feature, minor): add copy / paste commands
  * TODO(feature, minor): add select (so one can copy)
  * TODO(feature, minor): add page up / page down scrolling
