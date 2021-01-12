@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fmt/core.h>
 #include <optional>
+#include <variant>
 
 #ifdef DEBUG
 #include <array>
@@ -26,6 +27,22 @@ struct Timer {
     chronotp begin, end;
 };
 #endif
+
+template <typename T, typename U>
+constexpr auto to_t(T t) -> U {
+    return t;
+}
+
+template <typename T, typename ...Ts>
+constexpr auto to_option_vec(T t, Ts... ss) -> std::optional<std::vector<T>> {
+    if constexpr (sizeof...(ss) == 0) {
+        return std::vector<T> {t};
+    } else if constexpr (std::is_same_v<T, Ts...>) {
+        return std::vector<T> {t, { ss... }};
+    } else {
+        return std::vector<std::variant<T, Ts...>> {t, { ss... }};
+    }
+}
 
 /*
  * Concatenate preprocessor tokens A and B without expanding macro definitions

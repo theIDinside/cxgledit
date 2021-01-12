@@ -2,9 +2,27 @@
 // Created by 46769 on 2021-01-11.
 //
 
-#ifndef CXGLEDIT_MODAL_HPP
-#define CXGLEDIT_MODAL_HPP
+#pragma once
+#include <ui/core/layout.hpp>
 
-class Modal {};
+namespace ui {
+class View;
 
-#endif//CXGLEDIT_MODAL_HPP
+
+enum ModalContentsType {
+    List,
+    Item
+};
+
+struct Modal {
+    View* view;
+    ModalContentsType type;
+    core::DimInfo dimInfo;
+
+    Modal* create();
+    void set_position(int x, int y);
+    void set_dimensions(int x, int y);
+
+};
+
+}// namespace ui

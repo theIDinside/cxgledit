@@ -106,10 +106,10 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
         png_data[i * 4 + 3] = 0xff;
     }
 
-    auto png_filename = fmt::format("{}_output.png", path);
+    auto png_filename = fmt::format("{}_{}_output.png", path, pixel_size);
 
     stbi_write_png(png_filename.c_str(), tex_width, tex_height, 4, png_data, tex_width * 4);
-
+    util::println("Wrote {} font bitmap to file", png_filename);
     free(png_data);
     free(pixels);
 

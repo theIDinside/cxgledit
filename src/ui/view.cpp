@@ -234,10 +234,9 @@ namespace ui {
         shader->use();
         shader->set_projection(projection);
         font->t->bind();
-
+        auto defaultColor = glm::fvec3{1.0f, 1.0f, 1.0f};
         textToRender.append(cmd_rep);
         if (colorInfo) {
-            auto defaultColor = glm::fvec3{0.74f, 0.425f, 0.46f};
             auto text_len = textToRender.size();
             auto &vec = colorInfo.value();
             std::vector<ColorizeTextRange> fully_formatted{};
@@ -333,6 +332,7 @@ namespace ui {
     }
     void View::set_font(SimpleFont* new_font) {
         font = new_font;
+        cursor->setup_dimensions(cursor->width, font->max_glyph_height + 4);
         forced_draw(true);
     }
 
@@ -377,7 +377,6 @@ namespace ui {
 
         } else if (this->show_last_message) {
             //TODO: render something else. We are not inputing a commmand we are editing text, when this branch is true
-            util::println("Showing last err message: {}", last_message);
             this->active = false;
             this->command_view->get_text_buffer()->clear();
             this->command_view->get_text_buffer()->insert_str(last_message);
@@ -388,9 +387,15 @@ namespace ui {
         glDisable(GL_SCISSOR_TEST);
     }
 
+
+    using namespace std::string_view_literals;
     void CommandView::draw_error_message() {
         assert(not last_message.empty());
-        command_view->draw_command_view("error: ", {});
+        ColorizeTextRange msg_color{.begin = "error: "sv.size(),
+                .length = last_message.size(),
+                .color = glm::vec3{0.9f, 0.9f, 0.9f}};
+        auto color_cfg = to_option_vec(msg_color);
+        command_view->draw_command_view("error: ", color_cfg);
     }
 
 }// namespace ui

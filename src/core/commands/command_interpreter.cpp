@@ -97,11 +97,9 @@ void CommandInterpreter::set_current_command_read(Commands type) {
 }
 
 void CommandInterpreter::execute_command() {
-    util::println("Executing command for input: '{}'", ctx->get_command_view()->input_buffer->to_std_string());
     switch (ecmd.type) {
         case Commands::GotoLine:
             if (auto l = goto_is_ok(ctx->get_command_view()->input_buffer->to_std_string()); l) {
-                util::println("Goto line {}", l.value());
                 ctx->editor_window_goto(l.value());
             }
             break;
@@ -123,7 +121,6 @@ void CommandInterpreter::execute_command() {
             PANIC("Not yet implemented command");
             break;
         case Commands::UserCommand:
-            util::println("User command");
             parse_command(ctx->get_command_view()->input_buffer->to_std_string());
             break;
     }
@@ -214,7 +211,6 @@ using namespace std::string_view_literals;
 void CommandInterpreter::parse_command(std::string_view str) {
     auto delim = str.find(' ');
     auto cmd_str_rep = str.substr(0, delim);
-    util::println("command: '{}'", cmd_str_rep);
     if(cmd_str_rep == "font"sv) {
         str.remove_prefix(delim+1);
         if(auto pos = str.find(' '); pos == std::string_view::npos) {
@@ -223,10 +219,11 @@ void CommandInterpreter::parse_command(std::string_view str) {
                 auto f = FontLibrary::get_instance().get_font_with_size(v);
                 if(f)
                 {
-                    util::println("Font wit size {} found", v);
                     ctx->get_active_window()->view->set_font(*f);
                 } else {
-                    util::println("Error: No font with size {} found!", v);
+                    ctx->get_command_view()->last_message = fmt::format("No font with size {} found!", v);
+                    ctx->get_command_view()->show_last_message = true;
+                    ctx->get_command_view()->draw_error_message();
                 }
             } catch(...) {
                 util::println("parsing string to number failed");

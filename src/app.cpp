@@ -128,8 +128,8 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
                                .vs_path = "assets/shaders/cursor.vs",
                                .fs_path = "assets/shaders/cursor.fs"};
 
-    FontLibrary::get_instance().load_font(default_font_cfg, false);
-    FontLibrary::get_instance().load_font(default_font_cfg_18, true);
+    FontLibrary::get_instance().load_font(default_font_cfg, true);
+    FontLibrary::get_instance().load_font(default_font_cfg_18, false);
     FontLibrary::get_instance().load_font(default_font_cfg_13, false);
 
     ShaderLibrary::get_instance().load_shader(text_shader);
@@ -294,6 +294,7 @@ void App::update_views_dimensions(float wRatio, float hRatio) {
 }
 
 void App::kb_command(int key, int modifier) {
+    get_command_view()->show_last_message = false;
     auto modify_movement_op = [this](auto mod) {
         if (mod & GLFW_MOD_SHIFT) {
             if (not active_buffer->mark_set) { active_buffer->set_mark_at_cursor(); }
@@ -457,7 +458,7 @@ void App::disable_command_input() {
 }
 
 void App::handle_edit_input(int key, int modifier) {
-
+    get_command_view()->show_last_message = false;
     auto modify_movement_op = [this](auto mod) {
         if (mod & GLFW_MOD_SHIFT) {
             if (not active_buffer->mark_set) { active_buffer->set_mark_at_cursor(); }
@@ -501,7 +502,7 @@ void App::handle_edit_input(int key, int modifier) {
             if(command_edit)
                 disable_command_input();
             else {
-                command_input("command: ", Commands::UserCommand);
+                command_input("command", Commands::UserCommand);
             }
         } break;
         case GLFW_KEY_BACKSPACE: {
@@ -528,7 +529,7 @@ void App::handle_edit_input(int key, int modifier) {
                 ci.evaluate_current_input();
             } else {
                 if (not active_buffer->mark_set) {
-                    active_buffer->remove(Movement::Char(1, CursorDirection::Back));
+                    active_buffer->remove(Movement::Char(1, CursorDirection::Forward));
                 } else {
                     auto [b, e] = active_buffer->get_cursor_rect();
                     auto range = e.pos - b.pos;

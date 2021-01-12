@@ -3,3 +3,6 @@
 //
 
 #include "modal.hpp"
+ui::Modal *ui::Modal::create() {
+    return nullptr;
+}
