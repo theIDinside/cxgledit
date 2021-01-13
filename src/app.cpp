@@ -1,6 +1,7 @@
 
 // Created by 46769 on 2020-12-22.
 //
+#define WIN32_LEAN_AND_MEAN
 
 #include "app.hpp"
 #include <core/data_manager.hpp>
@@ -15,7 +16,11 @@
 #include <ranges>
 #include <utility>
 
+/// Utility macro for getting registered App pointer with GLFW
 #define get_app_handle(window) (App *) glfwGetWindowUserPointer(window)
+
+/// for loading our keybindings library, this way we can set keybindings, compile them while running the program
+/// and just hot-reload them
 
 static auto BUFFERS_COUNT = 0;
 
@@ -24,6 +29,46 @@ using ui::EditorWindow;
 using ui::View;
 using ui::core::DimInfo;
 using ui::core::Layout;
+
+static constexpr auto PRESS_MASK = GLFW_PRESS | GLFW_REPEAT;
+static constexpr auto pressed_or_repeated = [](auto action) -> bool { return action & PRESS_MASK; };
+
+auto initialize_key_callbacks() {
+    return [](auto window, int key, int scancode, int action, int mods) {
+      auto app = get_app_handle(window);
+      const auto input = KeyInput{key, mods};
+      // app->command_view->show_last_message = false;
+      if (pressed_or_repeated(action)) {
+
+          switch (app->bound_action(CXMode::Normal, input)) {
+              case Action::OpenFile:
+                  app->toggle_command_input("open", Commands::OpenFile);
+                  break;
+              case Action::WriteFile:
+                  app->toggle_command_input("write", Commands::WriteFile);
+                  break;
+              case Action::GotoLine:
+                  app->toggle_command_input("goto", Commands::GotoLine);
+                  break;
+              case Action::GotoItem:
+                  break;
+              case Action::PrintDebug:
+                  app->print_debug_info();
+                  break;
+              case Action::CommandPrompt:
+                  app->toggle_command_input("command", Commands::UserCommand);
+                  break;
+              case Action::DefaultAction: {
+                  if (mods & GLFW_MOD_CONTROL) {
+                      app->kb_command(input);
+                  } else {
+                      app->handle_edit_input(input);
+                  }
+              } break;
+          }
+      }
+    };
+}
 
 /// FIXME(urgent): When window is resized slowly, there seems to be a big within GLFW
 ///  because it doesn't update correctly and starts stretching my internal data layout for whatever
@@ -46,9 +91,62 @@ void framebuffer_callback(GLFWwindow *window, int width, int height) {
 
 auto size_changed_callback(GLFWwindow *window, int width, int height) { framebuffer_callback(window, width, height); }
 
+constexpr auto temp_dll = "keybound_live.dll";
+constexpr auto origin_dll = "keybound.dll";
+
+/**
+ * Rudimentary library loader, that takes a callback to be run, after initialization. The callback takes
+ * KeyBindingFn as a parameter
+ * @tparam Fn
+ * @param libHandle
+ * @param fnHandle
+ * @param init_callback
+ * @return
+ */
+template<typename Fn>
+bool reload_keybinding_library(HMODULE &libHandle, KeyBindingFn &fnHandle, Fn init_callback) {
+    if (not fs::exists(origin_dll)) return false;
+    FreeLibrary(libHandle);
+    fnHandle = nullptr;
+    libHandle = nullptr;
+    // if keybound.dll is live, meaning, *we* are running, or have ran, delete the copy of the dll, "keybound_live.dll"
+    if (fs::exists(temp_dll)) {
+        fs::remove(temp_dll);
+        // actually build the lib
+        fs::copy(origin_dll, temp_dll);
+    } else {
+        fs::copy(origin_dll, temp_dll);
+    }
+
+    // TODO: Spawn child process in another thread, free library, wait for "OK" response from thread, then re-load this dll
+    libHandle = LoadLibraryA(temp_dll);
+    if (libHandle) {
+        fnHandle = (KeyBindingFn)(GetProcAddress(libHandle, "translate"));
+        if (fnHandle) {
+            init_callback(fnHandle);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool unload_keybindings(HMODULE &libHandle, KeyBindingFn &fnHandle) {
+    if (libHandle) FreeLibrary(libHandle);
+    fnHandle = nullptr;
+    libHandle = nullptr;
+    return true;
+}
+
 App *App::initialize(int app_width, int app_height, const std::string &title) {
     util::printmsg("Initializing application");
     auto instance = new App{};
+
+    reload_keybinding_library(instance->kb_library, instance->bound_action, [](auto fn) {
+        util::println("Keybindings library initialized\n Attempting to call library");
+        auto test = fn(CXMode::Normal, KeyInput{0, 0});
+        if (test == Action::DefaultAction) { util::println("Library ok!"); }
+    });
+
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -147,7 +245,6 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
 
     auto char_input_callback = [](auto window, auto codepoint) {
         auto app = get_app_handle(window);
-        util::println("Char value: {}", codepoint);
         // TODO(feature, major, huge maybe): Unicode support. But why would we want that? Source code should and can only use ASCII. If you plan on using something else? Well fuck off then.
         if (codepoint >= 32 && codepoint <= 126) {
             app->active_buffer->insert((char) codepoint);
@@ -186,20 +283,10 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
         }
     });
 
-    static constexpr auto PRESS_MASK = GLFW_PRESS | GLFW_REPEAT;
-    static constexpr auto pressed_or_repeated = [](auto action) -> bool { return action & PRESS_MASK; };
 
-    glfwSetKeyCallback(window, [](auto window, int key, int scancode, int action, int mods) {
-        auto app = get_app_handle(window);
-        // app->command_view->show_last_message = false;
-        if (pressed_or_repeated(action)) {
-            if (mods & GLFW_MOD_CONTROL) {
-                app->kb_command(key, mods);
-            } else {
-                app->handle_edit_input(key, mods);
-            }
-        }
-    });
+
+
+    glfwSetKeyCallback(window, initialize_key_callbacks());
 
     auto &ci = CommandInterpreter::get_instance();
     ci.register_application(instance);
@@ -293,7 +380,8 @@ void App::update_views_dimensions(float wRatio, float hRatio) {
     command_view->command_view->set_projection(glm::ortho(0.0f, float(win_width), 0.0f, float(win_height)));
 }
 
-void App::kb_command(int key, int modifier) {
+void App::kb_command(KeyInput input) {
+    const auto&[key, modifier] = input;
     get_command_view()->show_last_message = false;
     auto modify_movement_op = [this](auto mod) {
         if (mod & GLFW_MOD_SHIFT) {
@@ -410,16 +498,16 @@ void App::kb_command(int key, int modifier) {
                 this->modal_popup();
             } break;
             case GLFW_KEY_G:
-                command_input("goto", Commands::GotoLine);
+                toggle_command_input("goto", Commands::GotoLine);
                 break;
             case GLFW_KEY_O:
-                command_input("open", Commands::OpenFile);
+                toggle_command_input("open", Commands::OpenFile);
                 break;
             case GLFW_KEY_D:
                 print_debug_info();
                 break;
             case GLFW_KEY_W:
-                command_input("write", Commands::WriteFile);
+                toggle_command_input("write", Commands::WriteFile);
                 break;
         }
     } else {
@@ -433,18 +521,22 @@ void App::graceful_exit() {
     exit_command_requested = true;
 }
 
-void App::command_input(const std::string &prefix, Commands commandInput) {
-    auto &ci = CommandInterpreter::get_instance();
-    ci.set_current_command_read(commandInput);
-    active_buffer = command_view->command_view->get_text_buffer();
-    active_buffer->clear();
-    if (!command_edit) {
-        auto current_input = ci.current_input();
-        command_view->set_prefix(prefix);
-        active_buffer->insert_str(current_input.value_or(""));
+void App::toggle_command_input(const std::string &prefix, Commands commandInput) {
+    if(command_edit) {
+        disable_command_input();
+    } else {
+        auto &ci = CommandInterpreter::get_instance();
+        ci.set_current_command_read(commandInput);
+        active_buffer = command_view->command_view->get_text_buffer();
+        active_buffer->clear();
+        if (!command_edit) {
+            auto current_input = ci.current_input();
+            command_view->set_prefix(prefix);
+            active_buffer->insert_str(current_input.value_or(""));
+        }
+        command_edit = true;
+        command_view->active = true;
     }
-    command_edit = true;
-    command_view->active = true;
 }
 
 void App::disable_command_input() {
@@ -457,7 +549,8 @@ void App::disable_command_input() {
     command_view->active = false;
 }
 
-void App::handle_edit_input(int key, int modifier) {
+void App::handle_edit_input(KeyInput input) {
+    const auto& [key, modifier] = input;
     get_command_view()->show_last_message = false;
     auto modify_movement_op = [this](auto mod) {
         if (mod & GLFW_MOD_SHIFT) {
@@ -499,11 +592,7 @@ void App::handle_edit_input(int key, int modifier) {
             active_buffer->move_cursor(Movement::Char(1, CursorDirection::Back));
         } break;
         case GLFW_KEY_ESCAPE: {
-            if(command_edit)
-                disable_command_input();
-            else {
-                command_input("command", Commands::UserCommand);
-            }
+            toggle_command_input("command", Commands::UserCommand);
         } break;
         case GLFW_KEY_BACKSPACE: {
             if (command_edit) {
@@ -538,7 +627,6 @@ void App::handle_edit_input(int key, int modifier) {
                     active_buffer->clear_marks();
                 }
             }
-
         } break;
         case GLFW_KEY_INSERT:
         case GLFW_KEY_PAGE_UP: {
@@ -592,6 +680,7 @@ void App::cycle_command_or_move_cursor(Cycle cycle) {
 }
 
 void App::print_debug_info() {
+#ifdef FOO2
     util::println("----- App Debug Info -----");
     util::println("Window Size: {} x {}", win_width, win_height);
     util::println("---------------------------");
@@ -610,12 +699,13 @@ void App::print_debug_info() {
     active_window->status_bar->print_debug_info();
     active_buffer->print_cursor_info();
     active_buffer->print_line_meta_data();
-    /*
     fmt::print("\n");
     util::println("---- Layout tree (negative id's are branch nodes, positive leaf nodes ---- ");
     dump_layout_tree(root_layout);
     util::println("---------------------------\n");
-     */
+#endif
+    auto &dm = DataManager::get_instance();
+    util::println("Available buffers in re-use list: {}", dm.reuseable_buffers());
 }
 WindowDimensions App::get_window_dimension() { return win_dimensions; }
 
@@ -713,8 +803,9 @@ void App::fwrite_active_to_disk(const std::string &path) {
         auto buf_view = active_window->get_text_buffer()->to_string_view();
         auto bytes_written = sv_write_file(p, buf_view);
         if (bytes_written) {// success
+            get_command_view()->draw_message(
+                    fmt::format("Wrote {} bytes to file: {}", bytes_written.value(), path.string()));
             // TODO: this could be printed on the command view
-            util::println("Wrote {} bytes to file {}", bytes_written.value(), path.string());
         } else {
             util::println("Could not retrieve file size");
         }
@@ -728,6 +819,9 @@ void App::fwrite_active_to_disk(const std::string &path) {
     }
 }
 void App::modal_popup() {}
+void App::reload_keybindings() {
+    reload_keybinding_library(kb_library, bound_action, [](auto fn) { util::println("Keybinding library reloaded"); });
+}
 
 void Register::push_view(std::string_view data) {
     if (not copies.empty()) [[likely]] {

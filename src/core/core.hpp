@@ -5,6 +5,7 @@
 #pragma once
 
 #include <fmt/core.h>
+#include <fmt/format.h>
 #include <utils/utils.hpp>
 
 constexpr auto SWEDISH_LAST_ALPHA_CHAR_UNICODE = 0x00f6u;

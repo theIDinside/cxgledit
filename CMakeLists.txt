@@ -93,8 +93,11 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 # add_subdirectory(${GLFW_DIR})
 
 add_library(glad ./src/glad.c)
-target_include_directories(glad PRIVATE "${DEP_DIR}/include")
 
+
+
+
+target_include_directories(glad PRIVATE "${DEP_DIR}/include")
 set(FT_DIR ${DEP_DIR}/freetype-2.10.4)
 add_subdirectory(${FT_DIR})
 
@@ -107,6 +110,9 @@ message("OpenGL libraries are set to: ${OPENGL_LIBRARIES}. CMAKE_DL_LIBS set to:
 
 target_link_libraries(cxgledit fmt::fmt glm ${OPENGL_LIBRARIES} glfw ${GLFW_LIBRARIES} glad ${CMAKE_DL_LIBS} freetype)
 
+add_library(keybound SHARED deps/include/bindingslib/keybindings.cpp)
+add_dependencies(cxgledit keybound)
+target_compile_definitions(keybound PRIVATE "GLFW_INCLUDE_NONE")
 # TODO(count character occurence, using avx): set add_definitions(-DINTRINSICS_ENABLED) when feature is implemented
 if (CMAKE_BUILD_TYPE STREQUAL Release)
     # set -DINTRINSICS_ENABLED, when AVX2 character occurence scanning is implemented
@@ -119,7 +125,7 @@ if (CMAKE_BUILD_TYPE STREQUAL Release)
 else ()
     # set -DINTRINSICS_ENABLED, when AVX2 character occurence scanning is implemented
     add_definitions(-DDEBUG)
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O3")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /O3")
     message("Build type is ${CMAKE_BUILD_TYPE}. Copying assets to ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}/assets")
     message("Debug has instrumentation features enabled.")
     target_compile_definitions(cxgledit PUBLIC INSTRUMENTATION KEEP_LOGS IS_DEBUG)

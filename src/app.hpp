@@ -3,6 +3,8 @@
 //
 
 #pragma once
+#include <windows.h>
+
 #include <GLFW/glfw3.h>
 #include <filesystem>
 #include <glm/glm.hpp>
@@ -15,9 +17,11 @@
 #include <core/text_data.hpp>
 #include <ui/managers/font_library.hpp>
 #include <ui/managers/shader_library.hpp>
-
-
 #include <ui/core/layout.hpp>
+#include <bindingslib/keybindings.hpp>
+
+
+typedef Action(__cdecl *KeyBindingFn)(CXMode, KeyInput);
 
 namespace ui {
     class View;
@@ -54,6 +58,9 @@ struct Register {
     std::optional<std::string_view> get_last();
 };
 
+
+void reload_keybinding_library();
+
 class App {
 public:
     static App *initialize(int app_width, int app_height, const std::string &title = "cxedit");
@@ -63,7 +70,7 @@ public:
     void load_file(const fs::path &file);
     void draw_all(bool force_redraw = false);
     void update_views_dimensions(float wRatio, float hRatio);
-    void command_input(const std::string& prefix, Commands commandInput);
+    void toggle_command_input(const std::string& prefix, Commands commandInput);
     void disable_command_input();
     void set_error_message(const std::string& msg);
     void new_editor_window(SplitStrategy ss = SplitStrategy::Stack);
@@ -82,6 +89,16 @@ public:
 
     int win_height;
     int win_width;
+    KeyBindingFn bound_action = nullptr;
+    void reload_keybindings();
+    void print_debug_info();
+    void kb_command(KeyInput input);
+    /**
+     * Handle keyboard input, when we are in "edit" mode, meaning when we are editing actual text.
+     * @param i
+     * @param i1
+     */
+    void handle_edit_input(KeyInput input);
 private:
     void cleanup();
     GLFWwindow *window;
@@ -93,31 +110,18 @@ private:
     std::vector<ui::EditorWindow*> editor_views;
     ui::EditorWindow* active_window;
     std::unique_ptr<ui::CommandView> command_view;
-
-
-
     TextData *active_buffer;
     ui::View *active_view;
-
     Register copy_register{};
-
     ui::core::Layout* root_layout;
-
+    HMODULE kb_library = nullptr;
     bool no_close_condition();
-    void kb_command(int i, int modifier);
     void graceful_exit();
     void update_all_editor_windows();
 
-
-    /**
-     * Handle keyboard input, when we are in "edit" mode, meaning when we are editing actual text.
-     * @param i
-     * @param i1
-     */
-    void handle_edit_input(int key, int modifier);
     void input_command_or_newline();
     void cycle_command_or_move_cursor(Cycle cycle);
-    void print_debug_info();
+
     static WindowDimensions win_dimensions;
     void modal_popup();
 };

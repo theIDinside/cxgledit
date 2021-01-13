@@ -6,10 +6,12 @@
 #include "file_manager.hpp"
 #include <algorithm>
 #include <app.hpp>
-#include <ranges>
-#include <ui/view.hpp>
-#include <ui/editor_window.hpp>
+
 #include <string>
+#include <ui/editor_window.hpp>
+#include <ui/view.hpp>
+#include <fmt/format.h>
+
 
 CommandInterpreter &CommandInterpreter::get_instance() {
     static CommandInterpreter ci;
@@ -211,25 +213,34 @@ using namespace std::string_view_literals;
 void CommandInterpreter::parse_command(std::string_view str) {
     auto delim = str.find(' ');
     auto cmd_str_rep = str.substr(0, delim);
-    if(cmd_str_rep == "font"sv) {
-        str.remove_prefix(delim+1);
-        if(auto pos = str.find(' '); pos == std::string_view::npos) {
+    if (cmd_str_rep == "font"sv) {
+        str.remove_prefix(delim + 1);
+        if (auto pos = str.find(' '); pos == std::string_view::npos) {
             try {
                 auto v = std::stoi(std::string{str});
                 auto f = FontLibrary::get_instance().get_font_with_size(v);
-                if(f)
-                {
+                if (f) {
                     ctx->get_active_window()->view->set_font(*f);
                 } else {
-                    ctx->get_command_view()->last_message = fmt::format("No font with size {} found!", v);
-                    ctx->get_command_view()->show_last_message = true;
-                    ctx->get_command_view()->draw_error_message();
+                    ctx->get_command_view()->draw_error_message(fmt::format("No font with size {} found!", v));
                 }
-            } catch(...) {
-                util::println("parsing string to number failed");
-            }
+            } catch (...) { util::println("parsing string to number failed"); }
         }
+    } else if(cmd_str_rep == "kbreload") {
+        ctx->reload_keybindings();
     }
+}
+bool CommandInterpreter::command_can_autocomplete() {
+    switch(ecmd.type) {
+        case Commands::OpenFile:
+        case Commands::UserCommand:
+            return true;
+        case Commands::WriteFile:
+        case Commands::GotoLine:
+        case Commands::Fail:
+            break;
+    }
+    return false;
 }
 
 std::optional<int> goto_is_ok(const std::string &input) {

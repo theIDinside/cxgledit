@@ -11,6 +11,8 @@
 #include <string>
 #include <string_view>
 #include <GLFW/glfw3.h>
+#include <app.hpp>
+
 
 enum class Cycle : int {
     Forward = GLFW_KEY_DOWN,        // down
@@ -40,10 +42,10 @@ public:
     void evaluate_current_input();
 
     void clear_state();
-
     void setup_state();
-
     bool cmd_is_interactive();
+
+    bool command_can_autocomplete();
 
 private:
     CommandInterpreter() = default;

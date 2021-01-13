@@ -267,6 +267,16 @@ std::unique_ptr<TextData> StdStringBuffer::make_handle() {
     buf->cursor.buffer_id = buf->id;
     return buf;
 }
+
+TextData *StdStringBuffer::make_non_owning() {
+    auto new_buffer_id = DataManager::get_instance().get_new_id();
+    auto buf = new StdStringBuffer;
+    buf->id = new_buffer_id;
+    buf->cursor.buffer_id = buf->id;
+    buf->has_meta_data = false;
+    return buf;
+}
+
 BufferCursor &StdStringBuffer::get_cursor() { return cursor; }
 
 void StdStringBuffer::remove(const Movement &m) {
@@ -568,6 +578,9 @@ std::string_view StdStringBuffer::copy_range(std::pair<BufferCursor, BufferCurso
 void StdStringBuffer::insert_str_owned(const std::string &ref_data) {
     for (auto ch : ref_data) { insert(ch); }
     if (has_meta_data) rebuild_metadata();
+}
+StdStringBuffer::~StdStringBuffer() {
+    util::println("Destroying buffer {}", id);
 }
 
 /// ----------- NON-PURE VIRTUAL ABSTRACT IMPL METHODS ----------------

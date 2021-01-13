@@ -207,7 +207,6 @@ Shader Shader::load_shader(const char *vertexPath, const char *fragmentPath, con
     glDeleteShader(vertex);
     glDeleteShader(fragment);
     if (geometryPath != nullptr) glDeleteShader(geometry);
-    fmt::print("Shader compiled and linked.\n");
     fflush(stdout);
     return Shader(shaderID);
 }
@@ -281,7 +280,6 @@ Shader Shader::load_shader(fs::path vertexPath, fs::path fragmentPath, fs::path 
     glDeleteShader(vertex);
     glDeleteShader(fragment);
     if (!geometryPath.empty()) glDeleteShader(geometry);
-    fmt::print("Shader compiled and linked.\n");
     fflush(stdout);
     return Shader(shaderID);
 }

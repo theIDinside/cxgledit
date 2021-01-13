@@ -13,6 +13,11 @@ namespace ui {
 
 
 namespace ui::core {
+
+    struct ScreenPos {
+        int x, y;
+    };
+
     enum class LayoutType { Stack, Vertical, Horizontal };
     template<typename T>
     struct SplitDimInfo {

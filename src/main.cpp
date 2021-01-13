@@ -1,8 +1,8 @@
 #include "app.hpp"
+
 // Default Window Width and Window Height
 constexpr auto WW = 1920;
 constexpr auto WH = 1080;
-
 
 int main(int argc, const char **argv) {
     auto app = App::initialize(WW, WH);

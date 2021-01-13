@@ -155,7 +155,7 @@ private:
 class StdStringBuffer : public TextData {
 public:
     explicit StdStringBuffer() : TextData(), store{} {}
-    ~StdStringBuffer() override = default;
+    ~StdStringBuffer() override;
 
     /// EDITING
     void insert(char ch) override;
@@ -175,6 +175,7 @@ public:
 
     /// INIT CALLS
     static std::unique_ptr<TextData> make_handle();
+    static TextData*make_non_owning();
 
     /// SEARCH OPS
     size_t lines_count() const override;

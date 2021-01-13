@@ -12,7 +12,7 @@ namespace ui {
 //! -----------------------------------------------------
 
 StatusBar *StatusBar::create(int width, int height, int x, int y) {
-    auto status_bar_text = DataManager::get_instance().create_managed_buffer(BufferType::StatusBar);
+    auto status_bar_text = DataManager::get_instance().create_free_buffer(BufferType::StatusBar);
     auto ui_view = View::create_managed(status_bar_text, "status_bar", width, height, x, y);
     BufferCursor *cursor_info = &status_bar_text->cursor;
     auto sb = new StatusBar{};
@@ -44,5 +44,8 @@ void StatusBar::draw(View *view) {
 void StatusBar::print_debug_info() const {
     auto output = fmt::format("[{}, {}]", active_buffer_cursor->line, active_buffer_cursor->col_pos);
     util::println("Text to display: '{}'", output);
+}
+StatusBar::~StatusBar() {
+    util::println("Destroying status bar");
 }
 }// namespace ui
