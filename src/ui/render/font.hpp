@@ -18,13 +18,14 @@
 
 #include "texture.hpp"
 #include "vertex_buffer.hpp"
+#include <core/vec_3.hpp>
 
 namespace ui {
-    namespace core {
-        class ScreenPos;
-    }
-    class View;
+namespace core {
+    class ScreenPos;
 }
+class View;
+}// namespace ui
 
 struct SyntaxColor {
     GLfloat r{0.0f}, g{0.0f}, b{0.0f};
@@ -104,6 +105,13 @@ struct ColorizeTextRange {
     glm::vec3 color;
 };
 
+struct TextDrawable {
+    int xpos = -1, ypos = -1;
+    std::string_view text;
+    std::optional<Vec3f> color;
+};
+
+using OptionalColData = std::optional<std::vector<ColorizeTextRange>>;
 class SimpleFont {
 public:
     static SyntaxColor colors[8];
@@ -117,8 +125,10 @@ public:
 
     void create_vertex_data_in(VAO *vao, ui::View *view, int xpos, int ypos);
 
-    void emplace_colorized_text_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos,
-                                         std::optional<std::vector<ColorizeTextRange>> colorData);
+    void emplace_colorized_text_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos, OptionalColData colorData);
+    void add_colorized_text_gpu_data(VAO *vao, std::vector<TextDrawable> textDrawables);
+
+    int calculate_text_width(std::string_view str);
 
     std::unique_ptr<Texture> t{nullptr};
     [[nodiscard]] int get_row_advance() const;
@@ -126,10 +136,12 @@ public:
     int row_height;
     int max_glyph_width;
     int max_glyph_height;
+    int size_bearing_difference_max;
 
     void create_vertex_data_for(ui::View *pView, ui::core::ScreenPos startingTopLeftPos);
 
 private:
     // glyph_info* data = info;
     int pixel_size{};
+
 };

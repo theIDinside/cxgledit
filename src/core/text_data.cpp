@@ -531,13 +531,17 @@ void StdStringBuffer::step_to_line_begin(Boundary boundary) {
 }
 
 void StdStringBuffer::rebuild_metadata() {
-    if (has_meta_data && data_is_pristine == false && info == BufferTypeInfo::EditBuffer) {
+    if (has_meta_data && (data_is_pristine == false) && info == BufferTypeInfo::EditBuffer) {
         if (has_meta_data) {
             auto line_indices = str::count_newlines(store.data(), store.size());
             auto buf_name = meta_data.buf_name;
             this->meta_data = TextMetaData{std::move(line_indices), std::move(buf_name)};
         }
         data_is_pristine = true;
+    } else if(info == BufferTypeInfo::Modal) {
+        auto line_indices = str::count_newlines(store.data(), store.size());
+        auto buf_name = meta_data.buf_name;
+        this->meta_data = TextMetaData{std::move(line_indices), std::move(buf_name)};
     }
     state_is_pristine = false;
     data_is_pristine = true;

@@ -14,6 +14,7 @@
 #include <ui/managers/shader_library.hpp>
 #include <core/commands/command_interpreter.hpp>
 
+#include "cursors/view_cursor.hpp"
 
 #undef min
 #undef max
@@ -108,10 +109,12 @@ void View::draw(bool isActive) {
     // GL anchors x, y in the bottom left, with our orthographic view, we anchor from top left, thus we have to take y-h, instead of just taking y
     glScissor(x, y - height, this->width, this->height);
 
+    // TODO(optimization?): lift out display settings into a static structure reachable everywhere, to query info about size, settings, colors etc
+    auto[r,g,b] = bg_color;
     if (isActive) {
-        glClearColor(0.25f, 0.35f, 0.35f, 1.0f);
+        glClearColor(r + 0.05, g + 0.05, b + 0.05, 1.0f);
     } else {
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(r, g, b, 1.0f);
     }
     glClear(GL_COLOR_BUFFER_BIT);
     vao->bind_all();
@@ -143,10 +146,11 @@ void View::forced_draw(bool isActive) {
     // FN_MICRO_BENCH();
     glEnable(GL_SCISSOR_TEST);
     glScissor(x, y - height, this->width, this->height);
+    auto[r,g,b] = bg_color;
     if (isActive) {
-        glClearColor(0.25f, 0.35f, 0.35f, 1.0f);
+        glClearColor(r + 0.05, g + 0.05, b + 0.05, 1.0f);
     } else {
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(r, g, b, 1.0f);
     }
     glClear(GL_COLOR_BUFFER_BIT);
     vao->bind_all();
@@ -166,59 +170,6 @@ void View::forced_draw(bool isActive) {
     glDisable(GL_SCISSOR_TEST);
 }
 
-void View::forced_draw_with_prefix_colorized(const std::string &prefix,
-                                             std::optional<std::vector<ColorizeTextRange>> cInfo, bool isActive) {
-    glEnable(GL_SCISSOR_TEST);
-    glScissor(x, 0, this->width, this->height);
-
-    if (isActive) {
-        glClearColor(0.25f, 0.35f, 0.35f, 1.0f);
-    } else {
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    }
-    glClear(GL_COLOR_BUFFER_BIT);
-    auto &ci = CommandInterpreter::get_instance();
-    std::string textToRender = prefix;
-    std::string cmd_rep = ci.current_input().value_or(data->to_std_string());
-    vao->bind_all();
-    shader->use();
-    shader->set_projection(projection);
-    font->t->bind();
-
-    textToRender.append(cmd_rep);
-
-    if (cInfo) {
-        auto defaultColor = glm::fvec3{0.74f, 0.425f, 0.46f};
-        auto text_len = textToRender.size();
-        auto &vec = cInfo.value();
-        std::vector<ColorizeTextRange> fully_formatted{};
-        auto index = 0u;
-        for (auto range : vec) {
-            if (index < range.begin) {
-                auto a = ColorizeTextRange{.begin = index, .length = (range.begin) - index, .color = defaultColor};
-                fully_formatted.push_back(a);
-                fully_formatted.push_back(range);
-            } else {
-                fully_formatted.push_back(range);
-            }
-            index += range.begin + range.length;
-        }
-        if (index != text_len) {
-            fully_formatted.push_back(
-                    ColorizeTextRange{.begin = index, .length = (text_len) -index, .color = defaultColor});
-        }
-
-        font->emplace_colorized_text_gpu_data(vao.get(), textToRender, AS(this->x + View::TEXT_LENGTH_FROM_EDGE, int),
-                                              this->y - font->get_row_advance(), fully_formatted);
-        vao->flush_and_draw();
-    } else {
-        font->emplace_colorized_text_gpu_data(vao.get(), textToRender, AS(this->x + View::TEXT_LENGTH_FROM_EDGE, int),
-                                              this->y - font->get_row_advance(), std::move(cInfo));
-        // font->emplace_source_text_gpu_data(vao.get(), textToRender, this->x + View::TEXT_LENGTH_FROM_EDGE,this->y - font->get_row_advance());
-        vao->flush_and_draw();
-    }
-    glDisable(GL_SCISSOR_TEST);
-}
 ViewCursor *View::get_cursor() { return cursor.get(); }
 
 void View::draw_statusbar() {
@@ -304,15 +255,6 @@ void View::scroll(Scroll direction, int linesToScroll) {
     util::println("View cursor line: {}", cursor->line);
 }
 
-void View::set_fill(float w, float h, int parent_w, int parent_h) {
-    assert(w <= 1.0 && h <= 1.0f);
-    width_fill = w;
-    height_fill = h;
-    width = int(float(parent_w) * w);
-    width = int(float(parent_w) * w);
-    height = int(float(parent_h) * h);
-}
-
 View *View::create(TextData *data, const std::string &name, int w, int h, int x, int y, ViewType type) {
     auto reserveMemory_Quads =
             gpu_mem_required_for_quads<TextVertex>(1024);// reserve GPU memory for at least 1024 characters.
@@ -330,7 +272,7 @@ View *View::create(TextData *data, const std::string &name, int w, int h, int x,
     v->vao = std::move(vao);
     v->data = data;
     v->vertexCapacity = reserveMemory_Quads / sizeof(TextVertex);
-    v->cursor = ViewCursor::create_from(*v);
+    v->cursor = ViewCursor::create_from(v);
     v->name = name;
     return v;
 }
@@ -344,6 +286,29 @@ View::~View() {
     if (not DataManager::get_instance().is_managed(data->id)) {
         delete data;
     }
+}
+
+void View::draw_modal_view(int selected, std::vector<TextDrawable>& drawables) {
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(x, y - height, this->width, this->height);
+    auto[r,g,b] = bg_color;
+
+    glClear(GL_COLOR_BUFFER_BIT);
+    vao->bind_all();
+    shader->use();
+    font->t->bind();
+    shader->set_projection(projection);
+    cursor->set_projection(projection);
+    auto text_size = data->size();
+    if (text_size * 6 > this->vertexCapacity) {
+        this->vao->reserve_gpu_size(text_size * 2 + 2);
+        this->vertexCapacity = (text_size * 6 * 2 + 2);
+    }
+    font->add_colorized_text_gpu_data(vao.get(), drawables);
+    vao->flush_and_draw();
+    cursor->set_line_rect(drawables[selected].xpos, drawables[selected].xpos + width, drawables[selected].ypos - 4, font->row_height - 2);
+    cursor->forced_draw();
+    glDisable(GL_SCISSOR_TEST);
 }
 
 void CommandView::draw() {

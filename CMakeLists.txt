@@ -56,7 +56,19 @@ set(UI_RENDER_SOURCES
         src/ui/render/shader.cpp src/ui/render/shader.hpp
         src/ui/render/texture.cpp src/ui/render/texture.hpp
         src/ui/render/vertex_buffer.cpp src/ui/render/vertex_buffer.hpp
-        src/ui/view.cpp src/ui/view.hpp src/ui/view_cursor.cpp src/ui/view_cursor.hpp src/ui/managers/view_manager.cpp src/ui/managers/view_manager.hpp src/ui/core/layout.cpp src/ui/core/layout.hpp src/ui/editor_window.cpp src/ui/editor_window.hpp src/ui/status_bar.cpp src/ui/status_bar.hpp src/ui/syntax_highlighting.cpp src/ui/syntax_highlighting.hpp src/ui/core/opengl.cpp src/ui/core/opengl.hpp src/ui/modal.cpp src/ui/modal.hpp)
+
+        src/ui/view.cpp src/ui/view.hpp
+        src/ui/cursors/view_cursor.cpp src/ui/cursors/view_cursor.hpp
+
+        src/ui/managers/view_manager.cpp src/ui/managers/view_manager.hpp
+        src/ui/core/layout.cpp src/ui/core/layout.hpp
+        src/ui/editor_window.cpp src/ui/editor_window.hpp
+        src/ui/status_bar.cpp src/ui/status_bar.hpp
+        src/ui/syntax_highlighting.cpp src/ui/syntax_highlighting.hpp
+        src/ui/core/opengl.cpp src/ui/core/opengl.hpp
+        src/ui/modal.cpp src/ui/modal.hpp
+        src/ui/panel.cpp src/ui/panel.hpp
+        )
 
 set(UTIL_SOURCES
         src/utils/utils.cpp src/utils/utils.hpp
@@ -78,7 +90,7 @@ add_executable(cxgledit
         ${CORE_SOURCE}
         ${UI_RENDER_SOURCES}
         ${UTIL_SOURCES}
-        ${COMMANDS_SOURCE})
+        ${COMMANDS_SOURCE} src/core/vec_3.cpp src/core/vec_3.hpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${GLFW_DIR}/include")
 set(GLFW_BUILD_EXAMPLES OFF CACHE INTERNAL "Build the GLFW example programs")

@@ -160,7 +160,7 @@ enum GLFWKeys {
 
 enum class CXMode {
     Normal,
-    Input,
+    Insert,
     Command,
 };
 

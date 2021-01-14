@@ -4,13 +4,15 @@
 
 #pragma once
 
-#include "view_cursor.hpp"
+
 #include <GLFW/glfw3.h>
 #include <core/text_data.hpp>
 #include <ui/core/layout.hpp>
 #include <ui/render/font.hpp>
 #include <ui/render/shader.hpp>
 #include <ui/render/vertex_buffer.hpp>
+#include <core/vec_3.hpp>
+#include "cursors/view_cursor.hpp"
 
 /// ---- Forward declarations
 struct ColorizeTextRange;
@@ -24,7 +26,7 @@ namespace ui {
 enum class ViewType {
     Text,
     Command,
-    List,
+    Modal
 };
 
 enum class Scroll {
@@ -40,19 +42,18 @@ struct View {
 
     static View *create(TextData *data, const std::string &name, int w, int h, int x, int y,
                         ViewType type = ViewType::Text);
+
     void draw(bool isActive = false);
     void forced_draw(bool isActive = false);
-
-    void forced_draw_with_prefix_colorized(const std::string &prefix,
-                                           std::optional<std::vector<ColorizeTextRange>> colorInfo,
-                                           bool isActive = false);
     void draw_command_view(const std::string &prefix, std::optional<std::vector<ColorizeTextRange>> colorInfo);
     void draw_statusbar();
+    void draw_modal_view(int selected, std::vector<TextDrawable>& drawables);
+
     void set_projection(glm::mat4 projection);
     void set_dimensions(int w, int h);
     void anchor_at(int x, int y);
     void scroll(Scroll direction, int linesToScroll);
-    void set_fill(float w, float h, int parent_w, int parent_h);
+
     SimpleFont *get_font();
     void set_font(SimpleFont *new_font);
     [[nodiscard]] TextData *get_text_buffer() const;
@@ -61,28 +62,22 @@ struct View {
     std::string name{};
     int width{}, height{}, x{}, y{};
     int lines_displayable = -1;
-    float width_fill{1.0f};
-    float height_fill{1.0f};
     std::unique_ptr<VAO> vao{nullptr};// the graphical representation
-private:
+    Vec3f bg_color{0.2f, 0.3f, 0.3f};
+    glm::mat4 projection;
     /// Anonymous for now, will pull out this later on
     struct {
         TextData *data = nullptr;
         int td_id;
     };
 
-
+    Vec3f fg_color{1.0f, 1.0f, 1.0f};
     SimpleFont *font = nullptr;
     Shader *shader = nullptr;
-    glm::mat4 projection;
     std::size_t vertexCapacity{0};
     int scrolled = 0;
     Boxed<ViewCursor> cursor;
     ViewType type = ViewType::Text;
-    friend class CommandView;
-    friend class ViewCursor;
-    friend class StatusBar;
-    friend class App;
 };
 
 class CommandView {

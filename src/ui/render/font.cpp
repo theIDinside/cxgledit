@@ -53,7 +53,7 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
     auto max_glyph_height = 0u;
     auto max_glyph_width = 0u;
     std::vector<glyph_info> glyph_cache;
-
+    auto max_bearing_size_diff = 0;
     for (int i = 0; i < charRange.to; ++i) {
 
         FT_Load_Char(face, i, FT_LOAD_RENDER | FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT);
@@ -72,6 +72,7 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
                 int y = pen_y + row;
                 pixels[y * tex_width + x] = bmp->buffer[row * bmp->pitch + col];
             }
+
         }
 
         // this is stuff you'd need when rendering individual glyphs out of the
@@ -89,10 +90,10 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
                 .bearing = glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
         };
 
+        max_bearing_size_diff = std::max(std::abs(glyphInfo.size.y - glyphInfo.bearing.y), max_bearing_size_diff);
         glyph_cache.push_back(glyphInfo);
         pen_x += bmp->width + 1;
     }
-    fmt::print("Max glyph height was: {}\n", max_glyph_height);
     auto max_adv_y = max_glyph_height + 5;
     row_advance = max_adv_y;
     auto texture = Texture::make_from_data(pixels, tex_width, tex_height, 1);
@@ -109,7 +110,6 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
     auto png_filename = fmt::format("{}_{}_output.png", path, pixel_size);
 
     stbi_write_png(png_filename.c_str(), tex_width, tex_height, 4, png_data, tex_width * 4);
-    util::println("Wrote {} font bitmap to file", png_filename);
     free(png_data);
     free(pixels);
 
@@ -117,6 +117,7 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
     font->row_height = row_advance;
     font->max_glyph_width = max_glyph_width;
     font->max_glyph_height = max_glyph_height;
+    font->size_bearing_difference_max = max_bearing_size_diff;
 
     return font;
 }
@@ -364,6 +365,50 @@ void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, std::string_view text
     }
 }
 
+void SimpleFont::add_colorized_text_gpu_data(VAO *vao, std::vector<TextDrawable> textDrawables) {
+
+    auto count_chars_in_drawables = std::accumulate(textDrawables.begin(), textDrawables.end(), 0, [](auto acc, auto el) {
+        return acc + el.text.size();
+    });
+
+    vao->vbo->data.clear();
+    vao->vbo->data.reserve(gpu_mem_required_for_quads<TextVertex>(count_chars_in_drawables));
+    auto &store = vao->vbo->data;
+    auto defaultColor = Vec3f{0.84f, 0.725f, 0.66f};
+
+    for(const auto& drawable : textDrawables) {
+        auto [r,g,b] = drawable.color.value_or(defaultColor);
+        auto x = drawable.xpos;
+        auto y = drawable.ypos;
+        auto data_index = 0;
+        for (char c : drawable.text) {
+            auto &glyph = this->glyph_cache[c];
+            if (c == '\n') {
+                x = drawable.xpos;
+                y -= row_height;
+                continue;
+            }
+            auto xpos = float(x) + glyph.bearing.x;
+            auto ypos = float(y) - static_cast<float>(glyph.size.y - glyph.bearing.y);
+
+            auto x0 = float(glyph.x0) / float(t->width);
+            auto x1 = float(glyph.x1) / float(t->width);
+            auto y0 = float(glyph.y0) / float(t->height);
+            auto y1 = float(glyph.y1) / float(t->height);
+            auto w = float(glyph.x1 - glyph.x0);
+            auto h = float(glyph.y1 - glyph.y0);
+            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+            store.emplace_back(xpos, ypos, x0, y1, r, g, b);
+            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+            store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
+            x += glyph.advance;
+            data_index++;
+        }
+    }
+}
+
 void SimpleFont::create_vertex_data_for(ui::View* view, const ui::core::ScreenPos startingTopLeftPos) {
     // FN_MICRO_BENCH();
     auto text = view->get_text_buffer()->to_string_view();
@@ -516,3 +561,18 @@ void SimpleFont::create_vertex_data_for(ui::View* view, const ui::core::ScreenPo
         view_cursor->update_cursor_data(xpos, y - 6);
     }
 }
+
+int SimpleFont::calculate_text_width(std::string_view str) {
+    auto width_in_pixels = 0;
+    auto acc = 0;
+    for(const auto& c : str) {
+        auto &glyph = glyph_cache[c];
+        acc += glyph.advance;
+        if(c == '\n') {
+            width_in_pixels = std::max(acc, width_in_pixels);
+            acc = 0;
+        }
+    }
+    return width_in_pixels;
+}
+

@@ -219,6 +219,7 @@ std::vector<Token> tokenize(std::string_view text) {
     result.reserve(sz / 3);// if we guess that a token average length is 3 characters, we get this reserved number
     if (sz < 2) return result;
     for (auto i = 0u; i < sz - 2; i++) {
+        if(std::isspace(text[i])) continue;
         if (text[i] == '/') {
             if (text[i + 1] == '/') {
                 auto token = line_comment(text, i);

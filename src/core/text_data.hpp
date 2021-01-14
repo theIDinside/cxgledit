@@ -53,7 +53,7 @@ struct TextMetaData {
     std::string buf_name{};
 };
 
-enum class BufferTypeInfo { CommandInput, StatusBar, EditBuffer };
+enum class BufferTypeInfo { CommandInput, StatusBar, EditBuffer, Modal };
 
 struct BufferCursor {
     int pos{0};

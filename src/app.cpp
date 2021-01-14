@@ -33,40 +33,71 @@ using ui::core::Layout;
 static constexpr auto PRESS_MASK = GLFW_PRESS | GLFW_REPEAT;
 static constexpr auto pressed_or_repeated = [](auto action) -> bool { return action & PRESS_MASK; };
 
-auto initialize_key_callbacks() {
-    return [](auto window, int key, int scancode, int action, int mods) {
-      auto app = get_app_handle(window);
-      const auto input = KeyInput{key, mods};
-      // app->command_view->show_last_message = false;
-      if (pressed_or_repeated(action)) {
+static void initialize_static_resources() {
 
-          switch (app->bound_action(CXMode::Normal, input)) {
-              case Action::OpenFile:
-                  app->toggle_command_input("open", Commands::OpenFile);
-                  break;
-              case Action::WriteFile:
-                  app->toggle_command_input("write", Commands::WriteFile);
-                  break;
-              case Action::GotoLine:
-                  app->toggle_command_input("goto", Commands::GotoLine);
-                  break;
-              case Action::GotoItem:
-                  break;
-              case Action::PrintDebug:
-                  app->print_debug_info();
-                  break;
-              case Action::CommandPrompt:
-                  app->toggle_command_input("command", Commands::UserCommand);
-                  break;
-              case Action::DefaultAction: {
-                  if (mods & GLFW_MOD_CONTROL) {
-                      app->kb_command(input);
-                  } else {
-                      app->handle_edit_input(input);
-                  }
-              } break;
-          }
-      }
+    FontConfig default_font_cfg{.name = "FreeMono24",
+                                .path = "assets/fonts/FreeMono.ttf",
+                                .pixel_size = 24,
+                                .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
+    FontConfig default_font_cfg_18{.name = "FreeMono18",
+                                   .path = "assets/fonts/FreeMono.ttf",
+                                   .pixel_size = 18,
+                                   .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
+
+    FontConfig default_font_cfg_13{.name = "FreeMono12",
+                                   .path = "assets/fonts/FreeMono.ttf",
+                                   .pixel_size = 12,
+                                   .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
+
+    ShaderConfig text_shader{.name = "text",
+                             .vs_path = "assets/shaders/textshader.vs",
+                             .fs_path = "assets/shaders/textshader.fs"};
+    ShaderConfig cursor_shader{.name = "cursor",
+                               .vs_path = "assets/shaders/cursor.vs",
+                               .fs_path = "assets/shaders/cursor.fs"};
+
+    FontLibrary::get_instance().load_font(default_font_cfg, true);
+    FontLibrary::get_instance().load_font(default_font_cfg_18, false);
+    FontLibrary::get_instance().load_font(default_font_cfg_13, false);
+
+    ShaderLibrary::get_instance().load_shader(text_shader);
+    ShaderLibrary::get_instance().load_shader(cursor_shader);
+}
+
+auto initialize_key_callbacks() {
+    util::println("Configuring action bindings");
+    return [](auto window, int key, int scancode, int action, int mods) {
+        auto app = get_app_handle(window);
+        const auto input = KeyInput{key, mods};
+        // app->command_view->show_last_message = false;
+        if (pressed_or_repeated(action)) {
+            switch (app->bound_action(CXMode::Normal, input)) {
+                case Action::OpenFile:
+                    app->toggle_command_input("open", Commands::OpenFile);
+                    break;
+                case Action::WriteFile:
+                    app->toggle_command_input("write", Commands::WriteFile);
+                    break;
+                case Action::GotoLine:
+                    app->toggle_command_input("goto", Commands::GotoLine);
+                    break;
+                case Action::GotoItem:
+                    break;
+                case Action::PrintDebug:
+                    app->print_debug_info();
+                    break;
+                case Action::CommandPrompt:
+                    app->toggle_command_input("command", Commands::UserCommand);
+                    break;
+                case Action::DefaultAction: {
+                    if (mods & GLFW_MOD_CONTROL) {
+                        app->kb_command(input);
+                    } else {
+                        app->handle_edit_input(input);
+                    }
+                } break;
+            }
+        }
     };
 }
 
@@ -197,6 +228,7 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
     instance->scroll = 0;
 
     instance->projection = glm::ortho(0.0f, static_cast<float>(app_width), 0.0f, static_cast<float>(app_height));
+
     instance->title = title;
     instance->window = window;
 
@@ -205,37 +237,12 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
         PANIC("Failed to create GLFW Window");
     }
 
-    FontConfig default_font_cfg{.name = "FreeMono24",
-                                .path = "assets/fonts/FreeMono.ttf",
-                                .pixel_size = 24,
-                                .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
-    FontConfig default_font_cfg_18{.name = "FreeMono18",
-                                   .path = "assets/fonts/FreeMono.ttf",
-                                   .pixel_size = 18,
-                                   .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
-
-    FontConfig default_font_cfg_13{.name = "FreeMono12",
-                                   .path = "assets/fonts/FreeMono.ttf",
-                                   .pixel_size = 12,
-                                   .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
-
-    ShaderConfig text_shader{.name = "text",
-                             .vs_path = "assets/shaders/textshader.vs",
-                             .fs_path = "assets/shaders/textshader.fs"};
-    ShaderConfig cursor_shader{.name = "cursor",
-                               .vs_path = "assets/shaders/cursor.vs",
-                               .fs_path = "assets/shaders/cursor.fs"};
-
-    FontLibrary::get_instance().load_font(default_font_cfg, true);
-    FontLibrary::get_instance().load_font(default_font_cfg_18, false);
-    FontLibrary::get_instance().load_font(default_font_cfg_13, false);
-
-    ShaderLibrary::get_instance().load_shader(text_shader);
-    ShaderLibrary::get_instance().load_shader(cursor_shader);
+    initialize_static_resources();
 
     auto text_row_advance = FontLibrary::get_default_font()->get_row_advance() + 2;
     auto cv = CommandView::create("command", app_width, text_row_advance * 1, 0, text_row_advance * 1);
     cv->command_view->set_projection(instance->projection);
+    instance->modal_popup = ui::Modal::create(instance->projection);
 
     instance->command_view = std::move(cv);
 
@@ -282,9 +289,6 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
             PANIC("MOUSE CLICKING FEATURES NOT YET DONE GOOD.");
         }
     });
-
-
-
 
     glfwSetKeyCallback(window, initialize_key_callbacks());
 
@@ -361,6 +365,7 @@ void App::load_file(const fs::path &file) {
 void App::draw_all(bool force_redraw) {
     for (auto &ew : editor_views) ew->draw(force_redraw);
     this->command_view->draw();
+    if (modal_shown) modal_popup->draw();
     glViewport(0, 0, this->win_width, this->win_height);
     glfwSwapBuffers(this->window);
 }
@@ -381,7 +386,7 @@ void App::update_views_dimensions(float wRatio, float hRatio) {
 }
 
 void App::kb_command(KeyInput input) {
-    const auto&[key, modifier] = input;
+    const auto &[key, modifier] = input;
     get_command_view()->show_last_message = false;
     auto modify_movement_op = [this](auto mod) {
         if (mod & GLFW_MOD_SHIFT) {
@@ -495,7 +500,7 @@ void App::kb_command(KeyInput input) {
                 if (data) { active_buffer->insert_str(*data); }
             } break;
             case GLFW_KEY_M: {
-                this->modal_popup();
+                toggle_modal_popup();
             } break;
             case GLFW_KEY_G:
                 toggle_command_input("goto", Commands::GotoLine);
@@ -522,7 +527,7 @@ void App::graceful_exit() {
 }
 
 void App::toggle_command_input(const std::string &prefix, Commands commandInput) {
-    if(command_edit) {
+    if (command_edit) {
         disable_command_input();
     } else {
         auto &ci = CommandInterpreter::get_instance();
@@ -550,7 +555,7 @@ void App::disable_command_input() {
 }
 
 void App::handle_edit_input(KeyInput input) {
-    const auto& [key, modifier] = input;
+    const auto &[key, modifier] = input;
     get_command_view()->show_last_message = false;
     auto modify_movement_op = [this](auto mod) {
         if (mod & GLFW_MOD_SHIFT) {
@@ -581,7 +586,12 @@ void App::handle_edit_input(KeyInput input) {
         } break;
         case GLFW_KEY_DOWN:
         case GLFW_KEY_UP: {
-            cycle_command_or_move_cursor(static_cast<Cycle>(key));
+            if (modal_shown) {
+                util::println("Cycling choices");
+                modal_popup->cycle_choice(static_cast<ui::Scroll>(key));
+            } else {
+                cycle_command_or_move_cursor(static_cast<Cycle>(key));
+            }
         } break;
         case GLFW_KEY_RIGHT: {
             modify_movement_op(modifier);
@@ -818,7 +828,23 @@ void App::fwrite_active_to_disk(const std::string &path) {
         write_impl(p);
     }
 }
-void App::modal_popup() {}
+void App::toggle_modal_popup() {
+    if (modal_shown) {
+        modal_shown = false;
+    } else {
+        util::println("Sdhow modal dialog");
+        modal_shown = true;
+        modal_popup->set_data("Goto...\nFind in file...\nSave all...");
+        auto width = modal_popup->view->get_font()->calculate_text_width("1: Item\n2: Item\n3: Item");
+        auto heightOfModalPixels = (FontLibrary::get_default_font()->get_row_advance()) * modal_popup->choices;
+
+        DimInfo dim{250, 250, width, heightOfModalPixels};
+        util::println("Dimensions of modal popup containing: {}\t\t Dimension: {}", "1: Item\n2: Item\n3: Item",
+                      dim.debug_str());
+        modal_popup->show(dim);
+    }
+}
+
 void App::reload_keybindings() {
     reload_keybinding_library(kb_library, bound_action, [](auto fn) { util::println("Keybinding library reloaded"); });
 }
