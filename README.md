@@ -13,11 +13,18 @@ I will write my own buffer type, probably a gap buffer or something easy like th
 all the vertex data for a line, or even the entire file, upload that to the gpu and issue 1 draw call - instead of 15000
 for a file with 500 lines and 30 character per line average.
 
-![First render](initial.PNG)
+![First render](docs/img/initial.PNG)
 
 Syntax highlighting has improved slightly
 
-![Broader syntax highlighting](syntax_highlighting.PNG)
+![Broader syntax highlighting](docs/img/syntax_highlighting.PNG)
+
+
+Got some semi-rudimentary decent modal popup dialog working. But damn it's janky figuring out how the font is aligned etc. 
+And since I've pretty much hacked and slashed it together, it takes me longer than I would like to admit to solve it.
+Font class basically calculates required height & width of provided text data for the box, and splits it up by lines.
+
+![Modal popup dialog example](docs/img/modal_dialog_example.PNG)
 
 ### Features on display:
 - Split editor windows
