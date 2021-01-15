@@ -33,7 +33,8 @@ int main(int argc, const char **argv) {
  * TODO(feature, major): add intelligence to editor, so that it can "reason" about the lexed and/or "parsed" source code
  *
  * TODO(major): remove dependencies on GLM & GLFW, possibly freetype as well, but probably not
- *
+ *      - addendum: possibly change font dependency to STB, as this library exists on github,
+ *      thus doesn't have the suckyness of freetype, which must be installed manually in the deps folder
  * Add some debug code for OpenGL and read up about OpenGL
  *
     GLint s;
