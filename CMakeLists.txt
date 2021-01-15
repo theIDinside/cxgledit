@@ -138,11 +138,13 @@ if (CMAKE_BUILD_TYPE STREQUAL Release)
 else ()
     # set -DINTRINSICS_ENABLED, when AVX2 character occurence scanning is implemented
     add_definitions(-DDEBUG)
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /O3")
     message("Build type is ${CMAKE_BUILD_TYPE}. Copying assets to ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}/assets")
     message("Debug has instrumentation features enabled.")
     target_compile_definitions(cxgledit PUBLIC INSTRUMENTATION KEEP_LOGS IS_DEBUG)
     add_custom_command(TARGET cxgledit POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${PROJECT_SOURCE_DIR}/assets ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}/assets)
+    add_custom_command(TARGET cxgledit POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${PROJECT_SOURCE_DIR}/test_src ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}/test)
 endif ()
