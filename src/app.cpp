@@ -228,7 +228,6 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
     auto char_input_callback = [](auto window, auto codepoint) {
         auto app = get_app_handle(window);
         // TODO(feature, major, huge maybe): Unicode support. But why would we want that? Source code should and can only use ASCII. If you plan on using something else? Well fuck off then.
-        util::println("Char callback: {} for mode {}", codepoint, util::to_string(app->mode));
         if (app->mode == CXMode::Normal) {
             if (codepoint >= 32 && codepoint <= 126) {
                 app->active_buffer->insert((char) codepoint);
@@ -256,9 +255,6 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
     };
 
     glfwSetCharCallback(window, char_input_callback);
-
-    auto key_cb = initialize_key_callbacks();
-
     auto key_callbacks = [](auto window, int key, int scancode, int action, int mods) {
         auto app = get_app_handle(window);
         const auto input = KeyInput{key, mods};
@@ -279,7 +275,7 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
         }
     };
 
-    glfwSetKeyCallback(window, key_cb);
+    glfwSetKeyCallback(window, key_callbacks);
     glfwSetMouseButtonCallback(window, [](auto window, auto button, auto action, auto mods) {
         double xpos, ypos;
         auto app = get_app_handle(window);
@@ -558,7 +554,7 @@ void App::kb_command(KeyInput input) {
                 toggle_command_input("open", Commands::OpenFile);
                 break;
             case GLFW_KEY_D:// DEBUG
-                print_debug_info();
+                app_debug();
                 break;
             case GLFW_KEY_W:// WRITE
                 toggle_command_input("write", Commands::WriteFile);
@@ -778,7 +774,7 @@ void App::cycle_command_or_move_cursor(Cycle cycle) {
     }
 }
 
-void App::print_debug_info() {
+void App::app_debug() {
 #ifdef FOO2
     util::println("----- App Debug Info -----");
     util::println("Window Size: {} x {}", win_width, win_height);
@@ -806,8 +802,8 @@ void App::print_debug_info() {
     auto &dm = DataManager::get_instance();
     util::println("Available buffers in re-use list: {}", dm.reuseable_buffers());
     dm.print_all_managed();
-    util::println("Buffer line: {}\t Cursor line: {}", active_window->get_text_buffer()->cursor.line,
-                  active_window->view->cursor->line);
+    util::println("Buffer line: {}\t Cursor line: {}\tDisplayable lines in view: {}", active_window->get_text_buffer()->cursor.line,
+                  active_window->view->cursor->line, active_window->view->lines_displayable);
 }
 WindowDimensions App::get_window_dimension() { return win_dimensions; }
 
@@ -874,7 +870,7 @@ ui::CommandView *App::get_command_view() const { return command_view.get(); }
 void App::editor_window_goto(int line) {
     auto l = active_view->get_cursor()->line;
     auto buf = active_view->get_text_buffer();
-    if (line > buf->meta_data.line_begins.size()) {
+    if (line >= buf->meta_data.line_begins.size()) {
         buf->step_cursor_to(buf->size());
         auto scroll_amt = buf->meta_data.line_begins.size() - l;
         active_view->scroll(ui::Scroll::Down, scroll_amt);

@@ -53,6 +53,7 @@ struct View {
     void set_dimensions(int w, int h);
     void anchor_at(int x, int y);
     void scroll(Scroll direction, int linesToScroll);
+    void scroll_to(int line);
     // TODO(urgent): make sure that view-scrolling-to-buffer works, this is useful
     void goto_buffer_position();
 

@@ -88,7 +88,7 @@ public:
     std::string last_searched{};
 
     void reload_keybindings();
-    void print_debug_info();
+    void app_debug();
     void kb_command(KeyInput input);
 
 

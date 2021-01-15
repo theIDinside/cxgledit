@@ -304,10 +304,7 @@ void StdStringBuffer::remove_ch_forward(size_t i) {
         auto e = cursor.pos + i;
         for (auto index = cursor.pos; index < e; index++) {
             if (store[index] == '\n') {
-                util::println("DELETED A LINE");
                 lines_deleted++;
-            } else {
-                util::println("First character to 'delete': '{}'", store[index]);
             }
         }
         store.erase(cursor.pos, i);
