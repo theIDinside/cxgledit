@@ -98,8 +98,9 @@ void VAO::push_quad(std::array<TextVertex, 4> quad) {
     vbo->data.push_back(quad[2]);
     vbo->data.push_back(quad[3]);
 }
+
 VAO::~VAO() {
-    util::println("Destroying Vertex Array Object and it's resources");
+
 }
 
 VAO::VAO(GLuint VAO_ID, std::unique_ptr<TextVertexBufferObject>&& VBO) : vao_id(VAO_ID), vbo(std::move(VBO)) {

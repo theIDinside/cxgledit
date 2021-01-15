@@ -15,7 +15,7 @@ class View;
 struct StatusBar {
     ~StatusBar();
     Boxed<View> ui_view;
-    BufferCursor *active_buffer_cursor;
+    BufferCursor *buffer_cursor;
     glm::vec3 bg_color{0.25f, 0.25f, 0.27f};
     glm::vec3 font_color{0.9f, 0.8f, 0.6f};
     void draw(View *view);

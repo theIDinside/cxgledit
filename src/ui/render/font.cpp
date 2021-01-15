@@ -573,6 +573,6 @@ int SimpleFont::calculate_text_width(std::string_view str) {
             acc = 0;
         }
     }
-    return width_in_pixels;
+    return std::max(width_in_pixels, acc);
 }
 

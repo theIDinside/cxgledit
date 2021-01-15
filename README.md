@@ -24,7 +24,7 @@ Got some semi-rudimentary decent modal popup dialog working. But damn it's janky
 And since I've pretty much hacked and slashed it together, it takes me longer than I would like to admit to solve it.
 Font class basically calculates required height & width of provided text data for the box, and splits it up by lines.
 
-![Modal popup dialog example](docs/img/modal_dialog_example.PNG)
+![ModalPopup popup dialog example](docs/img/modal_dialog_example.PNG)
 
 ### Features on display:
 - Split editor windows

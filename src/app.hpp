@@ -55,6 +55,7 @@ struct Register {
 
 void reload_keybinding_library();
 
+
 class App {
 public:
     static App *initialize(int app_width, int app_height, const std::string &title = "cxedit");
@@ -81,15 +82,28 @@ public:
     int win_height;
     int win_width;
     KeyBindingFn bound_action = nullptr;
+    bool modal_shown;
+    CXMode mode = CXMode::Normal;
+    ui::ModalPopup * modal_popup;
+    std::string last_searched{};
+
     void reload_keybindings();
     void print_debug_info();
     void kb_command(KeyInput input);
+
+
+    void update_all_editor_windows();
+    void input_command_or_newline();
+    void cycle_command_or_move_cursor(Cycle cycle);
+    void toggle_modal_popup();
+
     /**
      * Handle keyboard input, when we are in "edit" mode, meaning when we are editing actual text.
      * @param i
      * @param i1
      */
     void handle_edit_input(KeyInput input);
+    void find_next_in_active(const std::string& search);
 
 private:
     void cleanup();
@@ -97,24 +111,21 @@ private:
     std::string title;
     int scroll;
     bool exit_command_requested;
-    bool command_edit = false;
     glm::mat4 projection;
     std::vector<ui::EditorWindow *> editor_views;
     ui::EditorWindow *active_window;
     std::unique_ptr<ui::CommandView> command_view;
     TextData *active_buffer{nullptr};
     ui::View *active_view{nullptr};
-    ui::Modal* modal_popup;
+
     Register copy_register{};
     ui::core::Layout *root_layout{nullptr};
     HMODULE kb_library = nullptr;
-    CXMode mode = CXMode::Normal;
+
     bool no_close_condition();
     void graceful_exit();
-    void update_all_editor_windows();
-    void input_command_or_newline();
-    void cycle_command_or_move_cursor(Cycle cycle);
+
     static WindowDimensions win_dimensions;
-    void toggle_modal_popup();
-    bool modal_shown;
+    void close_active();
+
 };

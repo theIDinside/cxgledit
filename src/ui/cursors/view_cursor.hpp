@@ -41,6 +41,8 @@ namespace ui {
         int row{};
         int width{};
         int height{};
+        int pos_x;
+        int pos_y;
         std::unique_ptr<CursorVAO> gpu_data;
     };
 }

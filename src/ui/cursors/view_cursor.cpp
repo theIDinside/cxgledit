@@ -29,6 +29,8 @@ void ViewCursor::forced_draw() {
 }
 
 void ViewCursor::update_cursor_data(GLfloat x, GLfloat y) {
+    pos_x = AS(x, int);
+    pos_y = AS(y, int);
     auto w = width;
     auto h = height;
     auto &data = this->gpu_data->vbo->data;
@@ -45,6 +47,8 @@ void ViewCursor::update_cursor_data(GLfloat x, GLfloat y) {
 void ViewCursor::set_rect(GLfloat x1, GLfloat x2, GLfloat y1, GLfloat y2) {
     auto w = x2 - x1;
     auto h = y2 - y1;
+    pos_x = x1;
+    pos_y = y1;
     auto x = x1;
     auto y = y1;
     auto &data = this->gpu_data->vbo->data;

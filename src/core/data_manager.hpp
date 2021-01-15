@@ -34,6 +34,8 @@ public:
     CommandResult request_close(int i);
     int reuseable_buffers() const;
     bool is_managed(int buffer_id);
+    void print_all_managed();
+
 private:
     std::vector<Boxed<TextData>> data;
     std::vector<Boxed<TextData>> reuse_list;

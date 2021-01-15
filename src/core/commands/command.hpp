@@ -17,6 +17,7 @@ enum class Commands {
     WriteFile,
     GotoLine,
     UserCommand,
+    Search,
     Fail
 };
 

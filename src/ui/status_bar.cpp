@@ -17,11 +17,11 @@ StatusBar *StatusBar::create(int width, int height, int x, int y) {
     BufferCursor *cursor_info = &status_bar_text->cursor;
     auto sb = new StatusBar{};
     sb->ui_view = std::move(ui_view);
-    sb->active_buffer_cursor = cursor_info;
+    sb->buffer_cursor = cursor_info;
     return sb;
 }
 
-void StatusBar::set_buffer_cursor(BufferCursor *cursor) { active_buffer_cursor = cursor; }
+void StatusBar::set_buffer_cursor(BufferCursor *cursor) { buffer_cursor = cursor; }
 
 void StatusBar::draw(View *view) {
     glEnable(GL_SCISSOR_TEST);
@@ -35,14 +35,14 @@ void StatusBar::draw(View *view) {
 
     if (fName.empty()) { fName = "*unnamed buffer*"; }
 
-    auto output = fmt::format("{} - [{}, {}]", fName, active_buffer_cursor->line, active_buffer_cursor->col_pos);
+    auto output = fmt::format("{} - [{}, {}]", fName, buffer_cursor->line, buffer_cursor->col_pos);
     ui_view->get_text_buffer()->clear();
     ui_view->get_text_buffer()->insert_str(output);
     ui_view->draw_statusbar();
     glDisable(GL_SCISSOR_TEST);
 }
 void StatusBar::print_debug_info() const {
-    auto output = fmt::format("[{}, {}]", active_buffer_cursor->line, active_buffer_cursor->col_pos);
+    auto output = fmt::format("[{}, {}]", buffer_cursor->line, buffer_cursor->col_pos);
     util::println("Text to display: '{}'", output);
 }
 StatusBar::~StatusBar() {

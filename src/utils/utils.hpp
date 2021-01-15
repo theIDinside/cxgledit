@@ -5,6 +5,9 @@
 #include <optional>
 #include <variant>
 
+#include <bindingslib/keybindings.hpp>
+
+
 #ifdef DEBUG
 #include <array>
 #include <chrono>
@@ -95,6 +98,9 @@ namespace util::file {
 /// the "current command" it is owning & pointing to, we want to be able to check in successive calls after that if ptr == nullptr
 
 namespace util {
+
+    auto to_string(CXMode mode) -> const char*;
+
     void printmsg(const char *msg);
 
     template<typename... Args>

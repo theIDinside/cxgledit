@@ -43,7 +43,7 @@ class TextDataIterator;
 enum DelimiterSize { None, One, Two };
 
 static inline bool is_delimiter(char ch) {
-    return ((ch == ' ') || (ch == '\n') || (ch == '-') || (ch == '>') || ch == '.');
+    return ((ch == ' ') || (ch == '\n') || (ch == '-') || (ch == '>') || (ch == '.') || ch == '(' || ch == ')');
 }
 
 namespace fs = std::filesystem;
@@ -69,6 +69,7 @@ class TextData {
 public:
     BufferTypeInfo info;
     int id{0};
+    std::string name;
     BufferCursor cursor{};
 
     TextData() = default;
@@ -133,6 +134,10 @@ public:
     fs::path file_path;
     TextMetaData meta_data;
     virtual std::string_view copy_range(std::pair<BufferCursor, BufferCursor> selected_range) = 0;
+    virtual void goto_next(std::string search) = 0;
+
+    void set_name(std::string buffer_name);
+
 protected:
     /**
      * Changed this to "state_is_pristine" to also communicate that, not only the text data
@@ -200,6 +205,7 @@ public:
 
     std::pair<BufferCursor, BufferCursor> get_cursor_rect() const override;
     std::string_view copy_range(std::pair<BufferCursor, BufferCursor> selected_range) override;
+    void goto_next(std::string search) override;
 
 private:
     void char_move_forward(std::size_t count) override;
@@ -215,6 +221,7 @@ private:
     void remove_line_forward(size_t i);
     void remove_line_backward(size_t i);
     std::string store;
+    std::string cached_search;
 
     // This variable is set/checked every time a view wants to display. So once
     // vertex data is generated, this is set to true, until any text is inserted to the buffer

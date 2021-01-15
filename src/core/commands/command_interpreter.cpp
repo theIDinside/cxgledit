@@ -7,11 +7,10 @@
 #include <algorithm>
 #include <app.hpp>
 
+#include <fmt/format.h>
 #include <string>
 #include <ui/editor_window.hpp>
 #include <ui/view.hpp>
-#include <fmt/format.h>
-
 
 CommandInterpreter &CommandInterpreter::get_instance() {
     static CommandInterpreter ci;
@@ -92,6 +91,8 @@ void CommandInterpreter::set_current_command_read(Commands type) {
             break;
         case Commands::UserCommand:
             break;
+        case Commands::Search:
+            break;
     }
     getting_input = true;
     ecmd = EditorCommand{.type = type};
@@ -124,6 +125,11 @@ void CommandInterpreter::execute_command() {
             break;
         case Commands::UserCommand:
             parse_command(ctx->get_command_view()->input_buffer->to_std_string());
+            break;
+        case Commands::Search:
+            auto search_for = ctx->get_command_view()->input_buffer->to_std_string();
+            ctx->find_next_in_active(search_for);
+            ctx->last_searched = search_for;
             break;
     }
     ctx->restore_input();
@@ -160,6 +166,8 @@ std::optional<std::string> CommandInterpreter::current_input() {
             auto file_str_path = ctx->get_active_window()->get_text_buffer()->file_path.string();
             return file_str_path;
         }
+        case Commands::Search:
+            [[fallthrough]];
         case Commands::GotoLine:
             return ctx->get_command_view()->input_buffer->to_std_string();
         case Commands::Fail:
@@ -179,9 +187,14 @@ std::string CommandInterpreter::command_auto_completed() {
             auto [prefix, suggestion] = fm.get_suggestion();
             return suggestion.value_or(prefix);
         }
+        case Commands::Search:
+            [[fallthrough]];
         case Commands::WriteFile:
+            [[fallthrough]];
         case Commands::UserCommand:
+            [[fallthrough]];
         case Commands::GotoLine:
+            [[fallthrough]];
             return ctx->get_command_view()->input_buffer->to_std_string();
         case Commands::Fail:
             break;
@@ -198,6 +211,7 @@ void CommandInterpreter::setup_state() {
 }
 bool CommandInterpreter::cmd_is_interactive() {
     switch (this->ecmd.type) {
+        case Commands::Search:
         case Commands::OpenFile:
         case Commands::WriteFile:
         case Commands::UserCommand:
@@ -205,7 +219,6 @@ bool CommandInterpreter::cmd_is_interactive() {
         case Commands::GotoLine:
         case Commands::Fail:
             return false;
-            break;
     }
 }
 using namespace std::string_view_literals;
@@ -226,12 +239,12 @@ void CommandInterpreter::parse_command(std::string_view str) {
                 }
             } catch (...) { util::println("parsing string to number failed"); }
         }
-    } else if(cmd_str_rep == "kbreload") {
+    } else if (cmd_str_rep == "kbreload") {
         ctx->reload_keybindings();
     }
 }
 bool CommandInterpreter::command_can_autocomplete() {
-    switch(ecmd.type) {
+    switch (ecmd.type) {
         case Commands::OpenFile:
         case Commands::UserCommand:
             return true;

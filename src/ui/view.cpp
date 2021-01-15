@@ -221,12 +221,14 @@ void View::draw_command_view(const std::string &prefix, std::optional<std::vecto
         vao->flush_and_draw();
     }
 }
+
 void View::scroll(Scroll direction, int linesToScroll) {
     /// TODO: add data so that the view cursor knows the entire range of lines being displayed
     ///  this is so that if we want to jump on a line that currently is displayed in view, we don't scroll down the view to it
     //// we can just scroll the buffer cursor position instead.
     auto [win_width, win_height] = ::App::get_window_dimension();
-    util::println("View cursor line prior to scroll: {}", cursor->line);
+    // util::println("View cursor line prior to scroll: {}", cursor->line);
+
     switch (direction) {
         case Scroll::Up: {
             /// TODO: Bounds check so we prohibit the user from scrolling up where no lines can be. Which would be bad UX
@@ -239,18 +241,26 @@ void View::scroll(Scroll direction, int linesToScroll) {
             cursor->line = std::max(cursor->line, 0);
         } break;
         case Scroll::Down: {
-            /// TODO: Bounds check so we prohibit the user from scrolling down where no lines are. Which would be bad UX
-            scrolled -= (linesToScroll * font->get_row_advance());
-            auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled),
-                                static_cast<float>(win_height + scrolled));
-            set_projection(p);
-            cursor->line += linesToScroll;
-            cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - 3));
+            if(cursor->line + linesToScroll >= int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable)) {
+                util::println("Lines to scroll: {}, Lines displayable: {} - Max view anchor position: {}. Buffer lines: {}", linesToScroll, lines_displayable, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable), get_text_buffer()->meta_data.line_begins.size());
+                auto diff = (cursor->line + linesToScroll) - int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable);
+                scrolled -= (diff * font->get_row_advance());
+                auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled),
+                                    static_cast<float>(win_height + scrolled));
+                set_projection(p);
+                cursor->line += diff;
+                cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable));
+            } else {
+                /// TODO: Bounds check so we prohibit the user from scrolling down where no lines are. Which would be bad UX
+                // scrolled is not lines scrolled, but the amount of pixels we've moved the projection north/south
+                scrolled -= (linesToScroll * font->get_row_advance());
+                auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled),
+                                    static_cast<float>(win_height + scrolled));
+                set_projection(p);
+                cursor->line += linesToScroll;
+                cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable));
+            }
         } break;
-    }
-    if (data->has_metadata()) {
-        auto pos = data->meta_data.line_begins[cursor->line];
-        data->step_cursor_to(pos);
     }
     util::println("View cursor line: {}", cursor->line);
 }
@@ -268,6 +278,7 @@ View *View::create(TextData *data, const std::string &name, int w, int h, int x,
     v->x = x;
     v->y = y;
     v->font = FontLibrary::get_default_font();
+    v->lines_displayable = std::ceil(float(h) / float(v->font->get_row_advance()));
     v->shader = ShaderLibrary::get_text_shader();
     v->vao = std::move(vao);
     v->data = data;
@@ -282,8 +293,9 @@ void View::set_font(SimpleFont *new_font) {
     forced_draw(true);
 }
 View::~View() {
-    util::println("Destroying View {} and it's affiliated resources", name);
+    util::println("Destroying View {} and it's affiliated resources. TextBuffer id: {} - Name: {}", name, get_text_buffer()->id, get_text_buffer()->fileName());
     if (not DataManager::get_instance().is_managed(data->id)) {
+        DataManager::get_instance().print_all_managed();
         delete data;
     }
 }
@@ -309,6 +321,17 @@ void View::draw_modal_view(int selected, std::vector<TextDrawable>& drawables) {
     cursor->set_line_rect(drawables[selected].xpos, drawables[selected].xpos + width, drawables[selected].ypos - 4, font->row_height - 2);
     cursor->forced_draw();
     glDisable(GL_SCISSOR_TEST);
+}
+
+void View::goto_buffer_position() {
+    auto curr_line = cursor->line;
+    util::println("view cursor line: {} - buffer cursor line: {}", curr_line, data->cursor.line);
+    auto diff = curr_line - data->cursor.line;
+    if(diff < 0) {
+        scroll(Scroll::Down, std::abs(diff - lines_displayable));
+    } else {
+        scroll(Scroll::Up, diff);
+    }
 }
 
 void CommandView::draw() {
@@ -393,12 +416,12 @@ void CommandView::draw_error_message(std::string &&msg) {
 
 void CommandView::draw_message(std::string &&msg) {
     assert(not msg.empty());
-    infoPrefix = "message: ";
-    ColorizeTextRange msg_color{.begin = infoPrefix.size(), .length = msg.size(), .color = glm::vec3{0.9f, 0.9f, 0.9f}};
+    ColorizeTextRange msg_color{.begin = 0, .length = msg.size(), .color = glm::vec3{0.9f, 0.9f, 0.9f}};
     auto color_cfg = to_option_vec(msg_color);
     last_message = std::move(msg);
     show_last_message = true;
-    command_view->draw_command_view("message: ", color_cfg);
+    infoPrefix = "";
+    command_view->draw_command_view("", color_cfg);
 }
 void CommandView::draw_current() {
     ColorizeTextRange msg_color{.begin = infoPrefix.size(),

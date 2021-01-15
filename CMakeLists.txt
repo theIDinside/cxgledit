@@ -7,9 +7,10 @@ message("Project source dir ${PROJECT_SOURCE_DIR}")
 set(SRC_DIR ./src)
 
 set(DEP_DIR ${PROJECT_SOURCE_DIR}/deps)
-
+message("Hello fucker")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/bin/debug)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release)
+
 
 FetchContent_Declare(
         glm
@@ -21,7 +22,7 @@ FetchContent_Declare(
 FetchContent_Declare(
         fmt
         GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-        GIT_TAG 6.2.1
+        GIT_TAG master
         SOURCE_DIR ${PROJECT_SOURCE_DIR}/deps/fmt
 )
 

@@ -87,6 +87,7 @@ CommandResult DataManager::request_close(int i) {
         auto used = reuse_list.back().get();
         used->clear();
         used->has_meta_data = false;
+        used->set_name(fmt::format("free {}", used->id));
         util::println("Handed buffer back to manager. Memory re-usable");
     }
 
@@ -96,5 +97,17 @@ int DataManager::reuseable_buffers() const {
     return AS(reuse_list.size(), int);
 }
 bool DataManager::is_managed(int buffer_id) {
-    return std::ranges::any_of(data, [buffer_id](auto& e){ return e->id == buffer_id; });
+    auto is_managed_buffer =
+            std::ranges::any_of(data, [buffer_id](auto& e){ return e->id == buffer_id; }) ||
+            std::ranges::any_of(reuse_list, [buffer_id](auto& e){ return e->id == buffer_id; });
+    return is_managed_buffer;
+}
+void DataManager::print_all_managed() {
+    util::println("Managed buffers: ");
+    for(const auto& d : data) {
+        util::println("{} - {}", d->id, d->name);
+    }
+    for(const auto& d : reuse_list) {
+        util::println("{} - {}", d->id, d->name);
+    }
 }

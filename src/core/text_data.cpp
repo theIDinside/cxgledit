@@ -9,6 +9,7 @@
 // FIXME: Fix line move backward, forward seems to work perfectly fine, line position, column info etc
 
 #include <core/data_manager.hpp>
+#include <utility>
 
 void BufferCursor::reset() {
     line = 0;
@@ -471,14 +472,23 @@ size_t StdStringBuffer::lines_count() const {
 }
 int StdStringBuffer::find_next_delimiter(int i) {
     auto sz = size();
-    if (i + 1 < sz) {
-        i++;
-        for (; i < sz; i++) {
-            if (is_delimiter(store[i])) { return i; }
+    if(is_delimiter(store[i])) {
+        // we are already standing on whitespace... scan until we are no longer on whitespace
+        while(i < sz) {
+            if(not is_delimiter(store[i])) return i;
+            i++;
         }
         return i;
     } else {
-        return sz;
+        if (i + 1 < sz) {
+            i++;
+            for (; i < sz; i++) {
+                if (is_delimiter(store[i])) { return i; }
+            }
+            return i;
+        } else {
+            return sz;
+        }
     }
 }
 
@@ -583,8 +593,25 @@ void StdStringBuffer::insert_str_owned(const std::string &ref_data) {
     for (auto ch : ref_data) { insert(ch); }
     if (has_meta_data) rebuild_metadata();
 }
+
 StdStringBuffer::~StdStringBuffer() {
-    util::println("Destroying buffer {}", id);
+    if(DataManager::get_instance().is_managed(id)) {
+        DataManager::get_instance().print_all_managed();
+        // TODO: this is just here, so we always can be sure that during the life time of the program, the buffers don't accidentally destroy themselves
+        //  this will be removed.
+        PANIC("ERROR. BUFFER IS TRYING TO DESTROY ITSELF. THAT IS HANDLED BY DATAMANAGER. ID: {}", id);
+    }
+}
+
+void StdStringBuffer::goto_next(std::string search) {
+    auto pos = store.find(search, cursor.pos + 2);
+    auto oldpos = cursor.pos;
+    if(pos != std::string::npos) {
+        cached_search = search;
+        util::println("found '{}' at {}: [{}]", search, pos, store.substr(pos, search.size()));
+        step_cursor_to(pos);
+        util::println("Move {} -> {}", oldpos, cursor.pos);
+    }
 }
 
 /// ----------- NON-PURE VIRTUAL ABSTRACT IMPL METHODS ----------------
@@ -592,6 +619,7 @@ StdStringBuffer::~StdStringBuffer() {
 void TextData::set_file(fs::path p) {
     file_path = p;
     meta_data.buf_name = p.filename().string();
+    set_name(p.filename().string());
 }
 
 bool TextData::exist_on_disk() const { return (not file_path.empty() && fs::exists(file_path)); }
@@ -603,4 +631,8 @@ void TextData::clear_metadata() {
     cursor.line = 0;
     meta_data.line_begins.clear();
     meta_data.buf_name.clear();
+}
+
+void TextData::set_name(std::string buffer_name) {
+    name = std::move(buffer_name);
 }

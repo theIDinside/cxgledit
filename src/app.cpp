@@ -9,6 +9,7 @@
 #include <ui/editor_window.hpp>
 #include <ui/status_bar.hpp>
 #include <ui/view.hpp>
+#include <utility>
 #include <utils/fileutil.hpp>
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -32,6 +33,8 @@ using ui::core::Layout;
 
 static constexpr auto PRESS_MASK = GLFW_PRESS | GLFW_REPEAT;
 static constexpr auto pressed_or_repeated = [](auto action) -> bool { return action & PRESS_MASK; };
+static constexpr auto pressed = [](auto action) -> bool { return action == GLFW_PRESS; };
+static constexpr auto repeated = [](auto action) -> bool { return action == GLFW_REPEAT; };
 
 static void initialize_static_resources() {
 
@@ -64,49 +67,29 @@ static void initialize_static_resources() {
     ShaderLibrary::get_instance().load_shader(cursor_shader);
 }
 
-auto initialize_key_callbacks() {
+static auto initialize_key_callbacks() {
     util::println("Configuring action bindings");
     return [](auto window, int key, int scancode, int action, int mods) {
         auto app = get_app_handle(window);
         const auto input = KeyInput{key, mods};
         // app->command_view->show_last_message = false;
-        if (pressed_or_repeated(action)) {
-            switch (app->bound_action(CXMode::Normal, input)) {
-                case Action::OpenFile:
-                    app->toggle_command_input("open", Commands::OpenFile);
-                    break;
-                case Action::WriteFile:
-                    app->toggle_command_input("write", Commands::WriteFile);
-                    break;
-                case Action::GotoLine:
-                    app->toggle_command_input("goto", Commands::GotoLine);
-                    break;
-                case Action::GotoItem:
-                    break;
-                case Action::PrintDebug:
-                    app->print_debug_info();
-                    break;
-                case Action::CommandPrompt:
-                    app->toggle_command_input("command", Commands::UserCommand);
-                    break;
-                case Action::DefaultAction: {
-                    if (mods & GLFW_MOD_CONTROL) {
-                        app->kb_command(input);
-                    } else {
-                        app->handle_edit_input(input);
-                    }
-                } break;
+        if (pressed(action)) {
+            if (mods & GLFW_MOD_CONTROL) {
+                app->kb_command(input);
+            } else {
+                app->handle_edit_input(input);
+            }
+        } else if (repeated(action)) {
+            util::println("keyrepeated {}", key);
+            if (mods & GLFW_MOD_CONTROL) {
+                app->kb_command(input);
+            } else {
+                app->handle_edit_input(input);
             }
         }
     };
 }
 
-/// FIXME(urgent): When window is resized slowly, there seems to be a big within GLFW
-///  because it doesn't update correctly and starts stretching my internal data layout for whatever
-///  reason. When I min/max it works, when I resize with a fast pull on an edge, no problems show up
-///  but if one slowly pulls the edge, problems pop up. Looks horrible. It could very well have something
-///  to do with how I resize in this function (a ratio) which doesn't update correctly between
-///  subsequent calls to framebuffer_callback
 void framebuffer_callback(GLFWwindow *window, int width, int height) {
     fmt::print("New width: {}\t New height: {}\n", width, height);
     // if w & h == 0, means we minimized. Do nothing. Because when we un-minimize, means we restore the prior size
@@ -125,21 +108,17 @@ auto size_changed_callback(GLFWwindow *window, int width, int height) { framebuf
 constexpr auto temp_dll = "keybound_live.dll";
 constexpr auto origin_dll = "keybound.dll";
 
-/**
- * Rudimentary library loader, that takes a callback to be run, after initialization. The callback takes
- * KeyBindingFn as a parameter
- * @tparam Fn
- * @param libHandle
- * @param fnHandle
- * @param init_callback
- * @return
- */
-template<typename Fn>
-bool reload_keybinding_library(HMODULE &libHandle, KeyBindingFn &fnHandle, Fn init_callback) {
-    if (not fs::exists(origin_dll)) return false;
-    FreeLibrary(libHandle);
+bool unload_keybindings(HMODULE &libHandle, KeyBindingFn &fnHandle) {
+    if (libHandle) FreeLibrary(libHandle);
     fnHandle = nullptr;
     libHandle = nullptr;
+    return true;
+}
+
+template<typename Fn>
+bool load_keybinding_library(HMODULE &libHandle, KeyBindingFn &fnHandle, Fn init_callback) {
+    if (not fs::exists(origin_dll)) return false;
+    unload_keybindings(libHandle, fnHandle);
     // if keybound.dll is live, meaning, *we* are running, or have ran, delete the copy of the dll, "keybound_live.dll"
     if (fs::exists(temp_dll)) {
         fs::remove(temp_dll);
@@ -161,18 +140,11 @@ bool reload_keybinding_library(HMODULE &libHandle, KeyBindingFn &fnHandle, Fn in
     return false;
 }
 
-bool unload_keybindings(HMODULE &libHandle, KeyBindingFn &fnHandle) {
-    if (libHandle) FreeLibrary(libHandle);
-    fnHandle = nullptr;
-    libHandle = nullptr;
-    return true;
-}
-
 App *App::initialize(int app_width, int app_height, const std::string &title) {
     util::printmsg("Initializing application");
     auto instance = new App{};
 
-    reload_keybinding_library(instance->kb_library, instance->bound_action, [](auto fn) {
+    load_keybinding_library(instance->kb_library, instance->bound_action, [](auto fn) {
         util::println("Keybindings library initialized\n Attempting to call library");
         auto test = fn(CXMode::Normal, KeyInput{0, 0});
         if (test == Action::DefaultAction) { util::println("Library ok!"); }
@@ -242,30 +214,72 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
     auto text_row_advance = FontLibrary::get_default_font()->get_row_advance() + 2;
     auto cv = CommandView::create("command", app_width, text_row_advance * 1, 0, text_row_advance * 1);
     cv->command_view->set_projection(instance->projection);
-    instance->modal_popup = ui::Modal::create(instance->projection);
+    instance->modal_popup = ui::ModalPopup::create(instance->projection);
 
     instance->command_view = std::move(cv);
 
     // TODO: remove these, these are just for simplicity when testing UI
     instance->new_editor_window();
     // instance->load_file("main.cpp");
+    glfwSetWindowUserPointer(window, instance);
+    auto &ci = CommandInterpreter::get_instance();
+    ci.register_application(instance);
 
     auto char_input_callback = [](auto window, auto codepoint) {
         auto app = get_app_handle(window);
         // TODO(feature, major, huge maybe): Unicode support. But why would we want that? Source code should and can only use ASCII. If you plan on using something else? Well fuck off then.
-        if (codepoint >= 32 && codepoint <= 126) {
-            app->active_buffer->insert((char) codepoint);
-            app->command_view->show_last_message = false;
-            if (app->command_edit) {
-                // TODO: let CommandInterpreter know to INvalidate any argument cycling of current command, and re-validate the input
+        util::println("Char callback: {} for mode {}", codepoint, util::to_string(app->mode));
+        if (app->mode == CXMode::Normal) {
+            if (codepoint >= 32 && codepoint <= 126) {
+                app->active_buffer->insert((char) codepoint);
+                app->command_view->show_last_message = false;
+                app->command_view->show_last_message = false;
+            }
+        } else if (app->mode == CXMode::Command) {
+            if (codepoint >= 32 && codepoint <= 126) {
+                app->active_buffer->insert((char) codepoint);
+                app->command_view->show_last_message = false;
                 auto &ci = CommandInterpreter::get_instance();
                 ci.evaluate_current_input();
+            } else {
+            }
+        } else if (app->mode == CXMode::Actions) {
+
+        } else if (app->mode == CXMode::Search) {
+            app->mode = CXMode::Normal;
+            if (codepoint >= 32 && codepoint <= 126) {
+                app->active_buffer->insert((char) codepoint);
+                app->command_view->show_last_message = false;
+                app->command_view->show_last_message = false;
             }
         }
     };
-    glfwSetWindowUserPointer(window, instance);
+
     glfwSetCharCallback(window, char_input_callback);
 
+    auto key_cb = initialize_key_callbacks();
+
+    auto key_callbacks = [](auto window, int key, int scancode, int action, int mods) {
+        auto app = get_app_handle(window);
+        const auto input = KeyInput{key, mods};
+        // app->command_view->show_last_message = false;
+        if (pressed(action)) {
+            if (mods & GLFW_MOD_CONTROL) {
+                app->kb_command(input);
+            } else {
+                app->handle_edit_input(input);
+            }
+        } else if (repeated(action)) {
+            util::println("keyrepeated {}", key);
+            if (mods & GLFW_MOD_CONTROL) {
+                app->kb_command(input);
+            } else {
+                app->handle_edit_input(input);
+            }
+        }
+    };
+
+    glfwSetKeyCallback(window, key_cb);
     glfwSetMouseButtonCallback(window, [](auto window, auto button, auto action, auto mods) {
         double xpos, ypos;
         auto app = get_app_handle(window);
@@ -289,12 +303,6 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
             PANIC("MOUSE CLICKING FEATURES NOT YET DONE GOOD.");
         }
     });
-
-    glfwSetKeyCallback(window, initialize_key_callbacks());
-
-    auto &ci = CommandInterpreter::get_instance();
-    ci.register_application(instance);
-
     return instance;
 }
 
@@ -344,6 +352,8 @@ void App::load_file(const fs::path &file) {
         tmp.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
         active_window->get_text_buffer()->load_string(std::move(tmp));
         active_window->get_text_buffer()->set_file(file);
+        active_window->get_text_buffer()->set_name(file.filename().string());
+        active_window->view->name = file.filename().string();
         assert(!active_buffer->empty());
     } else {
         new_editor_window(SplitStrategy::VerticalSplit);
@@ -353,6 +363,7 @@ void App::load_file(const fs::path &file) {
         active_window->get_text_buffer()->set_string(tmp);
         active_window->get_text_buffer()->load_string(std::move(tmp));
         active_window->get_text_buffer()->set_file(file);
+        active_window->view->name = file.filename().string();
     }
 }
 
@@ -385,9 +396,21 @@ void App::update_views_dimensions(float wRatio, float hRatio) {
     command_view->command_view->set_projection(glm::ortho(0.0f, float(win_width), 0.0f, float(win_height)));
 }
 
+constexpr auto KEY_LEFT_ANGLE_BRACKET = 61;
+constexpr auto KEY_RIGHT_ANGLE_BRACKET = 62;
+constexpr auto CTRL_L_ANGLE_BRACKET = 162;
+
+constexpr auto should_ignore = [](auto key) {
+    return key == GLFW_KEY_LEFT_CONTROL || key == GLFW_KEY_RIGHT_CONTROL || key == GLFW_KEY_LEFT_ALT ||
+           key == GLFW_KEY_RIGHT_ALT || key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT;
+};
+
+/// Keyboard input is tricky as f*ck. We have to remember to ignore modifier keys in this function, because we (rarely)
+/// want to treat those as single input keys, but a combination
 void App::kb_command(KeyInput input) {
     const auto &[key, modifier] = input;
     get_command_view()->show_last_message = false;
+    if (should_ignore(key)) { return; }
     auto modify_movement_op = [this](auto mod) {
         if (mod & GLFW_MOD_SHIFT) {
             if (not active_buffer->mark_set) { active_buffer->set_mark_at_cursor(); }
@@ -395,12 +418,27 @@ void App::kb_command(KeyInput input) {
             if (active_buffer->mark_set) { active_buffer->clear_marks(); }
         }
     };
+    // util::println("CXMode: {}. Key & modifier = {} & {}", util::to_string(mode), key, modifier);
+    if (mode == CXMode::Search && key == KEY_N) {
+        util::println("find next result of {}", last_searched);
+        find_next_in_active(last_searched);
+    } else if (mode == CXMode::Search && key != KEY_N) {
+        util::println("Restoring mode");
+        mode = CXMode::Normal;
+    }
 
-    if (!command_edit) {
+    if (mode == CXMode::Command) {
+        util::println("ctrl-commands disabled in command input mode.");
+    } else if (mode == CXMode::Normal || mode == CXMode::Actions) {
         switch (key) {
-            case GLFW_KEY_ENTER:
-                active_buffer->insert('\n');
+            case CTRL_L_ANGLE_BRACKET:
+                toggle_command_input("command", Commands::UserCommand);
                 break;
+            case GLFW_KEY_ENTER: {
+                auto curr_pos = active_buffer->cursor.pos;
+                active_buffer->insert('\n');
+                active_buffer->step_cursor_to(curr_pos);
+            } break;
             case GLFW_KEY_TAB:
                 active_buffer->insert_str("    ");
                 break;
@@ -415,6 +453,14 @@ void App::kb_command(KeyInput input) {
             case GLFW_KEY_LEFT:
                 modify_movement_op(modifier);
                 active_buffer->move_cursor(Movement::Word(1, CursorDirection::Back));
+                break;
+            case GLFW_KEY_HOME:// GOTO FILE BEGIN
+                active_window->get_text_buffer()->step_cursor_to(0);
+                active_window->view->goto_buffer_position();
+                break;
+            case GLFW_KEY_END:// GOTO FILE END
+                active_window->get_text_buffer()->step_cursor_to(active_window->get_text_buffer()->size());
+                active_window->view->goto_buffer_position();
                 break;
             case GLFW_KEY_DELETE:
                 if (not active_buffer->mark_set) {
@@ -439,11 +485,10 @@ void App::kb_command(KeyInput input) {
                 }
                 break;
             case GLFW_KEY_Q: {
-                auto active_buf = active_view->get_text_buffer();
+                auto active_buf = active_window->get_text_buffer();
                 if (!active_buf->empty()) {
                     auto id = active_buf->id;
                     DataManager::get_instance().request_close(id);
-
                     auto layoutToDestroy = find_by_id(root_layout, active_window->ui_layout_id);
                     if (layoutToDestroy == layoutToDestroy->parent->left) {
                         if (layoutToDestroy->parent == root_layout) {
@@ -479,79 +524,49 @@ void App::kb_command(KeyInput input) {
                     this->graceful_exit();
                 }
             } break;
-            case GLFW_KEY_N: {
-                auto current_window = active_window;
-                current_window->active = false;
-                rotate_container(editor_views, 1);
-                active_window = editor_views.back();
-                active_window->active = true;
-                active_buffer = editor_views.back()->get_text_buffer();
-                active_view = active_window->view;
-                break;
-            }
-            case GLFW_KEY_C: {// cmdcopy
+            case GLFW_KEY_N: {// NEXT
+                if (mode == CXMode::Search) {
+                    find_next_in_active(last_searched);
+                } else {
+                    auto current_window = active_window;
+                    current_window->active = false;
+                    rotate_container(editor_views, 1);
+                    active_window = editor_views.back();
+                    active_window->active = true;
+                    active_buffer = editor_views.back()->get_text_buffer();
+                    active_view = active_window->view;
+                }
+            } break;
+            case GLFW_KEY_C: {// COPY
                 if (active_buffer->mark_set) {
                     auto view = active_buffer->copy_range(active_buffer->get_cursor_rect());
                     copy_register.push_view(view);
                 }
             } break;
-            case GLFW_KEY_V: {// cmdpaste
+            case GLFW_KEY_V: {// PASTE
                 auto data = copy_register.get_last();
                 if (data) { active_buffer->insert_str(*data); }
             } break;
-            case GLFW_KEY_M: {
+            case GLFW_KEY_M: {// MODAL
                 toggle_modal_popup();
             } break;
-            case GLFW_KEY_G:
+            case GLFW_KEY_G:// GOTO
                 toggle_command_input("goto", Commands::GotoLine);
                 break;
-            case GLFW_KEY_O:
+            case GLFW_KEY_O:// OPEN
                 toggle_command_input("open", Commands::OpenFile);
                 break;
-            case GLFW_KEY_D:
+            case GLFW_KEY_D:// DEBUG
                 print_debug_info();
                 break;
-            case GLFW_KEY_W:
+            case GLFW_KEY_W:// WRITE
                 toggle_command_input("write", Commands::WriteFile);
                 break;
+            case GLFW_KEY_F:// FIND
+                toggle_command_input("find", Commands::Search);
+                break;
         }
-    } else {
     }
-}
-
-void App::graceful_exit() {
-    // TODO: ask user to save / discard unsaved changes
-    // TODO: clean up GPU memory resources
-    // TODO: clean up CPU memory resources
-    exit_command_requested = true;
-}
-
-void App::toggle_command_input(const std::string &prefix, Commands commandInput) {
-    if (command_edit) {
-        disable_command_input();
-    } else {
-        auto &ci = CommandInterpreter::get_instance();
-        ci.set_current_command_read(commandInput);
-        active_buffer = command_view->command_view->get_text_buffer();
-        active_buffer->clear();
-        if (!command_edit) {
-            auto current_input = ci.current_input();
-            command_view->set_prefix(prefix);
-            active_buffer->insert_str(current_input.value_or(""));
-        }
-        command_edit = true;
-        command_view->active = true;
-    }
-}
-
-void App::disable_command_input() {
-    auto &ci = CommandInterpreter::get_instance();
-    ci.clear_state();
-    command_view->command_view->get_text_buffer()->clear();
-    active_buffer = active_window->get_text_buffer();
-    active_view = active_window->view;
-    command_edit = false;
-    command_view->active = false;
 }
 
 void App::handle_edit_input(KeyInput input) {
@@ -575,10 +590,42 @@ void App::handle_edit_input(KeyInput input) {
             active_buffer->step_to_line_end(Boundary::Outside);
         } break;
         case GLFW_KEY_ENTER: {
-            input_command_or_newline();
+            if (mode == CXMode::Popup) {
+                auto selected = modal_popup->get_choice();
+                switch (selected.type) {
+                    case ui::PopupActionType::Insert:
+                        toggle_modal_popup();
+                        active_buffer->insert_str(selected.displayable);
+                        break;
+                    case ui::PopupActionType::AppCommand:
+                        util::println("Selected command: {}", selected.displayable);
+                        toggle_modal_popup();
+                        switch (selected.command.value_or(Commands::Fail)) {
+                            case Commands::OpenFile:
+                                toggle_command_input("open", Commands::OpenFile);
+                                break;
+                            case Commands::WriteFile:
+                                toggle_command_input("write", Commands::WriteFile);
+                                break;
+                            case Commands::GotoLine:
+                                toggle_command_input("goto", Commands::GotoLine);
+                                break;
+                            case Commands::UserCommand:
+                                break;
+                            case Commands::Search:
+                                toggle_command_input("find", Commands::Search);
+                                break;
+                            case Commands::Fail:
+                                break;
+                        }
+                        break;
+                }
+            } else {
+                input_command_or_newline();
+            }
         } break;
         case GLFW_KEY_TAB: {
-            if (command_edit) {
+            if (mode == CXMode::Command) {
                 CommandInterpreter::get_instance().auto_complete();
             } else {
                 active_buffer->insert_str("    ");
@@ -587,7 +634,6 @@ void App::handle_edit_input(KeyInput input) {
         case GLFW_KEY_DOWN:
         case GLFW_KEY_UP: {
             if (modal_shown) {
-                util::println("Cycling choices");
                 modal_popup->cycle_choice(static_cast<ui::Scroll>(key));
             } else {
                 cycle_command_or_move_cursor(static_cast<Cycle>(key));
@@ -602,14 +648,21 @@ void App::handle_edit_input(KeyInput input) {
             active_buffer->move_cursor(Movement::Char(1, CursorDirection::Back));
         } break;
         case GLFW_KEY_ESCAPE: {
-            toggle_command_input("command", Commands::UserCommand);
+            if (modal_shown && mode == CXMode::Popup) {
+                toggle_modal_popup();
+                util::println("Disable popup");
+            } else if (mode == CXMode::Command) {
+                mode = CXMode::Command;
+                disable_command_input();
+            } else if (mode == CXMode::Normal) {
+            }
         } break;
         case GLFW_KEY_BACKSPACE: {
-            if (command_edit) {
+            if (mode == CXMode::Command) {
                 active_buffer->remove(Movement::Char(1, CursorDirection::Back));
                 auto &ci = CommandInterpreter::get_instance();
                 ci.evaluate_current_input();
-            } else {
+            } else if (mode == CXMode::Normal) {
                 if (not active_buffer->mark_set) {
                     active_buffer->remove(Movement::Char(1, CursorDirection::Back));
                 } else {
@@ -622,11 +675,11 @@ void App::handle_edit_input(KeyInput input) {
             }
         } break;
         case GLFW_KEY_DELETE: {
-            if (command_edit) {
+            if (mode == CXMode::Command) {
                 active_buffer->remove(Movement::Char(1, CursorDirection::Forward));
                 auto &ci = CommandInterpreter::get_instance();
                 ci.evaluate_current_input();
-            } else {
+            } else if (mode == CXMode::Normal) {
                 if (not active_buffer->mark_set) {
                     active_buffer->remove(Movement::Char(1, CursorDirection::Forward));
                 } else {
@@ -650,7 +703,42 @@ void App::handle_edit_input(KeyInput input) {
     }
     // N.B. this was moved from charCallback because typing in ÖÄÅ right now, crashes the application as the textual data lives inside a std::string
     // which gets passed around through layers of structures, and these characters can't be represented as single bytes.
-    command_view->active = command_edit;
+    command_view->active = (mode == CXMode::Command);
+}
+
+void App::graceful_exit() {
+    // TODO: ask user to save / discard unsaved changes
+    // TODO: clean up GPU memory resources
+    // TODO: clean up CPU memory resources
+    exit_command_requested = true;
+}
+
+void App::toggle_command_input(const std::string &prefix, Commands commandInput) {
+    util::println("Toggling command input");
+    if (mode == CXMode::Command) {
+        mode = CXMode::Normal;
+        disable_command_input();
+    } else if (mode == CXMode::Normal) {
+        mode = CXMode::Command;
+        auto &ci = CommandInterpreter::get_instance();
+        ci.set_current_command_read(commandInput);
+        active_buffer = command_view->command_view->get_text_buffer();
+        active_buffer->clear();
+        auto current_input = ci.current_input();
+        command_view->set_prefix(prefix);
+        active_buffer->insert_str(current_input.value_or(""));
+        command_view->active = true;
+    }
+}
+
+void App::disable_command_input() {
+    auto &ci = CommandInterpreter::get_instance();
+    ci.clear_state();
+    command_view->command_view->get_text_buffer()->clear();
+    active_buffer = active_window->get_text_buffer();
+    active_view = active_window->view;
+    mode = CXMode::Normal;
+    command_view->active = false;
 }
 
 void App::set_error_message(const std::string &msg) {
@@ -662,20 +750,20 @@ void App::set_error_message(const std::string &msg) {
 }
 
 void App::input_command_or_newline() {
-    if (command_edit) {
+    if (mode == CXMode::Command) {
         CommandInterpreter::get_instance().execute_command();
         /// Setting active input to text editor again
         active_buffer = active_window->get_text_buffer();
         active_view = active_window->view;
-        command_edit = false;
-    } else {
+        if (not(mode == CXMode::Search)) { mode = CXMode::Normal; }
+    } else if (mode == CXMode::Normal) {
         active_buffer->insert('\n');
     }
 }
 
 void App::cycle_command_or_move_cursor(Cycle cycle) {
     auto curs_direction = cycle == Cycle::Forward ? CursorDirection::Forward : CursorDirection::Back;
-    if (command_edit) {
+    if (mode == CXMode::Command) {
         auto &ci = CommandInterpreter::get_instance();
         if (ci.has_command_waiting()) {
             ci.cycle_current_command_arguments(cycle);
@@ -683,7 +771,7 @@ void App::cycle_command_or_move_cursor(Cycle cycle) {
             ci.validate(active_buffer->to_std_string());
             ci.cycle_current_command_arguments(cycle);
         }
-    } else {
+    } else if (mode == CXMode::Normal) {
         active_buffer->move_cursor(Movement::Line(1, curs_direction));
         if (active_buffer->mark_set) { active_buffer->clear_marks(); }
     }
@@ -716,6 +804,9 @@ void App::print_debug_info() {
 #endif
     auto &dm = DataManager::get_instance();
     util::println("Available buffers in re-use list: {}", dm.reuseable_buffers());
+    dm.print_all_managed();
+    util::println("Buffer line: {}\t Cursor line: {}", active_window->get_text_buffer()->cursor.line,
+                  active_window->view->cursor->line);
 }
 WindowDimensions App::get_window_dimension() { return win_dimensions; }
 
@@ -780,9 +871,7 @@ void App::update_all_editor_windows() {
 ui::CommandView *App::get_command_view() const { return command_view.get(); }
 
 void App::editor_window_goto(int line) {
-    util::println("Goto line {}", line);
     auto l = active_view->get_cursor()->line;
-
     auto buf = active_view->get_text_buffer();
     if (line > buf->meta_data.line_begins.size()) {
         buf->step_cursor_to(buf->size());
@@ -828,25 +917,88 @@ void App::fwrite_active_to_disk(const std::string &path) {
         write_impl(p);
     }
 }
-void App::toggle_modal_popup() {
-    if (modal_shown) {
-        modal_shown = false;
-    } else {
-        util::println("Sdhow modal dialog");
-        modal_shown = true;
-        modal_popup->set_data("Goto...\nFind in file...\nSave all...");
-        auto width = modal_popup->view->get_font()->calculate_text_width("1: Item\n2: Item\n3: Item");
-        auto heightOfModalPixels = (FontLibrary::get_default_font()->get_row_advance()) * modal_popup->choices;
 
-        DimInfo dim{250, 250, width, heightOfModalPixels};
-        util::println("Dimensions of modal popup containing: {}\t\t Dimension: {}", "1: Item\n2: Item\n3: Item",
-                      dim.debug_str());
-        modal_popup->show(dim);
+void App::toggle_modal_popup() {
+    static CXMode priorMode;
+    util::println("Toggle modal");
+    if (modal_shown || mode == CXMode::Popup) {
+        modal_shown = false;
+        mode = priorMode;
+        priorMode = CXMode::Popup;
+    } else if (mode == CXMode::Normal) {
+        priorMode = mode;
+        mode = CXMode::Popup;
+        modal_shown = true;
+        std::vector<ui::PopupItem> items;
+        items.push_back(ui::PopupItem{"Goto", ui::PopupActionType::AppCommand, Commands::GotoLine});
+        items.push_back(ui::PopupItem{"Find in file", ui::PopupActionType::AppCommand, Commands::Search});
+        items.push_back(ui::PopupItem{"Save all", ui::PopupActionType::AppCommand, Commands::WriteFile});
+        items.push_back(ui::PopupItem{"Open file", ui::PopupActionType::AppCommand, Commands::OpenFile});
+        modal_popup->register_actions(items);
+        auto x = active_window->view->cursor->pos_x;
+        auto y = active_window->view->cursor->pos_y;
+        modal_popup->anchor_to(x + 10, y);
     }
 }
 
 void App::reload_keybindings() {
-    reload_keybinding_library(kb_library, bound_action, [](auto fn) { util::println("Keybinding library reloaded"); });
+    load_keybinding_library(kb_library, bound_action, [](auto fn) { util::println("Keybinding library reloaded"); });
+    command_view->draw_message("keybindings reloaded");
+}
+
+void App::find_next_in_active(const std::string &search) {
+    mode = CXMode::Search;
+    last_searched = search;
+    auto pos = active_window->get_text_buffer()->cursor.pos;
+    active_window->get_text_buffer()->goto_next(search);
+    if (pos == active_window->get_text_buffer()->cursor.pos) {
+        command_view->draw_message(fmt::format("no more '{}' found", last_searched));
+    } else {
+        command_view->draw_message(fmt::format("search: {}", last_searched));
+        active_window->view->goto_buffer_position();
+    }
+}
+
+void App::close_active() {
+    auto active_buf = active_view->get_text_buffer();
+    if (!active_buf->empty()) {
+        auto id = active_buf->id;
+        DataManager::get_instance().request_close(id);
+
+        auto layoutToDestroy = find_by_id(root_layout, active_window->ui_layout_id);
+        if (layoutToDestroy == layoutToDestroy->parent->left) {
+            if (layoutToDestroy->parent == root_layout) {
+                auto new_root = layoutToDestroy->parent->right;
+                set_new_root(root_layout, new_root);
+            } else {
+                promote_node(layoutToDestroy->parent->right);
+            }
+        } else {
+            if (layoutToDestroy->parent == root_layout) {
+                auto new_root = layoutToDestroy->parent->left;
+                set_new_root(root_layout, new_root);
+            } else {
+                promote_node(layoutToDestroy->parent->left);
+            }
+        }
+
+        if (editor_views.back() == active_window) {
+            assert(active_window->view->td_id == id);
+            editor_views.pop_back();
+            delete active_window;
+            active_window = editor_views.back();
+            active_window->active = true;
+        } else {
+            PANIC("Somehow non-active window was deleted");
+        }
+
+        active_view = active_window->view;
+        active_buffer = active_view->get_text_buffer();
+        update_all_editor_windows();
+        draw_all(true);
+    } else {
+        this->graceful_exit();
+    }
 }
 
 void Register::push_view(std::string_view data) {
