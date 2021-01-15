@@ -20,7 +20,7 @@ namespace ui {
         static std::unique_ptr<ViewCursor> create_from(std::unique_ptr<View> &owning_view);
         static std::unique_ptr<ViewCursor> create_from(View* owning_view);
 
-        void update_cursor_data(GLfloat x, GLfloat y, GLfloat view_width);
+        void update_cursor_data(GLfloat x, GLfloat y);
         void draw(bool isActive = false);
         void forced_draw();
 

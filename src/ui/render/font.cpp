@@ -195,7 +195,7 @@ void SimpleFont::create_vertex_data_in(VAO *vao, ui::View *view, int xPos, int y
     auto xpos = float(x);
     auto ypos = float(y);
     if (not have_text) {
-        view_cursor->update_cursor_data(x, y - 6, view->width);
+        view_cursor->update_cursor_data(x, y - 6);
     } else {
         // TODO(optimization): change so that instead of doing IF-THEN_ELSE inside this for loop for every character
         //  make it so, that it checks IF we are inside range, then draw the data up until last character, then iterate 1 step
@@ -230,7 +230,7 @@ void SimpleFont::create_vertex_data_in(VAO *vao, ui::View *view, int xPos, int y
                         cx1 = x;
                         cy1 = y - 6;
                     } else {
-                        view_cursor->update_cursor_data(x, y - 6, view->width);
+                        view_cursor->update_cursor_data(x, y - 6);
                     }
                 }
                 if (data_index_pos_end == 0) { cx2 = x; }
@@ -257,7 +257,7 @@ void SimpleFont::create_vertex_data_in(VAO *vao, ui::View *view, int xPos, int y
                     cx1 = x;
                     cy1 = y - 6;
                 } else {
-                    view_cursor->update_cursor_data(xpos, y - 6, view->width);
+                    view_cursor->update_cursor_data(xpos, y - 6);
                 }
             }
             if (data_index_pos_end == 0) { cx2 = x; }
@@ -276,7 +276,7 @@ void SimpleFont::create_vertex_data_in(VAO *vao, ui::View *view, int xPos, int y
     } else if (view->get_text_buffer()->get_cursor_pos() == view->get_text_buffer()->size()) {
         xpos = float(x);
         ypos = float(y);
-        view_cursor->update_cursor_data(xpos, y - 6, view->width);
+        view_cursor->update_cursor_data(xpos, y - 6);
     }
 }
 
@@ -471,7 +471,7 @@ void SimpleFont::create_vertex_data_for(ui::View* view, const ui::core::ScreenPo
     auto xpos = float(x);
     auto ypos = float(y);
     if (not have_text) {
-        view_cursor->update_cursor_data(x, y - 6, view->width);
+        view_cursor->update_cursor_data(x, y - 6);
     } else {
         // TODO(optimization): change so that instead of doing IF-THEN_ELSE inside this for loop for every character
         //  make it so, that it checks IF we are inside range, then draw the data up until last character, then iterate 1 step
@@ -506,7 +506,7 @@ void SimpleFont::create_vertex_data_for(ui::View* view, const ui::core::ScreenPo
                         cx1 = x;
                         cy1 = y - 6;
                     } else {
-                        view_cursor->update_cursor_data(x, y - 6, view->width);
+                        view_cursor->update_cursor_data(x, y - 6);
                     }
                 }
                 if (data_index_pos_end == 0) { cx2 = x; }
@@ -533,7 +533,7 @@ void SimpleFont::create_vertex_data_for(ui::View* view, const ui::core::ScreenPo
                     cx1 = x;
                     cy1 = y - 6;
                 } else {
-                    view_cursor->update_cursor_data(xpos, y - 6, view->width);
+                    view_cursor->update_cursor_data(xpos, y - 6);
                 }
             }
             if (data_index_pos_end == 0) { cx2 = x; }
@@ -552,7 +552,7 @@ void SimpleFont::create_vertex_data_for(ui::View* view, const ui::core::ScreenPo
     } else if (view->get_text_buffer()->get_cursor_pos() == view->get_text_buffer()->size()) {
         xpos = float(x);
         ypos = float(y);
-        view_cursor->update_cursor_data(xpos, y - 6, view->width);
+        view_cursor->update_cursor_data(xpos, y - 6);
     }
 }
 

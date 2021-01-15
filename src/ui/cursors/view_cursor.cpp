@@ -92,13 +92,15 @@ void ViewCursor::forced_draw() {
     cursor_data->flush_and_draw();
 }
 
-void ViewCursor::update_cursor_data(GLfloat x, GLfloat y, GLfloat view_width) {
+void ViewCursor::update_cursor_data(GLfloat x, GLfloat y) {
     pos_x = AS(x, int);
     pos_y = AS(y, int);
     auto w = width;
     auto h = height;
     auto &c_data = cursor_data->vbo->data;
     auto &l_data = line_shade_data->vbo->data;
+
+    auto view_width = view->width;
 
     cursor_data->vbo->pristine = false;
     line_shade_data->vbo->pristine = false;
@@ -111,13 +113,14 @@ void ViewCursor::update_cursor_data(GLfloat x, GLfloat y, GLfloat view_width) {
     c_data.emplace_back(x + w, y);
     c_data.emplace_back(x + w, y + h);
 
+    auto vx = view->x;
     l_data.clear();
-    l_data.emplace_back(0, y + h);
-    l_data.emplace_back(0, y);
-    l_data.emplace_back(0 + view_width, y);
-    l_data.emplace_back(0, y + h);
-    l_data.emplace_back(0 + view_width, y);
-    l_data.emplace_back(0 + view_width, y + h);
+    l_data.emplace_back(vx, y + h);
+    l_data.emplace_back(vx, y);
+    l_data.emplace_back(vx + view_width, y);
+    l_data.emplace_back(vx, y + h);
+    l_data.emplace_back(vx + view_width, y);
+    l_data.emplace_back(vx + view_width, y + h);
 
 }
 
