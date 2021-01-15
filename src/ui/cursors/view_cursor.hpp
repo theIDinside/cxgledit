@@ -20,14 +20,12 @@ namespace ui {
         static std::unique_ptr<ViewCursor> create_from(std::unique_ptr<View> &owning_view);
         static std::unique_ptr<ViewCursor> create_from(View* owning_view);
 
-        void update_cursor_data(GLfloat x, GLfloat y);
+        void update_cursor_data(GLfloat x, GLfloat y, GLfloat view_width);
         void draw(bool isActive = false);
         void forced_draw();
 
-        void set_rect(GLfloat x1, GLfloat x2, GLfloat y1, GLfloat y2);
         void set_line_rect(GLfloat x1, GLfloat x2, GLfloat y1);
         void set_line_rect(GLfloat x1, GLfloat x2, GLfloat y1, int height);
-        void set_line_rect(GLfloat x1, GLfloat x2, GLfloat y1, GLfloat y2);
 
         void set_projection(glm::mat4 orthoProjection);
         void setup_dimensions(int Width, int Height);
@@ -43,6 +41,7 @@ namespace ui {
         int height{};
         int pos_x;
         int pos_y;
-        std::unique_ptr<CursorVAO> gpu_data;
+        std::unique_ptr<CursorVAO> cursor_data;
+        std::unique_ptr<CursorVAO> line_shade_data;
     };
 }

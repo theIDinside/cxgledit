@@ -290,6 +290,6 @@ void Shader::set_projection(const glm::mat4 &mat) { glUniformMatrix4fv(projectio
 void Shader::setup_fillcolor_id() {
     fillcolor = glGetUniformLocation(ID, "fillcolor");
 }
-void Shader::set_fillcolor(glm::vec3 color) {
+void Shader::set_fillcolor(glm::vec4 color) {
     glUniform3fv(fillcolor, 1, &color[0]);
 }

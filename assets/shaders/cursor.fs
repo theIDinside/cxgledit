@@ -1,8 +1,8 @@
 #version 430 core
 out vec4 FragColor;
-uniform vec3 fillcolor;
+uniform vec4 fillcolor;
 
 void main()
 {
-    FragColor = vec4(fillcolor, 0.4f);
+    FragColor = vec4(fillcolor);
 }

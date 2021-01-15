@@ -39,8 +39,6 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
 
     // quick and dirty max texture size estimate
 
-    auto total_possible_glyph_count = charRange.to - charRange.from;
-
     int max_dim = (1 + (face->size->metrics.height >> 6)) * ceilf(sqrtf(NUM_GLYPHS));
     int tex_width = 1;
     while (tex_width < max_dim) tex_width <<= 1;
@@ -125,11 +123,7 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
 SimpleFont::SimpleFont(int pixelSize, std::unique_ptr<Texture> &&texture, std::vector<glyph_info> &&glyphs)
     : pixel_size(pixelSize), t(std::move(texture)), glyph_cache(std::move(glyphs)) {}
 
-static int test_count = 0;
-
 int SimpleFont::get_row_advance() const { return row_height; }
-
-static bool exampleHowToLexVar = false;
 
 void SimpleFont::create_vertex_data_in(VAO *vao, ui::View *view, int xPos, int yPos) {
     // FN_MICRO_BENCH();
@@ -201,7 +195,7 @@ void SimpleFont::create_vertex_data_in(VAO *vao, ui::View *view, int xPos, int y
     auto xpos = float(x);
     auto ypos = float(y);
     if (not have_text) {
-        view_cursor->update_cursor_data(x, y - 6);
+        view_cursor->update_cursor_data(x, y - 6, view->width);
     } else {
         // TODO(optimization): change so that instead of doing IF-THEN_ELSE inside this for loop for every character
         //  make it so, that it checks IF we are inside range, then draw the data up until last character, then iterate 1 step
@@ -236,7 +230,7 @@ void SimpleFont::create_vertex_data_in(VAO *vao, ui::View *view, int xPos, int y
                         cx1 = x;
                         cy1 = y - 6;
                     } else {
-                        view_cursor->update_cursor_data(x, y - 6);
+                        view_cursor->update_cursor_data(x, y - 6, view->width);
                     }
                 }
                 if (data_index_pos_end == 0) { cx2 = x; }
@@ -263,7 +257,7 @@ void SimpleFont::create_vertex_data_in(VAO *vao, ui::View *view, int xPos, int y
                     cx1 = x;
                     cy1 = y - 6;
                 } else {
-                    view_cursor->update_cursor_data(xpos, y - 6);
+                    view_cursor->update_cursor_data(xpos, y - 6, view->width);
                 }
             }
             if (data_index_pos_end == 0) { cx2 = x; }
@@ -282,7 +276,7 @@ void SimpleFont::create_vertex_data_in(VAO *vao, ui::View *view, int xPos, int y
     } else if (view->get_text_buffer()->get_cursor_pos() == view->get_text_buffer()->size()) {
         xpos = float(x);
         ypos = float(y);
-        view_cursor->update_cursor_data(xpos, y - 6);
+        view_cursor->update_cursor_data(xpos, y - 6, view->width);
     }
 }
 
@@ -477,7 +471,7 @@ void SimpleFont::create_vertex_data_for(ui::View* view, const ui::core::ScreenPo
     auto xpos = float(x);
     auto ypos = float(y);
     if (not have_text) {
-        view_cursor->update_cursor_data(x, y - 6);
+        view_cursor->update_cursor_data(x, y - 6, view->width);
     } else {
         // TODO(optimization): change so that instead of doing IF-THEN_ELSE inside this for loop for every character
         //  make it so, that it checks IF we are inside range, then draw the data up until last character, then iterate 1 step
@@ -512,7 +506,7 @@ void SimpleFont::create_vertex_data_for(ui::View* view, const ui::core::ScreenPo
                         cx1 = x;
                         cy1 = y - 6;
                     } else {
-                        view_cursor->update_cursor_data(x, y - 6);
+                        view_cursor->update_cursor_data(x, y - 6, view->width);
                     }
                 }
                 if (data_index_pos_end == 0) { cx2 = x; }
@@ -539,7 +533,7 @@ void SimpleFont::create_vertex_data_for(ui::View* view, const ui::core::ScreenPo
                     cx1 = x;
                     cy1 = y - 6;
                 } else {
-                    view_cursor->update_cursor_data(xpos, y - 6);
+                    view_cursor->update_cursor_data(xpos, y - 6, view->width);
                 }
             }
             if (data_index_pos_end == 0) { cx2 = x; }
@@ -558,7 +552,7 @@ void SimpleFont::create_vertex_data_for(ui::View* view, const ui::core::ScreenPo
     } else if (view->get_text_buffer()->get_cursor_pos() == view->get_text_buffer()->size()) {
         xpos = float(x);
         ypos = float(y);
-        view_cursor->update_cursor_data(xpos, y - 6);
+        view_cursor->update_cursor_data(xpos, y - 6, view->width);
     }
 }
 

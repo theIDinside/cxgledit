@@ -45,7 +45,7 @@ public:
     // ------------------------------------------------------------------------
     void setMat4(const std::string &name, const glm::mat4 &mat) const;
     void set_projection(const glm::mat4 &mat);
-    void set_fillcolor(const glm::vec3 color);
+    void set_fillcolor(glm::vec4 color);
 
     void setup();
     void setup_fillcolor_id();

@@ -14,8 +14,6 @@
 #include <ui/managers/shader_library.hpp>
 #include <core/commands/command_interpreter.hpp>
 
-#include "cursors/view_cursor.hpp"
-
 #undef min
 #undef max
 
@@ -226,19 +224,8 @@ void View::draw_command_view(const std::string &prefix, std::optional<std::vecto
 void View::goto_buffer_position() {
     auto view_begin = cursor->line;
     auto view_end = view_begin + lines_displayable;
-    util::println("Buffer {} - View top: {} view end {}", data->cursor.line, view_begin, view_end);
     if(not is_within(data->cursor.line, view_begin, view_end)) {
         scroll_to(data->cursor.line);
-        /*
-        if(diff < 0) {
-            diff = std::abs(diff);
-            auto new_view_top_line = std::max(diff - lines_displayable, 0);
-            scroll(Scroll::Down, new_view_top_line);
-        } else {
-            assert(diff > 0);
-            scroll(Scroll::Up, diff);
-        }
-         */
     }
 }
 
@@ -270,8 +257,6 @@ void View::scroll(Scroll direction, int linesToScroll) {
     ///  this is so that if we want to jump on a line that currently is displayed in view, we don't scroll down the view to it
     //// we can just scroll the buffer cursor position instead.
     auto [win_width, win_height] = ::App::get_window_dimension();
-    // util::println("View cursor line prior to scroll: {}", cursor->line);
-
     switch (direction) {
         case Scroll::Up: {
             /// TODO: Bounds check so we prohibit the user from scrolling up where no lines can be. Which would be bad UX
@@ -377,8 +362,6 @@ void View::draw_modal_view(int selected, std::vector<TextDrawable>& drawables) {
 
 void CommandView::draw() {
     glEnable(GL_SCISSOR_TEST);
-
-    // glViewport(0, this->y, this->w, this->h);
     glScissor(x, 0, this->w, this->h);
     glClearColor(.3f, .3f, .3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);

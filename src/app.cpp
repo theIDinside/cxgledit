@@ -577,6 +577,10 @@ void App::handle_edit_input(KeyInput input) {
         }
     };
 
+    if(mode == CXMode::Search) {
+        mode = CXMode::Normal;
+    }
+
     switch (key) {
         case GLFW_KEY_HOME: {
             modify_movement_op(modifier);
