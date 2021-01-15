@@ -287,9 +287,10 @@ void Shader::setup() {
     projection = glGetUniformLocation(ID, "projection");
 }
 void Shader::set_projection(const glm::mat4 &mat) { glUniformMatrix4fv(projection, 1, GL_FALSE, &mat[0][0]); }
-void Shader::setup_fillcolor_id() {
+
+void Shader::setup_fillcolor_ids() {
     fillcolor = glGetUniformLocation(ID, "fillcolor");
 }
 void Shader::set_fillcolor(glm::vec4 color) {
-    glUniform3fv(fillcolor, 1, &color[0]);
+    glUniform4fv(fillcolor, 1, &color[0]);
 }

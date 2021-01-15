@@ -11,8 +11,8 @@ namespace ui {
 
 // View Cursor
 
-constexpr auto cursor_fill_color = glm::vec4{1.0, 1.0, 1.0, 0.4};
-constexpr auto line_shade_color = glm::vec4{0.5, 0.5, 0.5, 0.25};
+constexpr auto cursor_fill_color = glm::vec4{1.0, 0.0, 0.2, .4};
+constexpr auto line_shade_color = glm::vec4{0.5,0.5,0.5,0.25};
 
 std::unique_ptr<ViewCursor> ViewCursor::create_from(std::unique_ptr<View> &owning_view) {
     auto buf_curs = owning_view->get_text_buffer()->get_cursor();
@@ -26,7 +26,7 @@ std::unique_ptr<ViewCursor> ViewCursor::create_from(std::unique_ptr<View> &ownin
     auto font = FontLibrary::get_default_font();
 
     shader->setup();
-    shader->setup_fillcolor_id();
+    shader->setup_fillcolor_ids();
 
     vc->projection = owning_view->projection;
     vc->col = buf_curs.col_pos;
@@ -52,7 +52,7 @@ std::unique_ptr<ViewCursor> ViewCursor::create_from(View *view) {
     auto line_shade_vao = CursorVAO::make(GL_ARRAY_BUFFER, 6 * 1024);
 
     shader->setup();
-    shader->setup_fillcolor_id();
+    shader->setup_fillcolor_ids();
 
     vc->projection = view->projection;
     vc->col = buf_curs.col_pos;
@@ -67,27 +67,29 @@ std::unique_ptr<ViewCursor> ViewCursor::create_from(View *view) {
 }
 
 void ViewCursor::draw(bool isActive) {
-    cursor_data->bind_all();
     shader->use();
     shader->set_projection(projection);
-    shader->set_fillcolor(cursor_fill_color);
-    cursor_data->draw();
-
+    // draw highlight first, because we want cursor on top of it
     line_shade_data->bind_all();
     shader->set_fillcolor(line_shade_color);
     line_shade_data->draw();
+    cursor_data->bind_all();
+    shader->set_fillcolor(cursor_fill_color);
+    cursor_data->draw();
 }
 
 void ViewCursor::forced_draw() {
-    cursor_data->bind_all();
     shader->use();
     shader->set_projection(projection);
-    shader->set_fillcolor(line_shade_color);
-    cursor_data->flush_and_draw();
+    // draw highlight first, because we want cursor on top of it
 
     line_shade_data->bind_all();
     shader->set_fillcolor(line_shade_color);
     line_shade_data->flush_and_draw();
+
+    cursor_data->bind_all();
+    shader->set_fillcolor(cursor_fill_color);
+    cursor_data->flush_and_draw();
 }
 
 void ViewCursor::update_cursor_data(GLfloat x, GLfloat y, GLfloat view_width) {

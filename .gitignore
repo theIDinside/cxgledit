@@ -8,3 +8,4 @@ cmake-build-relwithdebinfo/
 tags
 runctags.sh
 deps/freetype-2.10.4
+.run/

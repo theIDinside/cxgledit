@@ -48,7 +48,7 @@ public:
     void set_fillcolor(glm::vec4 color);
 
     void setup();
-    void setup_fillcolor_id();
+    void setup_fillcolor_ids();
 
     static Shader load_shader(const char *vertexPath, const char *fragmentPath, const char *geometryPath = nullptr);
     static Shader load_shader(fs::path vertexPath, fs::path fragmentPath, fs::path geometryPath = "");

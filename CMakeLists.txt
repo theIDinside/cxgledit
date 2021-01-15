@@ -8,8 +8,11 @@ set(SRC_DIR ./src)
 
 set(DEP_DIR ${PROJECT_SOURCE_DIR}/deps)
 message("Hello fucker")
+
+set(RUN_FROM_FOLDER ${PROJECT_SOURCE_DIR}/bin/run)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/bin/debug)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${PROJECT_SOURCE_DIR}/bin/relwithdebinfo)
 
 
 FetchContent_Declare(
@@ -135,6 +138,21 @@ if (CMAKE_BUILD_TYPE STREQUAL Release)
     add_custom_command(TARGET cxgledit POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${PROJECT_SOURCE_DIR}/assets ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE}/assets)
+    add_custom_command(TARGET cxgledit POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${PROJECT_SOURCE_DIR}/test_src ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE}/test)
+
+elseif(CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
+    add_definitions(-DDEBUG)
+    message("Build type is ${CMAKE_BUILD_TYPE}. Copying assets to ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO}/assets")
+    message("Debug has instrumentation features enabled.")
+    target_compile_definitions(cxgledit PUBLIC INSTRUMENTATION KEEP_LOGS IS_DEBUG)
+    add_custom_command(TARGET cxgledit POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${PROJECT_SOURCE_DIR}/assets ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO}/assets)
+    add_custom_command(TARGET cxgledit POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${PROJECT_SOURCE_DIR}/test_src ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO}/test)
 else ()
     # set -DINTRINSICS_ENABLED, when AVX2 character occurence scanning is implemented
     add_definitions(-DDEBUG)
@@ -148,3 +166,12 @@ else ()
             COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${PROJECT_SOURCE_DIR}/test_src ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}/test)
 endif ()
+
+# This is simply used for testing. This is so we can set "working directory" to RUN_FROM_FOLDER, regardless
+# of what build type we are running, because it will just be the shaders, and test files stored there
+add_custom_command(TARGET cxgledit POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${PROJECT_SOURCE_DIR}/assets ${RUN_FROM_FOLDER}/assets)
+add_custom_command(TARGET cxgledit POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${PROJECT_SOURCE_DIR}/test_src ${RUN_FROM_FOLDER}/test)
