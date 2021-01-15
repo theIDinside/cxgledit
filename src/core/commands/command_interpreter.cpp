@@ -185,6 +185,7 @@ std::string CommandInterpreter::command_auto_completed() {
         case Commands::OpenFile: {
             auto &fm = FileManager::get_instance();
             auto [prefix, suggestion] = fm.get_suggestion();
+
             return suggestion.value_or(prefix);
         }
         case Commands::Search:

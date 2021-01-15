@@ -11,8 +11,6 @@ int main(int argc, const char **argv) {
     return 0;
 }
 
-
-
 /*
  * todos that aren't fixmes or doesn't have some locality somewhere in the code, basically features to implement
  *
@@ -34,6 +32,7 @@ int main(int argc, const char **argv) {
  * TODO(feature, minor): block highlight
  * TODO(feature, major): add intelligence to editor, so that it can "reason" about the lexed and/or "parsed" source code
  *
+ * TODO(major): remove dependencies on GLM & GLFW, possibly freetype as well, but probably not
  *
  * Add some debug code for OpenGL and read up about OpenGL
  *

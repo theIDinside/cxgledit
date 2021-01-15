@@ -53,10 +53,19 @@ void FileManager::set_user_input(std::string_view v) {
 }
 SelectionResult FileManager::get_suggestion() const {
     if(not withSamePrefix.empty()) {
-        return SelectionResult {
-                prefix,
-                withSamePrefix[selected_file].generic_string()
-        };
+        if(fs::is_directory(withSamePrefix[selected_file])) {
+            auto path_str = withSamePrefix[selected_file].generic_string();
+            path_str.push_back('/');
+            return SelectionResult {
+                    prefix,
+                    path_str
+            };
+        } else {
+            return SelectionResult {
+                    prefix,
+                    withSamePrefix[selected_file].generic_string()
+            };
+        }
     } else {
         return SelectionResult{prefix, {}};
     }

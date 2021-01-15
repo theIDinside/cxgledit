@@ -441,6 +441,7 @@ void App::kb_command(KeyInput input) {
             } break;
             case GLFW_KEY_TAB:
                 active_buffer->insert_str("    ");
+                active_buffer->insert_str("    ");
                 break;
             case GLFW_KEY_UP:
             case GLFW_KEY_DOWN: {
