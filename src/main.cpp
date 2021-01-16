@@ -17,6 +17,8 @@ int main(int argc, const char **argv) {
  * Features to add. The feature description minor/major does not mean to say anything about it's importance, or necessity nor it's urgency
  * but is simply meant to give a hint about what works need to be put behind it and how much other features it might spawn. Minor features are not features which will
  * father other features so to speak.
+ * TODO(abstraction, major): tie in all edits of buffer & their possible side effects behind the EditorWindow class
+ * TODO(abstraction, major): tie in all edits of buffer & their possible side effects behind the EditorWindow class
  * TODO(cosmetic, minor): Add delay to syntax highlighting / lexing, so that the entire text doesn't flicker about
  * TODO(feature, minor): add write file command
  *  - done, but no overwrite affirmation

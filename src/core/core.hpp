@@ -103,5 +103,5 @@ inline bool is_within(int value, int range_begin, int range_end) {
 
 template <typename View>
 inline bool is_within(int cursor_line, View* view) {
-    return (cursor_line >= view->cursor->line) && (cursor_line <= view->lines_displayable);
+    return (cursor_line >= view->cursor->line) && (cursor_line <= (view->cursor->line + view->lines_displayable));
 }

@@ -66,7 +66,8 @@ struct View {
     int width{}, height{}, x{}, y{};
     int lines_displayable = -1;
     std::unique_ptr<VAO> vao{nullptr};// the graphical representation
-    Vec3f bg_color{0.2f, 0.3f, 0.3f};
+    Vec3f fg_color{1.0f, 1.0f, 1.0f};
+    Vec3f bg_color{0.05f, 0.052f, 0.0742123f};
     glm::mat4 projection;
     /// Anonymous for now, will pull out this later on
     struct {
@@ -74,7 +75,6 @@ struct View {
         int td_id;
     };
 
-    Vec3f fg_color{1.0f, 1.0f, 1.0f};
     SimpleFont *font = nullptr;
     Shader *shader = nullptr;
     std::size_t vertexCapacity{0};
