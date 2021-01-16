@@ -12,7 +12,7 @@ constexpr auto SWEDISH_LAST_ALPHA_CHAR_UNICODE = 0x00f6u;
 
 #define AS(value, type) static_cast<type>(value)
 
-#define int_floor(value) static_cast<int>(std::floor(value));
+#define int_floor(value) static_cast<int>(std::floor(value))
 
 
 template<typename T> concept FloatingPoint = requires(T t) {

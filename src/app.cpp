@@ -439,9 +439,14 @@ void App::kb_command(KeyInput input) {
                 active_buffer->insert_str("    ");
                 active_buffer->insert_str("    ");
                 break;
-            case GLFW_KEY_UP:
+            case GLFW_KEY_UP: {
+                active_window->get_text_buffer()->move_cursor(Movement::Line(3, CursorDirection::Back));
+                active_view->goto_buffer_position();
+            } break;
             case GLFW_KEY_DOWN: {
-                active_view->scroll(static_cast<ui::Scroll>(key), 3);
+                active_window->get_text_buffer()->move_cursor(Movement::Line(3, CursorDirection::Forward));
+                active_view->goto_buffer_position();
+                // active_view->scroll(static_cast<ui::Scroll>(key), 3);
             } break;
             case GLFW_KEY_RIGHT:
                 modify_movement_op(modifier);
@@ -577,9 +582,7 @@ void App::handle_edit_input(KeyInput input) {
         }
     };
 
-    if(mode == CXMode::Search) {
-        mode = CXMode::Normal;
-    }
+    if (mode == CXMode::Search) { mode = CXMode::Normal; }
 
     switch (key) {
         case GLFW_KEY_HOME: {
@@ -693,13 +696,18 @@ void App::handle_edit_input(KeyInput input) {
             }
         } break;
         case GLFW_KEY_INSERT:
+            break;
         case GLFW_KEY_PAGE_UP: {
             auto rows_per_page = active_view->height / active_view->font->get_row_advance();
-            active_view->scroll(ui::Scroll::Up, rows_per_page);
+            active_window->get_text_buffer()->move_cursor(Movement::Line(rows_per_page, CursorDirection::Back));
+            active_view->goto_buffer_position();
+            // active_view->scroll(ui::Scroll::Up, rows_per_page);
         } break;
         case GLFW_KEY_PAGE_DOWN: {
-            auto rows_per_page = active_view->height / active_view->font->get_row_advance();
-            active_view->scroll(ui::Scroll::Down, rows_per_page);
+            auto rows_per_page = active_view->height / active_view->font->get_row_advance() + 2;
+            // active_view->scroll(ui::Scroll::Down, rows_per_page);
+            active_window->get_text_buffer()->move_cursor(Movement::Line(rows_per_page, CursorDirection::Forward));
+            active_view->goto_buffer_position();
         } break;
     }
     // N.B. this was moved from charCallback because typing in ÖÄÅ right now, crashes the application as the textual data lives inside a std::string
@@ -773,8 +781,20 @@ void App::cycle_command_or_move_cursor(Cycle cycle) {
             ci.cycle_current_command_arguments(cycle);
         }
     } else if (mode == CXMode::Normal) {
+        auto page_line_size = active_view->lines_displayable;
         active_buffer->move_cursor(Movement::Line(1, curs_direction));
         if (active_buffer->mark_set) { active_buffer->clear_marks(); }
+        if (not is_within(active_buffer->cursor.line, active_view->cursor->line,
+                          active_view->cursor->line + page_line_size)) {
+            if (cycle == Cycle::Forward) {
+                auto steps = active_buffer->cursor.line - (active_view->cursor->line + page_line_size);
+                active_view->scroll(ui::Scroll::Down, steps);
+            } else {
+                auto steps = (active_view->cursor->line - active_buffer->cursor.line);
+                active_view->scroll(ui::Scroll::Up, steps);
+            }
+        }
+
     }
 }
 
@@ -806,8 +826,9 @@ void App::app_debug() {
     auto &dm = DataManager::get_instance();
     util::println("Available buffers in re-use list: {}", dm.reuseable_buffers());
     dm.print_all_managed();
-    util::println("Buffer line: {}\t Cursor line: {}\tDisplayable lines in view: {}", active_window->get_text_buffer()->cursor.line,
-                  active_window->view->cursor->line, active_window->view->lines_displayable);
+    util::println("APPDEBUG: Buffer line: {}\t Cursor line: {}\tDisplayable lines in view: {} - Scrolled: {}",
+                  active_window->get_text_buffer()->cursor.line, active_window->view->cursor->line,
+                  active_window->view->lines_displayable, active_window->view->scrolled);
 }
 WindowDimensions App::get_window_dimension() { return win_dimensions; }
 

@@ -35,8 +35,6 @@ namespace ui {
         View *view = nullptr;
         Shader *shader = nullptr;
         int line{};
-        int col{};
-        int row{};
         int width{};
         int height{};
         int pos_x;

@@ -29,7 +29,7 @@ std::unique_ptr<ViewCursor> ViewCursor::create_from(std::unique_ptr<View> &ownin
     shader->setup_fillcolor_ids();
 
     vc->projection = owning_view->projection;
-    vc->col = buf_curs.col_pos;
+
     vc->line = buf_curs.line;
     vc->index = buf_curs.pos;
     vc->cursor_data = std::move(cursor_vao);
@@ -55,7 +55,6 @@ std::unique_ptr<ViewCursor> ViewCursor::create_from(View *view) {
     shader->setup_fillcolor_ids();
 
     vc->projection = view->projection;
-    vc->col = buf_curs.col_pos;
     vc->line = buf_curs.line;
     vc->index = buf_curs.pos;
     vc->cursor_data = std::move(cursor_vao);

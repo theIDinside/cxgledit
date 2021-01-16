@@ -37,7 +37,7 @@ std::unique_ptr<View> View::create_managed(TextData *data, const std::string &na
     v->y = y;
     v->font = FontLibrary::get_default_font();
     v->shader = ShaderLibrary::get_text_shader();
-    v->lines_displayable = int_floor(float(h) / float(v->font->get_row_advance())) - 2;
+    v->lines_displayable = int_floor(float(h) / float(v->font->get_row_advance())) - 7;
     v->vao = std::move(vao);
     v->data = data;
     v->vertexCapacity = reserveMemory / sizeof(TextVertex);
@@ -85,7 +85,8 @@ void View::set_projection(glm::mat4 view_projection) {
 void View::set_dimensions(int w, int h) {
     this->width = w;
     this->height = h;
-    lines_displayable = int_floor(float(h) / float(font->get_row_advance())) - 2;
+    lines_displayable = int_floor(float(h) / float(font->get_row_advance())) - 7;
+    util::println("lines displayable updated to: {}", lines_displayable);
 }
 
 void View::anchor_at(int x, int y) {
@@ -229,11 +230,14 @@ void View::goto_buffer_position() {
     }
 }
 
+
+// TODO: make it so, if view is outside of where the buffer cursor is, when navigational keys are pressed, zoom right into where
+//  it is.
 void View::scroll_to(int line) {
     auto [win_width, win_height] = ::App::get_window_dimension();
     // scroll up
     if(line < cursor->line) {
-        auto linesToScroll = cursor->line - line;
+        auto linesToScroll = (cursor->line + lines_displayable) - line;
         auto scroll_pos = scrolled + (linesToScroll * font->get_row_advance());
         scrolled = std::min(scroll_pos, 0);
         auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled),
@@ -314,7 +318,7 @@ View *View::create(TextData *data, const std::string &name, int w, int h, int x,
     v->x = x;
     v->y = y;
     v->font = FontLibrary::get_default_font();
-    v->lines_displayable = int_floor(float(h) / float(v->font->get_row_advance())) - 2;
+    v->lines_displayable = int_floor(float(h) / float(v->font->get_row_advance())) - 7;
     v->shader = ShaderLibrary::get_text_shader();
     v->vao = std::move(vao);
     v->data = data;
