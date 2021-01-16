@@ -80,7 +80,6 @@ static auto initialize_key_callbacks() {
                 app->handle_edit_input(input);
             }
         } else if (repeated(action)) {
-            util::println("keyrepeated {}", key);
             if (mods & GLFW_MOD_CONTROL) {
                 app->kb_command(input);
             } else {
@@ -266,7 +265,6 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
                 app->handle_edit_input(input);
             }
         } else if (repeated(action)) {
-            util::println("keyrepeated {}", key);
             if (mods & GLFW_MOD_CONTROL) {
                 app->kb_command(input);
             } else {
@@ -486,6 +484,7 @@ void App::kb_command(KeyInput input) {
                     active_buffer->remove(Movement::Char(range, CursorDirection::Forward));
                     active_buffer->clear_marks();
                 }
+
                 break;
             case GLFW_KEY_Q: {
                 auto active_buf = active_window->get_text_buffer();
@@ -677,6 +676,10 @@ void App::handle_edit_input(KeyInput input) {
                     active_buffer->remove(Movement::Char(range, CursorDirection::Forward));
                     active_buffer->clear_marks();
                 }
+
+                if(not is_within(active_buffer->cursor.line, active_view)) {
+                    active_view->scroll(ui::Scroll::Up, 1);
+                }
             }
         } break;
         case GLFW_KEY_DELETE: {
@@ -768,7 +771,9 @@ void App::input_command_or_newline() {
         if (mode != CXMode::Search) { mode = CXMode::Normal; }
     } else if (mode == CXMode::Normal) {
         active_buffer->insert('\n');
-        active_view->goto_buffer_position();
+        if(not is_within(active_buffer->cursor.line, active_view->cursor->line, active_view->cursor->line + active_view->lines_displayable)) {
+            active_view->scroll(ui::Scroll::Down, 1);
+        }
     }
 }
 

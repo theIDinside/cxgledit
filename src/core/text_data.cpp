@@ -297,8 +297,8 @@ void StdStringBuffer::remove(const Movement &m) {
     this->state_is_pristine = false;
     data_is_pristine = false;
 }
+
 void StdStringBuffer::remove_ch_forward(size_t i) {
-    util::println("delete: '{}'", store.substr(cursor.pos, i));
     auto line_deleted = false;
     if (cursor.pos + i < store.size()) {
         auto e = cursor.pos + i;
