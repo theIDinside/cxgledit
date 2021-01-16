@@ -235,8 +235,8 @@ void View::goto_buffer_position() {
 //  it is.
 void View::scroll_to(int line) {
     auto [win_width, win_height] = ::App::get_window_dimension();
-    // scroll up
-    if(line < cursor->line) {
+
+    if(line < cursor->line) { // means we need to => scroll up
         auto linesToScroll = (cursor->line + lines_displayable) - line;
         auto scroll_pos = scrolled + (linesToScroll * font->get_row_advance());
         scrolled = std::min(scroll_pos, 0);
@@ -245,14 +245,25 @@ void View::scroll_to(int line) {
         set_projection(p);
         cursor->line -= linesToScroll;
         cursor->line = std::max(cursor->line, 0);
-    } else {
-        auto linesToScroll = line - cursor->line;
-        scrolled -= (linesToScroll * font->get_row_advance());
-        auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled),
-                            static_cast<float>(win_height + scrolled));
-        set_projection(p);
-        cursor->line += linesToScroll;
-        cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable));
+    } else { // means we need to => scroll down
+        auto lineAnchorOfLastPage = get_text_buffer()->lines_count() - lines_displayable;
+        if(line > lineAnchorOfLastPage) {
+            auto linesToScroll = lineAnchorOfLastPage - cursor->line;
+            scrolled -= (linesToScroll * font->get_row_advance());
+            auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled),
+                                static_cast<float>(win_height + scrolled));
+            set_projection(p);
+            cursor->line += linesToScroll;
+            cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable));
+        } else {
+            auto linesToScroll = line - cursor->line;
+            scrolled -= (linesToScroll * font->get_row_advance());
+            auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled),
+                                static_cast<float>(win_height + scrolled));
+            set_projection(p);
+            cursor->line += linesToScroll;
+            cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable));
+        }
     }
 }
 

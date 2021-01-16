@@ -79,12 +79,6 @@ constexpr std::array keywords{mp("int", c_keyword),        mp("bool", c_keyword)
 
 constexpr std::array highlight{RED, GREEN, BLUE, YELLOW, WHITE};
 
-struct ColorFormatInfo {
-    std::size_t begin;
-    std::size_t end;
-    glm::vec3 color;
-};
-
 struct CharacterRange {
     unsigned int from, to;
 };
@@ -124,6 +118,7 @@ public:
     SimpleFont(int pixelSize, std::unique_ptr<Texture> &&texture, std::vector<glyph_info> &&glyphs);
 
     void create_vertex_data_in(VAO *vao, ui::View *view, int xpos, int ypos);
+    void create_culled_vertex_data_for(ui::View *view, int xpos, int ypos);
 
     void emplace_colorized_text_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos, OptionalColData colorData);
     void add_colorized_text_gpu_data(VAO *vao, std::vector<TextDrawable> textDrawables);

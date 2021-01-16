@@ -6,6 +6,7 @@
 #include <vector>
 #include <optional>
 #include <string_view>
+#include <glm/glm.hpp>
 
 enum class TokenType {
     Illegal,
@@ -22,6 +23,12 @@ enum class TokenType {
     Macro,
     Qualifier,
     Statement// const, consteval, constexpr, static, volatile
+};
+
+struct ColorFormatInfo {
+    std::size_t begin;
+    std::size_t end;
+    glm::vec3 color;
 };
 
 struct Token {
@@ -46,3 +53,7 @@ std::string token_ident_to_string(TokenType type);
 ///  that isn't really hard but it comes with it's own set of problems. Right now we'll just deal with std::string and string_views
 
 std::vector<Token> tokenize(std::string_view text);
+std::vector<ColorFormatInfo> format_tokens(const std::vector<Token>& tokens);
+
+
+std::vector<ColorFormatInfo> color_format_tokenize(std::string_view text);

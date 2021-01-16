@@ -26,9 +26,15 @@ auto to_string(CXMode mode) -> const char * {
 
 Timer::Timer(const std::string_view &title) : benchmark_title(title) { begin = hiResClk::now(); }
 Timer::~Timer() {
+    stop();
+}
+void Timer::stop() {
     end = hiResClk::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>((end - begin)).count();
     fmt::print("{}: {}us\n", benchmark_title, duration);
+}
+void Timer::reset() {
+    begin = hiResClk::now();
 }
 #endif
 

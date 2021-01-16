@@ -26,6 +26,10 @@ using chronotp = std::chrono::high_resolution_clock::time_point;
 struct Timer {
     explicit Timer(const std::string_view &timer_title);
     ~Timer();
+
+    void stop();
+    void reset();
+
     std::string_view benchmark_title;
     chronotp begin, end;
 };

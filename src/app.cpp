@@ -325,6 +325,7 @@ void App::set_dimensions(int w, int h) {
 }
 void App::run_loop() {
     double nowTime = glfwGetTime();
+    Timer t{"run_loop"};
     auto since_last_update = glfwGetTime();
     while (this->no_close_condition()) {
         // TODO: do stuff.
@@ -764,9 +765,10 @@ void App::input_command_or_newline() {
         /// Setting active input to text editor again
         active_buffer = active_window->get_text_buffer();
         active_view = active_window->view;
-        if (not(mode == CXMode::Search)) { mode = CXMode::Normal; }
+        if (mode != CXMode::Search) { mode = CXMode::Normal; }
     } else if (mode == CXMode::Normal) {
         active_buffer->insert('\n');
+        active_view->goto_buffer_position();
     }
 }
 

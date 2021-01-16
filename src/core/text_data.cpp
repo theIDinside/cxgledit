@@ -298,27 +298,27 @@ void StdStringBuffer::remove(const Movement &m) {
     data_is_pristine = false;
 }
 void StdStringBuffer::remove_ch_forward(size_t i) {
-    auto lines_deleted = 0;
     util::println("delete: '{}'", store.substr(cursor.pos, i));
+    auto line_deleted = false;
     if (cursor.pos + i < store.size()) {
         auto e = cursor.pos + i;
-        for (auto index = cursor.pos; index < e; index++) {
+        for (auto index = cursor.pos; index < e && not line_deleted; index++) {
             if (store[index] == '\n') {
-                lines_deleted++;
+                line_deleted = true;
             }
         }
         store.erase(cursor.pos, i);
-        cursor.line -= lines_deleted;
     } else {
         auto sz = store.size();
-        for (auto index = cursor.pos; index < sz; index++) {
-            if (store[index] == '\n') lines_deleted++;
+        for (auto index = cursor.pos; index < sz && not line_deleted; index++) {
+            if (store[index] == '\n') {
+                line_deleted = true;
+            }
         }
         store.erase(cursor.pos);
-        cursor.line -= lines_deleted;
     }
 
-    if (lines_deleted != 0) {
+    if (line_deleted) {
         rebuild_metadata();
     } else {
         if (has_meta_data) {
@@ -373,6 +373,13 @@ void StdStringBuffer::remove_word_backward(size_t count) {
 // TODO(simon): MAJOR CLEAN UP NEEDED!
 
 void StdStringBuffer::step_cursor_to(size_t pos) {
+    if(pos == 0) {
+        cursor.pos = 0;
+        cursor.line = 0;
+        cursor.col_pos = 0;
+        state_is_pristine = false;
+        return;
+    }
     if (empty() || pos == cursor.pos) return;
     assert(pos <= size() && pos >= 0);
     auto distance = std::abs(AS(pos, int) - cursor.pos);
@@ -392,15 +399,16 @@ void StdStringBuffer::step_cursor_to(size_t pos) {
                 cursor.pos = AS(pos, int);
             } else {
                 auto i = cursor.line;
-                auto lns = meta_data.line_begins.size();
+                auto last_item = meta_data.line_begins.size() - 1;
                 auto lineToGoTo = 0;
-                for (; i < lns - 1; i++) {
+                if(meta_data.line_begins[i] == cursor.pos) i++;
+                for (; i < last_item; i++) {
                     if (pos >= meta_data.line_begins[i] && pos <= meta_data.line_begins[i + 1]) {
                         lineToGoTo = i;
                         break;
                     }
                 }
-                if (i == lns) lineToGoTo = meta_data.line_begins.size() - 1;
+                if (i == last_item) lineToGoTo = meta_data.line_begins.size() - 1;
                 cursor.line = lineToGoTo;
                 cursor.pos = AS(pos, int);
             }
@@ -601,7 +609,7 @@ StdStringBuffer::~StdStringBuffer() {
 }
 
 void StdStringBuffer::goto_next(std::string search) {
-    auto pos = store.find(search, cursor.pos + 2);
+    auto pos = store.find(search, cursor.pos + 1);
     auto oldpos = cursor.pos;
     if(pos != std::string::npos) {
         cached_search = search;
