@@ -21,6 +21,8 @@
 #include <ui/managers/shader_library.hpp>
 #include <ui/modal.hpp>
 
+#include <cfg/configuration.hpp>
+
 typedef Action(__cdecl *KeyBindingFn)(CXMode, KeyInput);
 
 namespace ui {
@@ -121,6 +123,8 @@ private:
     Register copy_register{};
     ui::core::Layout *root_layout{nullptr};
     HMODULE kb_library = nullptr;
+
+    Configuration config;
 
     bool no_close_condition();
     void graceful_exit();

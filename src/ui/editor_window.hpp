@@ -3,11 +3,14 @@
 //
 
 #pragma once
-#include <ui/core/layout.hpp>
-#include <optional>
 #include <glm/glm.hpp>
+#include <core/vec_3.hpp>
+#include <optional>
+#include <ui/core/layout.hpp>
 
 class TextData;
+using Color = Vec3f;
+
 
 namespace ui {
     // Forward declarations
@@ -30,5 +33,7 @@ namespace ui {
         void set_projection(glm::mat4 projection) const;
         bool active = false;
         void handle_click(int x, int y);
+
+        void set_view_colors(Color bg, Color fg);
     };
 }

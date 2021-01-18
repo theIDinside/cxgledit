@@ -1,0 +1,9 @@
+[views]
+background_color = "0.05 0.052 0.0742123";
+foreground_color = "1 1 1";
+font_pixel_size = "24";
+
+[window]
+width = "1920";
+height = "1080";
+monitors = "1";

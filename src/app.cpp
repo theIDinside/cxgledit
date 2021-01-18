@@ -142,6 +142,8 @@ bool load_keybinding_library(HMODULE &libHandle, KeyBindingFn &fnHandle, Fn init
 App *App::initialize(int app_width, int app_height, const std::string &title) {
     util::printmsg("Initializing application");
     auto instance = new App{};
+    auto cfgData = ConfigFileData::load_cfg_data();
+    instance->config = Configuration::from_parsed_map(cfgData);
 
     load_keybinding_library(instance->kb_library, instance->bound_action, [](auto fn) {
         util::println("Keybindings library initialized\n Attempting to call library");
@@ -851,6 +853,7 @@ void App::new_editor_window(SplitStrategy splitStrategy) {
         push_node(l, layout_id, ui::core::LayoutType::Horizontal);
         auto active_editor_win = active_window;
         auto ew = EditorWindow::create({}, projection, layout_id, l->right->dimInfo);
+        ew->set_view_colors(config.views.bg_color, config.views.fg_color);
         ew->view->set_projection(projection);
         ew->status_bar->ui_view->set_projection(projection);
         editor_views.push_back(ew);
@@ -862,6 +865,7 @@ void App::new_editor_window(SplitStrategy splitStrategy) {
         active_window->active = true;
     } else {
         auto ew = EditorWindow::create({}, projection, layout_id, DimInfo{0, win_height, win_width, win_height});
+        ew->set_view_colors(config.views.bg_color, config.views.fg_color);
         ew->view->set_projection(projection);
         ew->status_bar->ui_view->set_projection(projection);
         editor_views.push_back(ew);

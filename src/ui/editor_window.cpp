@@ -93,4 +93,8 @@ void EditorWindow::handle_click(int x, int yPOS) {
               "inside this region");
     }
 }
+void EditorWindow::set_view_colors(Color bg, Color fg) {
+    view->fg_color = fg;
+    view->bg_color = bg;
+}
 }// namespace ui

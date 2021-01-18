@@ -82,7 +82,7 @@ set(UTIL_SOURCES
 set(CORE_SOURCE
         src/core/core.hpp
         src/core/strops.cpp src/core/strops.hpp
-        src/core/text_data.cpp src/core/text_data.hpp src/core/data_manager.cpp src/core/data_manager.hpp)
+        src/core/text_data.cpp src/core/text_data.hpp src/core/data_manager.cpp src/core/data_manager.hpp src/cfg/configuration.cpp src/cfg/configuration.hpp)
 
 set(COMMANDS_SOURCE
         src/core/commands/command.cpp src/core/commands/command.hpp
