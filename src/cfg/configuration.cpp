@@ -9,7 +9,7 @@
 ConfigFileData cfg_parse(std::string &&file_data) {
     ConfigFileData cfgFile{.raw_file_data = std::move(file_data), .parsed_data = {}};
     // auto& data = *ptrData;
-    auto &[data, parsed] = cfgFile;
+    auto &[data, parsed, _] = cfgFile;
     StrView key, val;
     std::string current_table{};
     LexerState state = LexerState::Table;
@@ -71,6 +71,22 @@ ConfigFileData cfg_parse(std::string &&file_data) {
 }
 std::string to_string(StrView str) { return std::string{str}; }
 
+std::string serialize(const Configuration &cfg) {
+    std::stringstream ss{};
+    ss << "[views]\n";
+    ss << "background_color = " << cfg.views.bg_color << ";\n";
+    ss << "foreground_color = " << cfg.views.fg_color << ";\n";
+    ss << "font_pixel_size = " << "\"" << cfg.views.font_pixel_size << "\";\n\n";
+
+    ss << "[window]\n";
+    ss << "width = " << "\"" << cfg.window.width << "\";\n";
+    ss << "height = " << "\"" << cfg.window.height << "\";\n";
+    ss << "monitors = " << "\"" << cfg.window.monitors << "\";\n";
+
+
+    return ss.str();
+}
+
 Color parse_color(const std::string &str_item) {
     std::stringstream ss{str_item};
     Color c;
@@ -96,15 +112,22 @@ Configuration Configuration::from_parsed_map(const ConfigFileData &configFileDat
     }
 
     if (configFileData.has_table("views")) {
-        auto strBackgroundColor =
-                configFileData.get_str_value("views", "background_color").value_or("0.05 0.052 0.0742123");
+        auto strBackgroundColor = configFileData.get_str_value("views", "background_color").value_or("0.05 0.052 0.0742123");
         auto strForegroundColor = configFileData.get_str_value("views", "foreground_color").value_or("1 1 1");
         auto strFontPixelSize = configFileData.get_str_value("views", "font_pixel_size").value_or("24");
+
+
         cfg.views.bg_color = parse_color(strBackgroundColor);
         cfg.views.fg_color = parse_color(strForegroundColor);
         cfg.views.font_pixel_size = std::stoi(strFontPixelSize);
     }
+    cfg.file_path = configFileData.file_path;
     return cfg;
+}
+Configuration Configuration::make_default() {
+    Configuration c;
+    c.file_path = "assets/config.cxe";
+    return c;
 }
 
 std::optional<std::string> ConfigFileData::get_str_value(const std::string &table, std::string_view key) const {
@@ -114,7 +137,7 @@ std::optional<std::string> ConfigFileData::get_str_value(const std::string &tabl
             std::string res{tableRef.at(key)};
             // remove the "" around the data
             res.erase(std::remove(res.begin(), res.end(), '"'), res.end());
-            return res;
+            return {res};
         } else {
             return {};
         }
@@ -128,5 +151,7 @@ ConfigFileData ConfigFileData::load_cfg_data(const fs::path &file_path) {
     std::ifstream f{file_path};
     std::string buf;
     buf.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
-    return cfg_parse(std::move(buf));
+    auto res = cfg_parse(std::move(buf));
+    res.file_path = file_path;
+    return res;
 }

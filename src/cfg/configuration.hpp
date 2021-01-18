@@ -22,6 +22,7 @@ using Color = Vec3f;
 struct ConfigFileData {
     std::string raw_file_data;
     ParsedView parsed_data;
+    fs::path file_path;
     [[nodiscard]] std::optional<std::string> get_str_value(const std::string& table, std::string_view key) const;
     [[nodiscard]] bool has_table(const std::string& table) const;
     [[nodiscard]] static ConfigFileData load_cfg_data(const fs::path& file_path = "./assets/config.cxe");
@@ -62,7 +63,11 @@ StrView parse_key(It begin, It end) {
     std::string_view sview{begin, end};
     auto iterator = std::find_if(sview.rbegin(), sview.rend(), [](auto e) { return std::isalpha(e); });
     auto dist = std::distance(sview.rbegin(), iterator);
+
+    auto key_begins_iterator = std::find_if(sview.begin(), sview.end(), [](auto e) { return std::isalpha(e); });
+    auto begin_dist = std::distance(sview.begin(), key_begins_iterator);
     sview.remove_suffix(dist);
+    sview.remove_prefix(begin_dist);
     return sview;
 }
 
@@ -84,14 +89,15 @@ struct Configuration {
         Color fg_color{1.0f, 1.0f, 1.0f};
         int font_pixel_size = 24;
     } views;
-
     struct {
         int width{1024};
         int height{768};
         int monitors{1};
     } window;
 
+    fs::path file_path;
     static Configuration from_parsed_map(const ConfigFileData& parsedView);
+    static Configuration make_default();
 };
 
 std::string serialize(const Configuration& cfg);

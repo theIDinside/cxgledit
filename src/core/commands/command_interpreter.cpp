@@ -240,6 +240,8 @@ void CommandInterpreter::parse_command(std::string_view str) {
                 }
             } catch (...) { util::println("parsing string to number failed"); }
         }
+    } else if (cmd_str_rep == "cfgreload") {
+        ctx->reload_configuration();
     } else if (cmd_str_rep == "kbreload") {
         ctx->reload_keybindings();
     }

@@ -24,7 +24,10 @@ struct Vec3 {
             }
         }
     }
+    friend bool operator==(const Vec3& lhs, const Vec3& rhs);
+    friend std::ostream& operator<<(std::ostream& os, const Vec3 v);
 };
+
 
 using Vec3i = Vec3<int>;
 using Vec3f = Vec3<float>;

@@ -838,6 +838,7 @@ void App::app_debug() {
     util::println("APPDEBUG: Buffer line: {}\t Cursor line: {}\tDisplayable lines in view: {} - Scrolled: {}",
                   active_window->get_text_buffer()->cursor.line, active_window->view->cursor->line,
                   active_window->view->lines_displayable, active_window->view->scrolled);
+    util::println("Current settings serialized:\n{}", serialize(config));
 }
 WindowDimensions App::get_window_dimension() { return win_dimensions; }
 
@@ -878,10 +879,6 @@ void App::new_editor_window(SplitStrategy splitStrategy) {
     util::println("Editor window created");
     layout_id++;
 }
-
-/*
- *
- */
 
 void App::update_all_editor_windows() {
     update_layout_tree(root_layout, 1.0, 1.0);
@@ -1031,6 +1028,21 @@ void App::close_active() {
         draw_all(true);
     } else {
         this->graceful_exit();
+    }
+}
+
+// TODO: make application aware of .cxe files, so that when editing an .cxe file, user can press some key, to automatically load the settings in it
+void App::reload_configuration() {
+    auto old_bg = config.views.bg_color;
+    util::println("Old config: \n{}", serialize(config));
+    util::println("Reloading config from: {}", config.file_path.string());
+    auto cfgData = ConfigFileData::load_cfg_data(config.file_path);
+    config = Configuration::from_parsed_map(cfgData);
+    util::println("New config:\n{}", serialize(config));
+
+    assert(!(old_bg == config.views.bg_color));
+    for(auto ew : editor_views) {
+        ew->set_view_colors(config.views.bg_color, config.views.fg_color);
     }
 }
 

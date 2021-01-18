@@ -107,6 +107,8 @@ public:
     void handle_edit_input(KeyInput input);
     void find_next_in_active(const std::string& search);
 
+    void reload_configuration();
+
 private:
     void cleanup();
     GLFWwindow *window;
@@ -131,5 +133,4 @@ private:
 
     static WindowDimensions win_dimensions;
     void close_active();
-
 };

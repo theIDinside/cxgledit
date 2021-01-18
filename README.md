@@ -26,6 +26,13 @@ Font class basically calculates required height & width of provided text data fo
 
 ![ModalPopup popup dialog example](docs/img/modal_dialog_example.PNG)
 
+When the editor becomes file-type aware, the user should be able to edit a config file (.cxe) like this,
+and be able to just hit some key/key combo, and let the editor realize that it's a .cxe file and thus
+load configuration from that active file. Right now loading a file like this works, but the file-
+type awareness is not yet implemented. It's not hard to do though.
+![Configuration of editor](docs/img/config_example.PNG)
+
+
 ### Features on display:
 - Split editor windows
 - Command input & auto completion (the grayed out part is what it can auto-complete to). If the user hits tab, 

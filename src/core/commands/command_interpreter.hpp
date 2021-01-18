@@ -44,7 +44,6 @@ public:
     void clear_state();
     void setup_state();
     bool cmd_is_interactive();
-
     bool command_can_autocomplete();
 
 private:
