@@ -4,7 +4,6 @@
 
 #include "layout.hpp"
 #include <core/core.hpp>
-#include <stack>
 
 namespace ui::core {
 
