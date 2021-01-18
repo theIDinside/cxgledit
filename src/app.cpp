@@ -11,13 +11,7 @@
 #include <ui/view.hpp>
 #include <utility>
 #include <utils/fileutil.hpp>
-
-#include <glm/gtc/matrix_transform.hpp>
-
 #include <ranges>
-#include <utility>
-
-#include <core/matrix.hpp>
 
 /// Utility macro for getting registered App pointer with GLFW
 #define get_app_handle(window) (App *) glfwGetWindowUserPointer(window)
@@ -201,11 +195,7 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
     instance->root_layout->id = 1;
 
     instance->scroll = 0;
-    glm::mat4 mvp = orthographic_projection(app_width, app_height, instance->scroll);
-
-
-    // instance->projection = glm::ortho(0.0f, static_cast<float>(app_width), 0.0f, static_cast<float>(app_height));
-    instance->projection = mvp;
+    instance->mvp = my_screen_projection_2D(app_width, app_height, instance->scroll);
     instance->title = title;
     instance->window = window;
 
@@ -218,8 +208,8 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
 
     auto text_row_advance = FontLibrary::get_default_font()->get_row_advance() + 2;
     auto cv = CommandView::create("command", app_width, text_row_advance * 1, 0, text_row_advance * 1);
-    cv->command_view->set_projection(instance->projection);
-    instance->modal_popup = ui::ModalPopup::create(instance->projection);
+    cv->command_view->set_projection(instance->mvp);
+    instance->modal_popup = ui::ModalPopup::create(instance->mvp);
 
     instance->command_view = std::move(cv);
 
@@ -324,8 +314,9 @@ void App::set_dimensions(int w, int h) {
     this->win_height = h;
     root_layout->dimInfo.y = h;
     win_dimensions = WindowDimensions{w, h};
-    this->projection = orthographic_projection(w, h, this->scroll);
-    // this->projection = glm::ortho(0.0f, static_cast<float>(w), 0.0f, static_cast<float>(h));
+    // this->projection = screen_projection_2D(w, h, this->scroll);
+    mvp = my_screen_projection_2D(w, h, scroll);
+
     util::println("New dimension set to {} x {}", w, h);
 }
 void App::run_loop() {
@@ -390,13 +381,13 @@ void App::update_views_dimensions(float wRatio, float hRatio) {
     for (auto e : editor_views) {
         auto ew_layout = find_by_id(root_layout, e->ui_layout_id);
         e->update_layout(ew_layout->dimInfo);
-        e->set_projection(projection);
+        e->set_projection(mvp);
     }
 
     command_view->w = win_width;
     command_view->command_view->set_dimensions(win_width, command_view->h);
     // command_view->command_view->set_projection(glm::ortho(0.0f, float(win_width), 0.0f, float(win_height)));
-    command_view->command_view->set_projection(orthographic_projection(win_width, win_height, this->scroll));
+    command_view->command_view->set_projection(my_screen_projection_2D(win_width, win_height, this->scroll));
 }
 
 constexpr auto KEY_LEFT_ANGLE_BRACKET = 61;
@@ -859,10 +850,13 @@ void App::new_editor_window(SplitStrategy splitStrategy) {
         auto l = find_by_id(root_layout, active_layout_id);
         push_node(l, layout_id, ui::core::LayoutType::Horizontal);
         auto active_editor_win = active_window;
-        auto ew = EditorWindow::create({}, projection, layout_id, l->right->dimInfo);
+        auto ew = EditorWindow::create({}, mvp, layout_id, l->right->dimInfo);
         ew->set_view_colors(config.views.bg_color, config.views.fg_color);
-        ew->view->set_projection(projection);
-        ew->status_bar->ui_view->set_projection(projection);
+        // ew->view->set_projection(projection);
+        // ew->status_bar->ui_view->set_projection(projection);
+        ew->view->set_projection(mvp);
+        ew->status_bar->ui_view->set_projection(mvp);
+
         editor_views.push_back(ew);
         auto &e = editor_views.back();
         active_buffer = e->get_text_buffer();
@@ -871,10 +865,12 @@ void App::new_editor_window(SplitStrategy splitStrategy) {
         active_editor_win->update_layout(l->left->dimInfo);
         active_window->active = true;
     } else {
-        auto ew = EditorWindow::create({}, projection, layout_id, DimInfo{0, win_height, win_width, win_height});
+        auto ew = EditorWindow::create({}, mvp, layout_id, DimInfo{0, win_height, win_width, win_height});
         ew->set_view_colors(config.views.bg_color, config.views.fg_color);
-        ew->view->set_projection(projection);
-        ew->status_bar->ui_view->set_projection(projection);
+        // ew->view->set_projection(projection);
+        //ew->status_bar->ui_view->set_projection(projection);
+        ew->view->set_projection(mvp);
+        ew->status_bar->ui_view->set_projection(mvp);
         editor_views.push_back(ew);
         auto &e = editor_views.back();
         active_buffer = e->get_text_buffer();
@@ -899,7 +895,7 @@ void App::update_all_editor_windows() {
             util::println("Updating EW DimInfo for {}: {} \t -> \t {}", e->ui_layout_id, dim.debug_str(),
                           ew_layout->dimInfo.debug_str());
             e->update_layout(ew_layout->dimInfo);
-            e->set_projection(projection);
+            e->set_projection(mvp);
         }
     }
 }

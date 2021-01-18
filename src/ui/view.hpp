@@ -4,15 +4,17 @@
 
 #pragma once
 
-
+#include "cursors/view_cursor.hpp"
 #include <GLFW/glfw3.h>
 #include <core/text_data.hpp>
+
+#include <core/vector.hpp>
+#include <core/matrix.hpp>
+
 #include <ui/core/layout.hpp>
 #include <ui/render/font.hpp>
 #include <ui/render/shader.hpp>
 #include <ui/render/vertex_buffer.hpp>
-#include <core/vec_3.hpp>
-#include "cursors/view_cursor.hpp"
 
 /// ---- Forward declarations
 struct ColorizeTextRange;
@@ -49,7 +51,7 @@ struct View {
     void draw_statusbar();
     void draw_modal_view(int selected, std::vector<TextDrawable>& drawables);
 
-    void set_projection(glm::mat4 projection);
+    void set_projection(Matrix projection);
     void set_dimensions(int w, int h);
     void anchor_at(int x, int y);
     void scroll(Scroll direction, int linesToScroll);
@@ -68,7 +70,7 @@ struct View {
     std::unique_ptr<VAO> vao{nullptr};// the graphical representation
     Vec3f fg_color{1.0f, 1.0f, 1.0f};
     Vec3f bg_color{0.05f, 0.052f, 0.0742123f};
-    glm::mat4 projection;
+    Matrix mvp;
     /// Anonymous for now, will pull out this later on
     struct {
         TextData *data = nullptr;

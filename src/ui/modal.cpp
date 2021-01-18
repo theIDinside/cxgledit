@@ -7,7 +7,23 @@
 #include <ui/view.hpp>
 #include <ranges>
 
+/*
 ui::ModalPopup *ui::ModalPopup::create(glm::mat4 projection) {
+    auto input_buffer = StdStringBuffer::make_non_owning();
+    input_buffer->info = BufferTypeInfo::Modal;
+    auto view = View::create(input_buffer, "modal_popup", 0, 0, 0, 0, ViewType::Modal);
+    view->bg_color = Vec3f{0.4f, 0.3f, 0.3f};
+    auto m = new ModalPopup{};
+    view->set_projection(projection);
+    m->view = view;
+    m->type = ModalContentsType::List;
+    m->dimInfo = {0, 0, 0, 0};
+    m->data = input_buffer;
+    return m;
+}
+*/
+
+ui::ModalPopup *ui::ModalPopup::create(Matrix projection) {
     auto input_buffer = StdStringBuffer::make_non_owning();
     input_buffer->info = BufferTypeInfo::Modal;
     auto view = View::create(input_buffer, "modal_popup", 0, 0, 0, 0, ViewType::Modal);
@@ -87,3 +103,4 @@ void ui::ModalPopup::anchor_to(int x, int y) {
 }
 
 ui::PopupItem ui::ModalPopup::get_choice() { return dialogData[selected]; }
+

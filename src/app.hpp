@@ -4,18 +4,20 @@
 
 #pragma once
 #include <windows.h>
+#include <stack>
+#include <string>
 
 #include <GLFW/glfw3.h>
 #include <filesystem>
-#include <glm/glm.hpp>
-#include <stack>
-#include <string>
+
 #include <ui/render/font.hpp>
 #include <ui/render/shader.hpp>
-
 #include <bindingslib/keybindings.hpp>
+
+#include <core/matrix.hpp>
 #include <core/commands/command_interpreter.hpp>
 #include <core/text_data.hpp>
+
 #include <ui/core/layout.hpp>
 #include <ui/managers/font_library.hpp>
 #include <ui/managers/shader_library.hpp>
@@ -115,7 +117,7 @@ private:
     std::string title;
     int scroll;
     bool exit_command_requested;
-    glm::mat4 projection;
+    Matrix mvp;
     std::vector<ui::EditorWindow *> editor_views;
     ui::EditorWindow *active_window;
     std::unique_ptr<ui::CommandView> command_view;

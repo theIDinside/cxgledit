@@ -2,8 +2,6 @@
 // Created by 46769 on 2020-12-22.
 //
 
-#include <glm/gtc/matrix_transform.hpp>
-
 #include "view.hpp"
 #include <utility>
 #include <vector>
@@ -78,10 +76,12 @@ CommandView *CommandView::create_not_managed(const std::string &name, int width,
 
 //! --------------------------------------------------------
 
+/*
 void View::set_projection(glm::mat4 view_projection) {
     this->cursor->set_projection(view_projection);
     this->projection = view_projection;
 }
+ */
 void View::set_dimensions(int w, int h) {
     this->width = w;
     this->height = h;
@@ -120,8 +120,13 @@ void View::draw(bool isActive) {
     vao->bind_all();
     shader->use();
     font->t->bind();
-    shader->set_projection(projection);
-    cursor->set_projection(projection);
+    // shader->set_projection(projection);
+    // shader->set_projection(projection);
+    shader->set_projection(mvp);
+
+    // cursor->set_projection(projection);
+    cursor->set_projection(mvp);
+
     auto text_size = data->size();
 
     if (text_size * 6 > this->vertexCapacity) {
@@ -156,8 +161,12 @@ void View::forced_draw(bool isActive) {
     vao->bind_all();
     shader->use();
     font->t->bind();
-    shader->set_projection(projection);
-    cursor->set_projection(projection);
+    // shader->set_projection(projection);
+    shader->set_projection(mvp);
+
+    // cursor->set_projection(projection);
+    cursor->set_projection(mvp);
+
     auto text_size = data->size();
     if (text_size * 6 > this->vertexCapacity) {
         this->vao->reserve_gpu_size(text_size * 2 + 2);
@@ -176,7 +185,10 @@ void View::draw_statusbar() {
     vao->bind_all();
     shader->use();
     font->t->bind();
-    shader->set_projection(projection);
+    // shader->set_projection(projection);
+    shader->set_projection(mvp);
+
+
     auto textToRender = this->data->to_string_view();
     font->emplace_colorized_text_gpu_data(vao.get(), textToRender, AS(this->x + View::TEXT_LENGTH_FROM_EDGE, int),
                                           this->y - font->get_row_advance(), {});
@@ -188,9 +200,10 @@ void View::draw_command_view(const std::string &prefix, std::optional<std::vecto
     std::string cmd_rep = ci.command_auto_completed();
     vao->bind_all();
     shader->use();
-    shader->set_projection(projection);
+    // shader->set_projection(projection);
+    shader->set_projection(mvp);
     font->t->bind();
-    auto defaultColor = glm::fvec3{1.0f, 1.0f, 1.0f};
+    auto defaultColor = Vec3f{1.0f, 1.0f, 1.0f};
     textToRender.append(cmd_rep);
     if (colorInfo) {
         auto text_len = textToRender.size();
@@ -242,9 +255,8 @@ void View::scroll_to(int line) {
         scrolled = std::min(scroll_pos, 0);
 
         // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
-        auto p = orthographic_projection(win_width, win_height, scrolled);
-
-        set_projection(p);
+        auto MVP = my_screen_projection_2D(win_width, win_height + scrolled, scrolled);
+        set_projection(MVP);
         cursor->line -= linesToScroll;
         cursor->line = std::max(cursor->line, 0);
     } else { // means we need to => scroll down
@@ -252,17 +264,19 @@ void View::scroll_to(int line) {
         if(line > lineAnchorOfLastPage) {
             auto linesToScroll = lineAnchorOfLastPage - cursor->line;
             scrolled -= (linesToScroll * font->get_row_advance());
-            // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
-            auto p = orthographic_projection(win_width, win_height, scrolled);
-            set_projection(p);
+            /// Old dependency on GLM, left here just so I can remember what the hell I did, and how I came to that conclusion.
+            /// auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
+
+            auto MVP = my_screen_projection_2D(win_width, win_height + scrolled, scrolled);
+            set_projection(MVP);
             cursor->line += linesToScroll;
             cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable));
         } else {
             auto linesToScroll = line - cursor->line;
             scrolled -= (linesToScroll * font->get_row_advance());
             // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
-            auto p = orthographic_projection(win_width, win_height, scrolled);
-            set_projection(p);
+            auto MVP = my_screen_projection_2D(win_width, win_height + scrolled, scrolled);
+            set_projection(MVP);
             cursor->line += linesToScroll;
             cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable));
         }
@@ -280,15 +294,14 @@ void View::scroll(Scroll direction, int linesToScroll) {
             if(cursor->line - linesToScroll < 0) {
                 cursor->line = 0;
                 scrolled = 0;
-                auto p = orthographic_projection(win_width, win_height, scrolled);
+                auto MVP = my_screen_projection_2D(win_width, win_height + scrolled, scrolled);
+                set_projection(MVP);
                 // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
-                set_projection(p);
             } else {
                 auto scroll_pos = scrolled + (linesToScroll * font->get_row_advance());
                 scrolled = std::min(scroll_pos, 0);
-                auto p = orthographic_projection(win_width, win_height, scrolled);
-                // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
-                set_projection(p);
+                auto MVP = my_screen_projection_2D(win_width, win_height + scrolled, scrolled);
+                set_projection(MVP);
                 cursor->line -= linesToScroll;
                 cursor->line = std::max(cursor->line, 0);
             }
@@ -299,18 +312,18 @@ void View::scroll(Scroll direction, int linesToScroll) {
                 util::println("Lines to scroll: {}, Lines displayable: {} - Max view anchor position: {}. Buffer lines: {}", linesToScroll, lines_displayable, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable), get_text_buffer()->meta_data.line_begins.size());
                 auto diff = (cursor->line + linesToScroll) - int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable);
                 scrolled -= (diff * font->get_row_advance());
-                auto p = orthographic_projection(win_width, win_height, scrolled);
+                auto MVP = my_screen_projection_2D(win_width, win_height + scrolled, scrolled);
+                set_projection(MVP);
                 // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
-                set_projection(p);
+
                 cursor->line += diff;
                 cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable));
             } else {
                 /// TODO: Bounds check so we prohibit the user from scrolling down where no lines are. Which would be bad UX
                 // scrolled is not lines scrolled, but the amount of pixels we've moved the projection north/south
                 scrolled -= (linesToScroll * font->get_row_advance());
-                auto p = orthographic_projection(win_width, win_height, scrolled);
-                // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled),static_cast<float>(win_height + scrolled));
-                set_projection(p);
+                auto MVP = my_screen_projection_2D(win_width, win_height + scrolled, scrolled);
+                set_projection(MVP);
                 cursor->line += linesToScroll;
                 cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable));
             }
@@ -362,8 +375,12 @@ void View::draw_modal_view(int selected, std::vector<TextDrawable>& drawables) {
     vao->bind_all();
     shader->use();
     font->t->bind();
-    shader->set_projection(projection);
-    cursor->set_projection(projection);
+    // shader->set_projection(projection);
+    shader->set_projection(mvp);
+
+    // cursor->set_projection(projection);
+    cursor->set_projection(mvp);
+
     auto text_size = data->size();
     if (text_size * 6 > this->vertexCapacity) {
         this->vao->reserve_gpu_size(text_size * 2 + 2);
@@ -376,6 +393,9 @@ void View::draw_modal_view(int selected, std::vector<TextDrawable>& drawables) {
     glDisable(GL_SCISSOR_TEST);
 }
 
+void View::set_projection(Matrix projection) {
+    this->mvp = projection;
+}
 
 void CommandView::draw() {
     glEnable(GL_SCISSOR_TEST);
@@ -397,13 +417,13 @@ void CommandView::draw() {
                     auto what_should_be_colorized_len = total_len - (infoPrefix.size() + s.size());
                     ColorizeTextRange color{.begin = infoPrefix.size() + s.size(),
                                             .length = what_should_be_colorized_len,
-                                            .color = glm::vec3{0.5f, 0.5f, 0.5f}};
+                                            .color = Vec3f{0.5f, 0.5f, 0.5f}};
                     this->command_view->draw_command_view(this->infoPrefix, {{color}});
                 } else {
                     auto what_should_be_colorized_len = total_len - (infoPrefix.size() + suggestion.size());
                     ColorizeTextRange color{.begin = infoPrefix.size() + suggestion.size(),
                                             .length = what_should_be_colorized_len,
-                                            .color = glm::vec3{0.5f, 0.5f, 0.5f}};
+                                            .color = Vec3f{0.5f, 0.5f, 0.5f}};
                     this->command_view->draw_command_view(this->infoPrefix, {{color}});
                 }
             } else {
@@ -416,7 +436,7 @@ void CommandView::draw() {
                 auto what_should_be_colorized_len = total_len - (infoPrefix.size() + s.size());
                 ColorizeTextRange color{.begin = infoPrefix.size() + s.size(),
                                         .length = what_should_be_colorized_len,
-                                        .color = glm::vec3{0.5f, 0.5f, 0.5f}};
+                                        .color = Vec3f{0.5f, 0.5f, 0.5f}};
                 this->command_view->draw_command_view(this->infoPrefix, {{color}});
             }
         } else {
@@ -440,7 +460,7 @@ void CommandView::draw_error_message() {
     infoPrefix = "error: ";
     ColorizeTextRange msg_color{.begin = infoPrefix.size(),
                                 .length = last_message.size(),
-                                .color = glm::vec3{0.9f, 0.9f, 0.9f}};
+                                .color = Vec3f{0.9f, 0.9f, 0.9f}};
     auto color_cfg = to_option_vec(msg_color);
     command_view->draw_command_view("error: ", color_cfg);
 }
@@ -448,7 +468,7 @@ void CommandView::draw_error_message() {
 void CommandView::draw_error_message(std::string &&msg) {
     assert(not msg.empty());
     infoPrefix = "error: ";
-    ColorizeTextRange msg_color{.begin = infoPrefix.size(), .length = msg.size(), .color = glm::vec3{0.9f, 0.9f, 0.9f}};
+    ColorizeTextRange msg_color{.begin = infoPrefix.size(), .length = msg.size(), .color = Vec3f{0.9f, 0.9f, 0.9f}};
     auto color_cfg = to_option_vec(msg_color);
     last_message = std::move(msg);
     show_last_message = true;
@@ -457,7 +477,7 @@ void CommandView::draw_error_message(std::string &&msg) {
 
 void CommandView::draw_message(std::string &&msg) {
     assert(not msg.empty());
-    ColorizeTextRange msg_color{.begin = 0, .length = msg.size(), .color = glm::vec3{0.9f, 0.9f, 0.9f}};
+    ColorizeTextRange msg_color{.begin = 0, .length = msg.size(), .color = Vec3f{0.9f, 0.9f, 0.9f}};
     auto color_cfg = to_option_vec(msg_color);
     last_message = std::move(msg);
     show_last_message = true;
@@ -467,7 +487,7 @@ void CommandView::draw_message(std::string &&msg) {
 void CommandView::draw_current() {
     ColorizeTextRange msg_color{.begin = infoPrefix.size(),
                                 .length = last_message.size(),
-                                .color = glm::vec3{0.9f, 0.9f, 0.9f}};
+                                .color = Vec3f{0.9f, 0.9f, 0.9f}};
     auto color_cfg = to_option_vec(msg_color);
     command_view->draw_command_view(infoPrefix, color_cfg);
 }

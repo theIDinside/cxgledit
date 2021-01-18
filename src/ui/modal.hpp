@@ -4,7 +4,6 @@
 
 #pragma once
 #include "view.hpp"
-#include <glm/glm.hpp>
 #include <ui/core/layout.hpp>
 #include <core/commands/command.hpp>
 
@@ -41,7 +40,8 @@ struct ModalPopup {
     int choices = 0;
     int character_width = 0;
     int lines = 0;
-    static ModalPopup * create(glm::mat4 projection);
+    // static ModalPopup * create(glm::mat4 projection);
+    static ModalPopup* create(Matrix projection);
     void show(core::DimInfo dimension);
     void anchor_to(int x, int y);
     void register_actions(std::vector<PopupItem> item);

@@ -5,7 +5,7 @@
 #pragma once
 
 #include <array>
-#include <glm/glm.hpp>
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -18,7 +18,7 @@
 
 #include "texture.hpp"
 #include "vertex_buffer.hpp"
-#include <core/vec_3.hpp>
+#include <core/vector.hpp>
 
 namespace ui {
 namespace core {
@@ -36,32 +36,29 @@ constexpr auto mp(T t, U u) {
     return std::pair<T, U>{t, u};
 }
 
-constexpr glm::vec3 vred{1.0f, 0.0f, 0.0f};
-constexpr glm::vec3 vgreen{0.f, 1.0f, 0.0f};
-constexpr glm::vec3 vblue{
-        0.0f,
-        0.0f,
-        1.0f,
-};
-constexpr glm::vec3 vsc1{0.820f, 0.500f, 0.000f};
-constexpr glm::vec3 vsc2{1.000f, 0.300f, 0.600f};
-constexpr glm::vec3 vsc3{0.300f, 0.231f, 0.800f};
-constexpr glm::vec3 vsc4{0.031f, 0.921f, 0.140f};
-constexpr glm::vec3 vsc5{0.712f, 1.000f, 1.000f};
+// clang-format off
+constexpr auto vred             = Vec3f{1.0f, 0.0f, 0.0f};
+constexpr auto vgreen           = Vec3f{0.f, 1.0f, 0.0f};
+constexpr auto vblue            = Vec3f{0.0f, 0.0f,1.0f};
 
-constexpr glm::vec3 c_keyword{0.820f, 0.500f, 0.000f};
+constexpr auto vsc1             = Vec3f{0.820f, 0.500f, 0.000f};
+constexpr auto vsc2             = Vec3f{1.000f, 0.300f, 0.600f};
+constexpr auto vsc3             = Vec3f{0.300f, 0.231f, 0.800f};
+constexpr auto vsc4             = Vec3f{0.031f, 0.921f, 0.140f};
+constexpr auto vsc5             = Vec3f{0.712f, 1.000f, 1.000f};
 
-constexpr auto YELLOW = glm::vec3{0.893f, 1.0f, 0.0f};
-constexpr auto RED = glm::vec3{1.0f, 0.0f, 0.0f};
-constexpr auto GREEN = glm::vec3{0.0f, .70f, 0.0f};
-constexpr auto DARKER_GREEN = glm::vec3{0.0f, 0.73f, 0.0f};
-constexpr auto BLUEISH = glm::vec3{0.0f, 0.034f, .90f};
-constexpr auto BLUE = glm::vec3{0.0f, 0.0f, .790f};
-constexpr auto WHITE = glm::vec3{1.0f, 1.0f, 1.0f};
-constexpr auto GRAY = glm::vec3{0.5f, 0.5f, 0.5f};
-constexpr auto LIGHT_GRAY = glm::vec3{0.65f, 0.65f, 0.65f};
+constexpr auto c_keyword        = Vec3f{0.820f, 0.500f, 0.000f};
+constexpr auto YELLOW           = Vec3f{0.893f, 1.0f, 0.0f};
+constexpr auto RED              = Vec3f{1.0f, 0.0f, 0.0f};
+constexpr auto GREEN            = Vec3f{0.0f, .70f, 0.0f};
+constexpr auto DARKER_GREEN     = Vec3f{0.0f, 0.73f, 0.0f};
+constexpr auto BLUEISH          = Vec3f{0.0f, 0.034f, .90f};
+constexpr auto BLUE             = Vec3f{0.0f, 0.0f, .790f};
+constexpr auto WHITE            = Vec3f{1.0f, 1.0f, 1.0f};
+constexpr auto GRAY             = Vec3f{0.5f, 0.5f, 0.5f};
+constexpr auto LIGHT_GRAY       = Vec3f{0.65f, 0.65f, 0.65f};
 
-using HighLight = std::pair<const char *, glm::vec3>;
+using HighLight = std::pair<const char *, Vec3f>;
 constexpr std::array keywords{mp("int", c_keyword),        mp("bool", c_keyword),      mp("void", c_keyword),
                               mp("long", c_keyword),       mp("double", c_keyword),    mp("float", c_keyword),
                               mp("struct", c_keyword),     mp("using", c_keyword),     mp("const", c_keyword),
@@ -78,6 +75,7 @@ constexpr std::array keywords{mp("int", c_keyword),        mp("bool", c_keyword)
                               mp("static_cast", c_keyword)};
 
 constexpr std::array highlight{RED, GREEN, BLUE, YELLOW, WHITE};
+// clang-format on
 
 struct CharacterRange {
     unsigned int from, to;
@@ -89,14 +87,14 @@ struct glyph_info {
     int x0, y0, x1, y1;// coords of glyph in the texture atlas
     int x_off, y_off;  // left & top bearing when rendering
     int advance;       // x advance when rendering
-    glm::ivec2 size, bearing;
+    Vec2i size, bearing;
 };
 
 static int row_advance = 0;
 
 struct ColorizeTextRange {
     std::size_t begin, length;
-    glm::vec3 color;
+    Vec3f color;
 };
 
 struct TextDrawable {
@@ -120,7 +118,8 @@ public:
     void create_vertex_data_in(VAO *vao, ui::View *view, int xpos, int ypos);
     void create_culled_vertex_data_for(ui::View *view, int xpos, int ypos);
 
-    void emplace_colorized_text_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos, OptionalColData colorData);
+    void emplace_colorized_text_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos,
+                                         OptionalColData colorData);
     void add_colorized_text_gpu_data(VAO *vao, std::vector<TextDrawable> textDrawables);
 
     int calculate_text_width(std::string_view str);
@@ -138,5 +137,4 @@ public:
 private:
     // glyph_info* data = info;
     int pixel_size{};
-
 };

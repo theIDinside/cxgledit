@@ -4,8 +4,7 @@
 
 #pragma once
 #include "modal.hpp"
-#include <core/vec_3.hpp>
-#include <glm/glm.hpp>
+#include <core/vector.hpp>
 #include <optional>
 #include <ui/core/layout.hpp>
 
@@ -28,10 +27,14 @@ namespace ui {
         ~EditorWindow();
 
         [[nodiscard]] TextData *get_text_buffer() const;
-        static EditorWindow *create(std::optional<TextData *> textData, glm::mat4 projection, int layout_id,
+
+        // static EditorWindow *create(std::optional<TextData *> textData, glm::mat4 projection, int layout_id, core::DimInfo dimInfo);
+
+        static EditorWindow *create(std::optional<TextData *> textData, Matrix projection, int layout_id,
                                     core::DimInfo dimInfo);
+
         void update_layout(core::DimInfo dim_info);
-        void set_projection(glm::mat4 projection) const;
+        void set_projection(Matrix projection) const;
         bool active = false;
         void handle_click(int x, int y);
 

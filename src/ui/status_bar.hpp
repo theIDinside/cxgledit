@@ -4,7 +4,7 @@
 
 #pragma once
 #include <core/core.hpp>
-#include <glm/glm.hpp>
+#include <core/vector.hpp>
 
 class TextData;
 class BufferCursor;
@@ -16,8 +16,8 @@ struct StatusBar {
     ~StatusBar();
     Boxed<View> ui_view;
     BufferCursor *buffer_cursor;
-    glm::vec3 bg_color{0.25f, 0.25f, 0.27f};
-    glm::vec3 font_color{0.9f, 0.8f, 0.6f};
+    Vec3f bg_color{0.25f, 0.25f, 0.27f};
+    Vec3f font_color{0.9f, 0.8f, 0.6f};
     void draw(View *view);
     void set_buffer_cursor(BufferCursor *cursor);
     static StatusBar *create(int width, int height, int x, int y);

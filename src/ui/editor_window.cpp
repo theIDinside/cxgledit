@@ -15,7 +15,7 @@
 
 namespace ui {
 
-EditorWindow *EditorWindow::create(std::optional<TextData *> textData, glm::mat4 projection, int layout_id,
+EditorWindow *EditorWindow::create(std::optional<TextData *> textData, Matrix projection, int layout_id,
                                    core::DimInfo dimInfo) {
     auto &[x, y, width, height] = dimInfo;
     auto sb_height = FontLibrary::get_default_font()->get_row_advance() + 2;
@@ -38,6 +38,30 @@ EditorWindow *EditorWindow::create(std::optional<TextData *> textData, glm::mat4
     ew->status_bar->set_buffer_cursor(&ew->view->get_text_buffer()->cursor);
     return ew;
 }
+/*
+EditorWindow *EditorWindow::create(std::optional<TextData *> textData, glm::mat4 projection, int layout_id,
+                                   core::DimInfo dimInfo) {
+    auto &[x, y, width, height] = dimInfo;
+    auto sb_height = FontLibrary::get_default_font()->get_row_advance() + 2;
+    // we have to make room for status bar & command view spanning across entire bottom, both of which are equal in height
+    auto text_editor_height = height - (sb_height * 2);
+    auto ew = new EditorWindow{};
+    ew->ui_layout_id = layout_id;
+    ew->dimInfo = dimInfo;
+    if (textData) {
+        ew->status_bar = StatusBar::create(width, sb_height, x, height);
+        ew->view = View::create(*textData, "unnamed buffer", width, text_editor_height, x, height - sb_height);
+    } else {
+        auto buf = DataManager::get_instance().create_managed_buffer(BufferType::CodeInput);
+        ew->status_bar = StatusBar::create(width, sb_height, x, height);
+        ew->view = View::create(buf, "unnamed buffer", width, text_editor_height, x, height - sb_height);
+    }
+
+    ew->view->set_projection(mvp);
+    ew->status_bar->ui_view->set_projection(projection);
+    ew->status_bar->set_buffer_cursor(&ew->view->get_text_buffer()->cursor);
+    return ew;
+}*/
 
 EditorWindow::~EditorWindow() {
     delete view;
@@ -67,8 +91,14 @@ void EditorWindow::update_layout(core::DimInfo dim_info) {
     status_bar->ui_view->anchor_at(x, height);
     this->dimInfo = dim_info;
 }
-
+/*
 void EditorWindow::set_projection(glm::mat4 projection) const {
+    this->view->set_projection(projection);
+    this->status_bar->ui_view->set_projection(projection);
+}
+ */
+
+void EditorWindow::set_projection(Matrix projection) const {
     this->view->set_projection(projection);
     this->status_bar->ui_view->set_projection(projection);
 }
@@ -101,4 +131,6 @@ void EditorWindow::set_font(SimpleFont *pFont) {
     view->font = pFont;
     view->cursor->setup_dimensions(8, pFont->max_glyph_height + 4);
 }
+
+
 }// namespace ui

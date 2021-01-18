@@ -1,10 +1,13 @@
 #pragma once
-#include <glm/glm.hpp>
+
+#include <core/matrix.hpp>
+#include <core/vector.hpp>
 
 #include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
+
 
 namespace fs = std::filesystem;
 
@@ -30,22 +33,19 @@ public:
     // ------------------------------------------------------------------------
     void setFloat(const std::string &name, float value) const;
     // ------------------------------------------------------------------------
-    void setVec2(const std::string &name, const glm::vec2 &value) const;
+    void setVec2(const std::string &name, const Vec2f &value) const;
     void setVec2(const std::string &name, float x, float y) const;
     // ------------------------------------------------------------------------
-    void setVec3(const std::string &name, const glm::vec3 &value) const;
+    void setVec3(const std::string &name, const Vec3f &value) const;
     void setVec3(const std::string &name, float x, float y, float z) const;
     // ------------------------------------------------------------------------
-    void setVec4(const std::string &name, const glm::vec4 &value) const;
+    void setVec4(const std::string &name, const Vec4f &value) const;
     void setVec4(const std::string &name, float x, float y, float z, float w);
     // ------------------------------------------------------------------------
-    void setMat2(const std::string &name, const glm::mat2 &mat) const;
-    // ------------------------------------------------------------------------
-    void setMat3(const std::string &name, const glm::mat3 &mat) const;
-    // ------------------------------------------------------------------------
-    void setMat4(const std::string &name, const glm::mat4 &mat) const;
-    void set_projection(const glm::mat4 &mat);
-    void set_fillcolor(glm::vec4 color);
+    void setMat4(const std::string &name, const Matrix& mat) const;
+    void set_projection(const Matrix& mat);
+    void set_fillcolor(Vec4f color);
+
 
     void setup();
     void setup_fillcolor_ids();

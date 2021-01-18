@@ -4,19 +4,15 @@
 
 #include "matrix.hpp"
 
-glm::mat4 orthographic_projection(int width, int height, int scrolled) {
-    glm::mat4 mvp;
-    glm::vec4 a{2/(float)width, 0, 0, 0};
-    glm::vec4 b{0, 2/(float)height, 0, 0};
-    glm::vec4 c{0, 0, -1, 0};
-    glm::vec4 d{-1, -(height + scrolled) / (height - scrolled), 0, 1};
-    mvp[0] = a;
-    mvp[1] = b;
-    mvp[2] = c;
-    mvp[3] = d;
-    return mvp;
-}
-
-glm::mat4 scrolled_projection(int width, int height, int scroll) {
-    return orthographic_projection(width, height, scroll);
+Matrix my_screen_projection_2D(int width, int height, int scrolled) {
+    Matrix m;
+    Vec4f a{2/(float)width, 0, 0, 0};
+    Vec4f b{0, 2/(float(height - scrolled)), 0, 0};
+    Vec4f c{0, 0, -1, 0};
+    Vec4f d{-1, - (float(height + scrolled) / float(height - scrolled)), 0, 1};
+    m[0] = a;
+    m[1] = b;
+    m[2] = c;
+    m[3] = d;
+    return m;
 }

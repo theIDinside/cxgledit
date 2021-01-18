@@ -84,8 +84,8 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
                 .x_off = face->glyph->bitmap_left,
                 .y_off = face->glyph->bitmap_top,
                 .advance = face->glyph->advance.x >> 6,
-                .size = glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
-                .bearing = glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+                .size = Vec2i{static_cast<int>(face->glyph->bitmap.width), static_cast<int>(face->glyph->bitmap.rows)},
+                .bearing = Vec2i{face->glyph->bitmap_left, face->glyph->bitmap_top},
         };
 
         max_bearing_size_diff = std::max(std::abs(glyphInfo.size.y - glyphInfo.bearing.y), max_bearing_size_diff);
@@ -448,7 +448,7 @@ void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, std::string_view text
     auto start_y = yPos;
     auto x = start_x;
     auto y = start_y;
-    auto defaultColor = glm::fvec3{0.84f, 0.725f, 0.66f};
+    auto defaultColor = Vec3f{0.84f, 0.725f, 0.66f};
     auto r = defaultColor.x;
     auto g = defaultColor.y;
     auto b = defaultColor.z;

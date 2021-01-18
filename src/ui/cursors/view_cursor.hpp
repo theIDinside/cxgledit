@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include <glm/glm.hpp>
-#include <ui/render/vertex_buffer.hpp>
 #include <ui/render/shader.hpp>
+#include <ui/render/vertex_buffer.hpp>
+#include <core/matrix.hpp>
 
 namespace ui {
     class View;
@@ -27,11 +27,12 @@ namespace ui {
         void set_line_rect(GLfloat x1, GLfloat x2, GLfloat y1);
         void set_line_rect(GLfloat x1, GLfloat x2, GLfloat y1, int height);
 
-        void set_projection(glm::mat4 orthoProjection);
+        // void set_projection(glm::mat4 orthoProjection);
+        void set_projection(Matrix orthoProjection);
         void setup_dimensions(int Width, int Height);
 
         int index{0};/// absolute position in text buffer
-        glm::mat4 projection;
+        Matrix mvp;
         View *view = nullptr;
         Shader *shader = nullptr;
         int line{};

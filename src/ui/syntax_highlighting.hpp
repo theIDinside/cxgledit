@@ -6,8 +6,8 @@
 #include <vector>
 #include <optional>
 #include <string_view>
-#include <glm/glm.hpp>
 
+#include <core/vector.hpp>
 enum class TokenType {
     Illegal,
     Keyword,
@@ -28,7 +28,7 @@ enum class TokenType {
 struct ColorFormatInfo {
     std::size_t begin;
     std::size_t end;
-    glm::vec3 color;
+    Vec3f color;
 };
 
 struct Token {

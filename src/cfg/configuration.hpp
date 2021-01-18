@@ -4,13 +4,12 @@
 
 #pragma once
 #include <algorithm>
-#include <glm/vec3.hpp>
+#include <core/vector.hpp>
+#include <filesystem>
 #include <map>
 #include <optional>
 #include <string>
 #include <string_view>
-#include <filesystem>
-#include <core/vec_3.hpp>
 
 namespace fs = std::filesystem;
 

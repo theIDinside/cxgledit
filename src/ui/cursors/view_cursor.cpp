@@ -11,8 +11,8 @@ namespace ui {
 
 // View Cursor
 
-constexpr auto cursor_fill_color = glm::vec4{1.0, 0.0, 0.2, .4};
-constexpr auto line_shade_color = glm::vec4{0.5,0.5,0.5,0.25};
+constexpr auto cursor_fill_color = Vec4f{1.0, 0.0, 0.2, .4};
+constexpr auto line_shade_color = Vec4f{0.5,0.5,0.5,0.25};
 
 std::unique_ptr<ViewCursor> ViewCursor::create_from(std::unique_ptr<View> &owning_view) {
     auto buf_curs = owning_view->get_text_buffer()->get_cursor();
@@ -27,8 +27,7 @@ std::unique_ptr<ViewCursor> ViewCursor::create_from(std::unique_ptr<View> &ownin
 
     shader->setup();
     shader->setup_fillcolor_ids();
-
-    vc->projection = owning_view->projection;
+    vc->mvp = owning_view->mvp;
 
     vc->line = buf_curs.line;
     vc->index = buf_curs.pos;
@@ -54,7 +53,7 @@ std::unique_ptr<ViewCursor> ViewCursor::create_from(View *view) {
     shader->setup();
     shader->setup_fillcolor_ids();
 
-    vc->projection = view->projection;
+    vc->mvp = view->mvp;
     vc->line = buf_curs.line;
     vc->index = buf_curs.pos;
     vc->cursor_data = std::move(cursor_vao);
@@ -67,7 +66,9 @@ std::unique_ptr<ViewCursor> ViewCursor::create_from(View *view) {
 
 void ViewCursor::draw(bool isActive) {
     shader->use();
-    shader->set_projection(projection);
+    // shader->set_projection(projection);
+    shader->set_projection(mvp);
+
     // draw highlight first, because we want cursor on top of it
     line_shade_data->bind_all();
     shader->set_fillcolor(line_shade_color);
@@ -79,7 +80,8 @@ void ViewCursor::draw(bool isActive) {
 
 void ViewCursor::forced_draw() {
     shader->use();
-    shader->set_projection(projection);
+    // shader->set_projection(projection);
+    shader->set_projection(mvp);
     // draw highlight first, because we want cursor on top of it
 
     line_shade_data->bind_all();
@@ -145,7 +147,7 @@ void ViewCursor::setup_dimensions(int Width, int Height) {
     this->width = Width;
     this->height = Height;
 }
-void ViewCursor::set_projection(glm::mat4 orthoProjection) { this->projection = orthoProjection; }
+// void ViewCursor::set_projection(glm::mat4 orthoProjection) { this->projection = orthoProjection; }
 
 void ViewCursor::set_line_rect(GLfloat x1, GLfloat x2, GLfloat y1, int rectHeight) {
     auto w = x2 - x1;
@@ -161,6 +163,9 @@ void ViewCursor::set_line_rect(GLfloat x1, GLfloat x2, GLfloat y1, int rectHeigh
     data.emplace_back(x, y + h);
     data.emplace_back(x + w, y);
     data.emplace_back(x + w, y + h);
+}
+void ViewCursor::set_projection(Matrix orthoProjection) {
+    this->mvp = orthoProjection;
 }
 
 }// namespace ui
