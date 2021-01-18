@@ -3,16 +3,21 @@
 //
 
 #pragma once
-
-#include "command.hpp"
-#include <array>
-#include <list>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <GLFW/glfw3.h>
-#include <app.hpp>
 
+class App;
+
+enum class Commands {
+    OpenFile,
+    WriteFile,
+    GotoLine,
+    UserCommand,
+    Search,
+    Fail
+};
 
 enum class Cycle : int {
     Forward = GLFW_KEY_DOWN,        // down

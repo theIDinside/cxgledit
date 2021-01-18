@@ -5,7 +5,7 @@
 #include "editor_window.hpp"
 #include <ui/managers/font_library.hpp>
 #include <ui/managers/shader_library.hpp>
-#include <core/data_manager.hpp>
+#include <core/buffer/data_manager.hpp>
 #include <ui/status_bar.hpp>
 #include <ui/view.hpp>
 

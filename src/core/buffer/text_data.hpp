@@ -3,14 +3,15 @@
 //
 
 #pragma once
-#include "core.hpp"
+#include <core/core.hpp>
+#include <utils/strops.hpp>
+
 #include <cassert>
 #include <filesystem>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
-#include <utils/strops.hpp>
 
 class TextData;
 enum CursorDirection { Forward, Back };

@@ -3,8 +3,9 @@
 //
 
 #pragma once
+#include <core/math/vector.hpp>
+
 #include <algorithm>
-#include <core/vector.hpp>
 #include <filesystem>
 #include <map>
 #include <optional>

@@ -3,12 +3,12 @@
 //
 
 #include "text_data.hpp"
-#include "strops.hpp"
+#include <core/strops.hpp>
 
 // FIXME: Fix word move forward / backward, so that cursor info data is recorded correctly. It's a mess right now
 // FIXME: Fix line move backward, forward seems to work perfectly fine, line position, column info etc
 
-#include <core/data_manager.hpp>
+#include <core/buffer/data_manager.hpp>
 #include <utility>
 
 void BufferCursor::reset() {

@@ -5,7 +5,7 @@
 #include "command.hpp"
 #include "command_interpreter.hpp"
 #include <app.hpp>
-#include <core/text_data.hpp>
+#include <core/buffer/text_data.hpp>
 #include <fmt/format.h>
 #include <fstream>
 #include <ranges>

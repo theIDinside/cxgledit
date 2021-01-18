@@ -4,7 +4,7 @@
 #define WIN32_LEAN_AND_MEAN
 
 #include "app.hpp"
-#include <core/data_manager.hpp>
+#include <core/buffer/data_manager.hpp>
 #include <ui/core/opengl.hpp>
 #include <ui/editor_window.hpp>
 #include <ui/status_bar.hpp>

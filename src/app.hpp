@@ -14,9 +14,9 @@
 #include <ui/render/shader.hpp>
 #include <bindingslib/keybindings.hpp>
 
-#include <core/matrix.hpp>
+#include <core/math/matrix.hpp>
+#include <core/buffer/text_data.hpp>
 #include <core/commands/command_interpreter.hpp>
-#include <core/text_data.hpp>
 
 #include <ui/core/layout.hpp>
 #include <ui/managers/font_library.hpp>

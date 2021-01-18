@@ -4,7 +4,7 @@
 
 #pragma once
 #include "modal.hpp"
-#include <core/vector.hpp>
+#include <core/math/vector.hpp>
 #include <optional>
 #include <ui/core/layout.hpp>
 

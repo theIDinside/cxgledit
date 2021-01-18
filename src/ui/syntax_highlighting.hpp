@@ -7,7 +7,8 @@
 #include <optional>
 #include <string_view>
 
-#include <core/vector.hpp>
+#include <core/math/vector.hpp>
+
 enum class TokenType {
     Illegal,
     Keyword,

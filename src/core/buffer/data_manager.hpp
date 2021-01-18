@@ -5,7 +5,7 @@
 #pragma once
 
 #include <vector>
-#include <core/text_data.hpp>
+#include <core/buffer/text_data.hpp>
 
 template<typename T>
 using Boxed = std::unique_ptr<T>;

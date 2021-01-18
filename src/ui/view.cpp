@@ -7,9 +7,12 @@
 #include <vector>
 
 // Managers
-#include <core/commands/command_interpreter.hpp>
-#include <core/data_manager.hpp>
-#include <core/matrix.hpp>
+#include <app.hpp>
+#include <core/buffer/data_manager.hpp>
+// #include <core/commands/command_interpreter.hpp>
+// #include <ui/managers/font_library.hpp>
+// #include <ui/managers/shader_library.hpp>
+
 
 #undef min
 #undef max

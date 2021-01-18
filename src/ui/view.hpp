@@ -3,13 +3,13 @@
 //
 
 #pragma once
+#include <GLFW/glfw3.h>
 
 #include "cursors/view_cursor.hpp"
-#include <GLFW/glfw3.h>
-#include <core/text_data.hpp>
+#include <core/buffer/text_data.hpp>
 
-#include <core/vector.hpp>
-#include <core/matrix.hpp>
+#include <core/math/vector.hpp>
+#include <core/math/matrix.hpp>
 
 #include <ui/core/layout.hpp>
 #include <ui/render/font.hpp>

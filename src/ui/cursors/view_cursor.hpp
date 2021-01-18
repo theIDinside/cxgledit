@@ -6,7 +6,7 @@
 
 #include <ui/render/shader.hpp>
 #include <ui/render/vertex_buffer.hpp>
-#include <core/matrix.hpp>
+#include <core/math/matrix.hpp>
 
 namespace ui {
     class View;

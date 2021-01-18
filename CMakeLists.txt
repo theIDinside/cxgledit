@@ -69,14 +69,16 @@ set(UTIL_SOURCES
 set(CORE_SOURCE
         src/core/core.hpp
         src/core/strops.cpp src/core/strops.hpp
-        src/core/text_data.cpp src/core/text_data.hpp
-        src/core/data_manager.cpp src/core/data_manager.hpp
+        src/core/buffer/text_data.cpp src/core/buffer/text_data.hpp
+        src/core/buffer/data_manager.cpp src/core/buffer/data_manager.hpp
         src/cfg/configuration.cpp src/cfg/configuration.hpp
-        src/core/vector.cpp src/core/vector.hpp src/core/matrix.cpp src/core/matrix.hpp)
+        src/core/math/vector.cpp src/core/math/vector.hpp
+        src/core/math/matrix.cpp src/core/math/matrix.hpp)
 
 set(COMMANDS_SOURCE
-        src/core/commands/command.cpp src/core/commands/command.hpp
-        src/core/commands/command_interpreter.cpp src/core/commands/command_interpreter.hpp src/core/commands/file_manager.cpp src/core/commands/file_manager.hpp)
+        # src/core/commands/command.cpp src/core/commands/command.hpp
+        src/core/commands/command_interpreter.cpp src/core/commands/command_interpreter.hpp
+        src/core/commands/file_manager.cpp src/core/commands/file_manager.hpp)
 
 add_executable(cxgledit
         src/main.cpp

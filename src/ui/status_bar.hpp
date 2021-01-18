@@ -4,7 +4,7 @@
 
 #pragma once
 #include <core/core.hpp>
-#include <core/vector.hpp>
+#include <core/math/vector.hpp>
 
 class TextData;
 class BufferCursor;

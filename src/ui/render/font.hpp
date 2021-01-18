@@ -3,22 +3,19 @@
 //
 
 #pragma once
-
 #include <array>
-
 #include <memory>
 #include <string>
 #include <vector>
-
-#include <core/text_data.hpp>
 #include <map>
+
+#include <core/buffer/text_data.hpp>
+#include <core/math/vector.hpp>
+#include "texture.hpp"
+#include "vertex_buffer.hpp"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
-
-#include "texture.hpp"
-#include "vertex_buffer.hpp"
-#include <core/vector.hpp>
 
 namespace ui {
 namespace core {

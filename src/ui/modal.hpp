@@ -5,7 +5,7 @@
 #pragma once
 #include "view.hpp"
 #include <ui/core/layout.hpp>
-#include <core/commands/command.hpp>
+#include <core/commands/command_interpreter.hpp>
 
 class TextData;
 

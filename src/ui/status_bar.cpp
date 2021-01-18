@@ -3,8 +3,8 @@
 //
 
 #include "status_bar.hpp"
-#include <core/data_manager.hpp>
-#include <core/text_data.hpp>
+#include <core/buffer/data_manager.hpp>
+#include <core/buffer/text_data.hpp>
 #include <ui/view.hpp>
 #include <app.hpp>
 

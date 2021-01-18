@@ -12,15 +12,6 @@
 #include <optional>
 #include <string>
 
-enum class Commands {
-    OpenFile,
-    WriteFile,
-    GotoLine,
-    UserCommand,
-    Search,
-    Fail
-};
-
 namespace fs = std::filesystem;
 
 class App;
