@@ -134,7 +134,7 @@ bool load_keybinding_library(HMODULE &libHandle, KeyBindingFn &fnHandle, Fn init
     }
     return false;
 }
-
+using namespace std::string_literals;
 App *App::initialize(int app_width, int app_height, const std::string &title) {
     util::printmsg("Initializing application");
     auto instance = new App{};

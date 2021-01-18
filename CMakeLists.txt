@@ -76,7 +76,6 @@ set(CORE_SOURCE
         src/core/math/matrix.cpp src/core/math/matrix.hpp)
 
 set(COMMANDS_SOURCE
-        # src/core/commands/command.cpp src/core/commands/command.hpp
         src/core/commands/command_interpreter.cpp src/core/commands/command_interpreter.hpp
         src/core/commands/file_manager.cpp src/core/commands/file_manager.hpp)
 

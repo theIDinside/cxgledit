@@ -77,14 +77,6 @@ CommandView *CommandView::create_not_managed(const std::string &name, int width,
     return cview;
 }
 
-//! --------------------------------------------------------
-
-/*
-void View::set_projection(glm::mat4 view_projection) {
-    this->cursor->set_projection(view_projection);
-    this->projection = view_projection;
-}
- */
 void View::set_dimensions(int w, int h) {
     this->width = w;
     this->height = h;

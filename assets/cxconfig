@@ -1,7 +1,8 @@
 [views]
-background_color = "0.05 0.052 0.0742123";
+background_color = "0.021 0.052 0.0742123";
 foreground_color = "1 1 1";
 font_pixel_size = "24";
+vertical_layout_only = "on";
 
 [window]
 width = "1920";

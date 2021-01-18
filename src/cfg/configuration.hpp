@@ -25,7 +25,7 @@ struct ConfigFileData {
     fs::path file_path;
     [[nodiscard]] std::optional<std::string> get_str_value(const std::string& table, std::string_view key) const;
     [[nodiscard]] bool has_table(const std::string& table) const;
-    [[nodiscard]] static ConfigFileData load_cfg_data(const fs::path& file_path = "./assets/config.cxe");
+    [[nodiscard]] static ConfigFileData load_cfg_data(const fs::path& file_path = "assets/cxconfig");
 };
 
 ConfigFileData cfg_parse(std::string&& data);
@@ -88,6 +88,7 @@ struct Configuration {
         Color bg_color{0.05f, 0.052f, 0.0742123f};
         Color fg_color{1.0f, 1.0f, 1.0f};
         int font_pixel_size = 24;
+        bool vertical_layout_only = true;
     } views;
     struct {
         int width{1024};
