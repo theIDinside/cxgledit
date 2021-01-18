@@ -199,7 +199,6 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
     instance->root_layout->id = 1;
 
     instance->scroll = 0;
-
     instance->projection = glm::ortho(0.0f, static_cast<float>(app_width), 0.0f, static_cast<float>(app_height));
 
     instance->title = title;
@@ -1033,17 +1032,25 @@ void App::close_active() {
 
 // TODO: make application aware of .cxe files, so that when editing an .cxe file, user can press some key, to automatically load the settings in it
 void App::reload_configuration() {
-    auto old_bg = config.views.bg_color;
-    util::println("Old config: \n{}", serialize(config));
-    util::println("Reloading config from: {}", config.file_path.string());
     auto cfgData = ConfigFileData::load_cfg_data(config.file_path);
     config = Configuration::from_parsed_map(cfgData);
+    auto& fl = FontLibrary::get_instance();
+    if(!fl.get_font_with_size(config.views.font_pixel_size)) {
+        auto font_cfg_name = fmt::format("FreeMono{}", config.views.font_pixel_size);
+        FontConfig font_cfg
+                {.name = font_cfg_name,
+                .path = "assets/fonts/FreeMono.ttf",
+                .pixel_size = config.views.font_pixel_size,
+                .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
+        fl.load_font(font_cfg, true);
+    }
     util::println("New config:\n{}", serialize(config));
 
-    assert(!(old_bg == config.views.bg_color));
     for(auto ew : editor_views) {
         ew->set_view_colors(config.views.bg_color, config.views.fg_color);
+        ew->set_font(FontLibrary::get_default_font());
     }
+    draw_all(true);
 }
 
 void Register::push_view(std::string_view data) {

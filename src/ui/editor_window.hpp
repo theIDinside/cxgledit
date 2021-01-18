@@ -3,8 +3,9 @@
 //
 
 #pragma once
-#include <glm/glm.hpp>
+#include "modal.hpp"
 #include <core/vec_3.hpp>
+#include <glm/glm.hpp>
 #include <optional>
 #include <ui/core/layout.hpp>
 
@@ -35,5 +36,6 @@ namespace ui {
         void handle_click(int x, int y);
 
         void set_view_colors(Color bg, Color fg);
+        void set_font(SimpleFont *pFont);
     };
 }

@@ -97,4 +97,8 @@ void EditorWindow::set_view_colors(Color bg, Color fg) {
     view->fg_color = fg;
     view->bg_color = bg;
 }
+void EditorWindow::set_font(SimpleFont *pFont) {
+    view->font = pFont;
+    view->cursor->setup_dimensions(8, pFont->max_glyph_height + 4);
+}
 }// namespace ui

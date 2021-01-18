@@ -42,6 +42,7 @@ std::unique_ptr<View> View::create_managed(TextData *data, const std::string &na
     v->data = data;
     v->vertexCapacity = reserveMemory / sizeof(TextVertex);
     v->cursor = ViewCursor::create_from(v);
+
     v->name = name;
 
     return v;
