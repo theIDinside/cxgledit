@@ -21,7 +21,7 @@ int main(int argc, const char **argv) {
  * TODO(abstraction, major): tie in all edits of buffer & their possible side effects behind the EditorWindow class
  * TODO(cosmetic, minor): Add delay to syntax highlighting / lexing, so that the entire text doesn't flicker about
  * TODO(feature, minor): add write file command
- *  - done, but no overwrite affirmation
+ *  - done, but no overwrite confirmation
  * TODO(feature, minor): add copy / paste commands
         - done, max copy is however single line at this point in time
          (seeing as how a GapBuffer is about to be implemented, furthering this feature right now is pointless)

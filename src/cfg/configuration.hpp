@@ -88,7 +88,7 @@ struct Configuration {
         Color bg_color{0.05f, 0.052f, 0.0742123f};
         Color fg_color{1.0f, 1.0f, 1.0f};
         int font_pixel_size = 24;
-        bool vertical_layout_only = true;
+        bool horizontal_layout_only = true;
     } views;
     struct {
         int width{1024};

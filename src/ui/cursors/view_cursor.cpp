@@ -114,7 +114,7 @@ void ViewCursor::update_cursor_data(GLfloat x, GLfloat y) {
     c_data.emplace_back(x + w, y);
     c_data.emplace_back(x + w, y + h);
 
-    auto vx = view->x;
+    auto vx = AS(view->x, float);
     l_data.clear();
     l_data.emplace_back(vx, y + h);
     l_data.emplace_back(vx, y);
@@ -154,8 +154,8 @@ void ViewCursor::set_line_rect(GLfloat x1, GLfloat x2, GLfloat y1, int rectHeigh
     auto h = rectHeight;
     auto x = x1;
     auto y = y1;
-    auto &data = this->cursor_data->vbo->data;
-    this->cursor_data->vbo->pristine = false;
+    auto &data = cursor_data->vbo->data;
+    cursor_data->vbo->pristine = false;
     data.clear();
     data.emplace_back(x, y + h);
     data.emplace_back(x, y);

@@ -77,7 +77,7 @@ std::string serialize(const Configuration &cfg) {
     ss << "background_color = " << cfg.views.bg_color << ";\n";
     ss << "foreground_color = " << cfg.views.fg_color << ";\n";
     ss << "font_pixel_size = " << "\"" << cfg.views.font_pixel_size << "\";\n";
-    ss << "vertical_layout_only = " << "\"" << (cfg.views.vertical_layout_only ? "on" : "off") << "\";\n\n";
+    ss << "horizontal_layout_only = " << "\"" << (cfg.views.horizontal_layout_only ? "on" : "off") << "\";\n\n";
 
     ss << "[window]\n";
     ss << "width = " << "\"" << cfg.window.width << "\";\n";
@@ -116,12 +116,12 @@ Configuration Configuration::from_parsed_map(const ConfigFileData &configFileDat
         auto strBackgroundColor = configFileData.get_str_value("views", "background_color").value_or("0.05 0.052 0.0742123");
         auto strForegroundColor = configFileData.get_str_value("views", "foreground_color").value_or("1 1 1");
         auto strFontPixelSize = configFileData.get_str_value("views", "font_pixel_size").value_or("24");
-        auto strVerticalLayoutOnly = configFileData.get_str_value("views", "vertical_layout_only").value_or("on");
+        auto strHorizontalLayoutOnly = configFileData.get_str_value("views", "horizontal_layout_only").value_or("on");
 
         cfg.views.bg_color = parse_color(strBackgroundColor);
         cfg.views.fg_color = parse_color(strForegroundColor);
         cfg.views.font_pixel_size = std::stoi(strFontPixelSize);
-        cfg.views.vertical_layout_only = (strVerticalLayoutOnly == "on");
+        cfg.views.horizontal_layout_only = (strHorizontalLayoutOnly == "on");
     }
     cfg.file_path = configFileData.file_path;
     return cfg;
