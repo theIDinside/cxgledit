@@ -9,10 +9,9 @@
 #include <vector>
 
 // Managers
-#include <core/data_manager.hpp>
-#include <ui/managers/font_library.hpp>
-#include <ui/managers/shader_library.hpp>
 #include <core/commands/command_interpreter.hpp>
+#include <core/data_manager.hpp>
+#include <core/matrix.hpp>
 
 #undef min
 #undef max
@@ -241,8 +240,10 @@ void View::scroll_to(int line) {
         auto linesToScroll = (cursor->line + lines_displayable) - line;
         auto scroll_pos = scrolled + (linesToScroll * font->get_row_advance());
         scrolled = std::min(scroll_pos, 0);
-        auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled),
-                            static_cast<float>(win_height + scrolled));
+
+        // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
+        auto p = orthographic_projection(win_width, win_height, scrolled);
+
         set_projection(p);
         cursor->line -= linesToScroll;
         cursor->line = std::max(cursor->line, 0);
@@ -251,16 +252,16 @@ void View::scroll_to(int line) {
         if(line > lineAnchorOfLastPage) {
             auto linesToScroll = lineAnchorOfLastPage - cursor->line;
             scrolled -= (linesToScroll * font->get_row_advance());
-            auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled),
-                                static_cast<float>(win_height + scrolled));
+            // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
+            auto p = orthographic_projection(win_width, win_height, scrolled);
             set_projection(p);
             cursor->line += linesToScroll;
             cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable));
         } else {
             auto linesToScroll = line - cursor->line;
             scrolled -= (linesToScroll * font->get_row_advance());
-            auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled),
-                                static_cast<float>(win_height + scrolled));
+            // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
+            auto p = orthographic_projection(win_width, win_height, scrolled);
             set_projection(p);
             cursor->line += linesToScroll;
             cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable));
@@ -279,14 +280,14 @@ void View::scroll(Scroll direction, int linesToScroll) {
             if(cursor->line - linesToScroll < 0) {
                 cursor->line = 0;
                 scrolled = 0;
-                auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled),
-                                    static_cast<float>(win_height + scrolled));
+                auto p = orthographic_projection(win_width, win_height, scrolled);
+                // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
                 set_projection(p);
             } else {
                 auto scroll_pos = scrolled + (linesToScroll * font->get_row_advance());
                 scrolled = std::min(scroll_pos, 0);
-                auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled),
-                                    static_cast<float>(win_height + scrolled));
+                auto p = orthographic_projection(win_width, win_height, scrolled);
+                // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
                 set_projection(p);
                 cursor->line -= linesToScroll;
                 cursor->line = std::max(cursor->line, 0);
@@ -298,8 +299,8 @@ void View::scroll(Scroll direction, int linesToScroll) {
                 util::println("Lines to scroll: {}, Lines displayable: {} - Max view anchor position: {}. Buffer lines: {}", linesToScroll, lines_displayable, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable), get_text_buffer()->meta_data.line_begins.size());
                 auto diff = (cursor->line + linesToScroll) - int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable);
                 scrolled -= (diff * font->get_row_advance());
-                auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled),
-                                    static_cast<float>(win_height + scrolled));
+                auto p = orthographic_projection(win_width, win_height, scrolled);
+                // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
                 set_projection(p);
                 cursor->line += diff;
                 cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable));
@@ -307,8 +308,8 @@ void View::scroll(Scroll direction, int linesToScroll) {
                 /// TODO: Bounds check so we prohibit the user from scrolling down where no lines are. Which would be bad UX
                 // scrolled is not lines scrolled, but the amount of pixels we've moved the projection north/south
                 scrolled -= (linesToScroll * font->get_row_advance());
-                auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled),
-                                    static_cast<float>(win_height + scrolled));
+                auto p = orthographic_projection(win_width, win_height, scrolled);
+                // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled),static_cast<float>(win_height + scrolled));
                 set_projection(p);
                 cursor->line += linesToScroll;
                 cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable));

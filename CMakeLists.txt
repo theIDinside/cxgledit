@@ -85,7 +85,7 @@ set(CORE_SOURCE
         src/core/text_data.cpp src/core/text_data.hpp
         src/core/data_manager.cpp src/core/data_manager.hpp
         src/cfg/configuration.cpp src/cfg/configuration.hpp
-        src/core/vec_3.cpp src/core/vec_3.hpp)
+        src/core/vec_3.cpp src/core/vec_3.hpp src/core/matrix.cpp src/core/matrix.hpp)
 
 set(COMMANDS_SOURCE
         src/core/commands/command.cpp src/core/commands/command.hpp

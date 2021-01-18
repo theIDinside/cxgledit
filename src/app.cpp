@@ -17,6 +17,8 @@
 #include <ranges>
 #include <utility>
 
+#include <core/matrix.hpp>
+
 /// Utility macro for getting registered App pointer with GLFW
 #define get_app_handle(window) (App *) glfwGetWindowUserPointer(window)
 
@@ -199,8 +201,11 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
     instance->root_layout->id = 1;
 
     instance->scroll = 0;
-    instance->projection = glm::ortho(0.0f, static_cast<float>(app_width), 0.0f, static_cast<float>(app_height));
+    glm::mat4 mvp = orthographic_projection(app_width, app_height, instance->scroll);
 
+
+    // instance->projection = glm::ortho(0.0f, static_cast<float>(app_width), 0.0f, static_cast<float>(app_height));
+    instance->projection = mvp;
     instance->title = title;
     instance->window = window;
 
@@ -319,7 +324,8 @@ void App::set_dimensions(int w, int h) {
     this->win_height = h;
     root_layout->dimInfo.y = h;
     win_dimensions = WindowDimensions{w, h};
-    this->projection = glm::ortho(0.0f, static_cast<float>(w), 0.0f, static_cast<float>(h));
+    this->projection = orthographic_projection(w, h, this->scroll);
+    // this->projection = glm::ortho(0.0f, static_cast<float>(w), 0.0f, static_cast<float>(h));
     util::println("New dimension set to {} x {}", w, h);
 }
 void App::run_loop() {
@@ -389,7 +395,8 @@ void App::update_views_dimensions(float wRatio, float hRatio) {
 
     command_view->w = win_width;
     command_view->command_view->set_dimensions(win_width, command_view->h);
-    command_view->command_view->set_projection(glm::ortho(0.0f, float(win_width), 0.0f, float(win_height)));
+    // command_view->command_view->set_projection(glm::ortho(0.0f, float(win_width), 0.0f, float(win_height)));
+    command_view->command_view->set_projection(orthographic_projection(win_width, win_height, this->scroll));
 }
 
 constexpr auto KEY_LEFT_ANGLE_BRACKET = 61;
