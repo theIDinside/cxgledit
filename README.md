@@ -48,10 +48,13 @@ Shouldn't be that hard to fix though, so I've put that on hold for now, dealing 
 ## Dependencies
 Project has a few dependencies on 3rd party libraries. Most of which I've made it so CMake automatically handles
 the download of, but some needs manual download and/or installation (locally to the project folder, everything built 
-from source)
+from source).
+
 
 ### Handled by cmake
 - [x] GLM, linear algebra/maths library
+    - this dependency has been removed. Considering only a tiny amount of functions & types were necesseary, a Matrix & Vector and orthographic projection call
+    it makes no sense to keep it, since I know how do that stuff by hand now.
 - [x] GLFW - Window library, handles some of the nasty GL / Window creation and input stuff for us
 - [x] fmtlib - because WHO the F* uses iostream for any output to console in C++ anymore, when fmtlib is even faster than printf?!
 
