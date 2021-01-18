@@ -14,14 +14,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/bin/debug)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${PROJECT_SOURCE_DIR}/bin/relwithdebinfo)
 
-
-FetchContent_Declare(
-        glm
-        GIT_REPOSITORY https://github.com/g-truc/glm.git
-        GIT_TAG master
-        SOURCE_DIR ${PROJECT_SOURCE_DIR}/deps/glm
-)
-
 FetchContent_Declare(
         fmt
         GIT_REPOSITORY https://github.com/fmtlib/fmt.git
@@ -36,16 +28,11 @@ FetchContent_Declare(
         SOURCE_DIR ${PROJECT_SOURCE_DIR}/deps/glfw
 )
 
-FetchContent_MakeAvailable(fmt glm glfw)
+FetchContent_MakeAvailable(fmt glfw)
 
 if (NOT fmt_POPULATED)
     FetchContent_Populate(fmt)
     add_subdirectory(${fmt_SOURCE_DIR} ${fmt_BINARY_DIR})
-endif ()
-
-if (NOT glm_POPULATED)
-    FetchContent_Populate(glm)
-    add_subdirectory(${glm_SOURCE_DIR} ${glm_BINARY_DIR})
 endif ()
 
 if (NOT glfw_POPULATED)
@@ -127,7 +114,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${DEP_DIR}/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${FT_DIR}/include)
 message("OpenGL libraries are set to: ${OPENGL_LIBRARIES}. CMAKE_DL_LIBS set to: ${CMAKE_DL_LIBS}")
 
-target_link_libraries(cxgledit fmt::fmt glm ${OPENGL_LIBRARIES} glfw ${GLFW_LIBRARIES} glad ${CMAKE_DL_LIBS} freetype)
+target_link_libraries(cxgledit fmt::fmt ${OPENGL_LIBRARIES} glfw ${GLFW_LIBRARIES} glad ${CMAKE_DL_LIBS} freetype)
 
 add_library(keybound SHARED deps/include/bindingslib/keybindings.cpp)
 add_dependencies(cxgledit keybound)
