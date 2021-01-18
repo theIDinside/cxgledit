@@ -102,11 +102,11 @@ struct Vec4 {
 };
 
 using Vec2i = Vec2<int>;
-using Vec2f = Vec2<float>;
+using Vec2f = Vec2<GLfloat>;
 using Vec2d = Vec2<double>;
 
 using Vec3i = Vec3<int>;
-using Vec3f = Vec3<float>;
+using Vec3f = Vec3<GLfloat>;
 using Vec3d = Vec3<double>;
 
 using Vec4i = Vec4<int>;
