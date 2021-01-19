@@ -45,7 +45,7 @@ optimization turned on u64 newline_count_64bit(const char *data, std::size_t len
 std::vector<int> make_lines_indices(const char *data, std::size_t len) {
     auto res = 0;
     std::vector<int> line_begins{};
-    line_begins.push_back(0);
+    line_begins.push_back(0);   // first line _always_ begins at 0... duh!
     line_begins.reserve(1024);// 8 * 1024 = 8kb (or 32, depending on what the compiler defines as "int")
     for (auto i = 0; i < len; i++) {
         if (data[i] == '\n') {

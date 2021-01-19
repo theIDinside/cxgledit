@@ -135,6 +135,7 @@ if (CMAKE_BUILD_TYPE STREQUAL Release)
 
 elseif(CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
     add_definitions(-DDEBUG)
+    set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} /Ot2 /DNDEBUG /Zi /Gy)
     message("Build type is ${CMAKE_BUILD_TYPE}. Copying assets to ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO}/assets")
     message("Debug has instrumentation features enabled.")
     target_compile_definitions(cxgledit PUBLIC INSTRUMENTATION KEEP_LOGS IS_DEBUG)

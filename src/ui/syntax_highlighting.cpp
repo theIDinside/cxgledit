@@ -326,9 +326,7 @@ std::vector<ColorFormatInfo> format_tokens(const std::vector<Token> &tokens) {
 }
 
 std::vector<ColorFormatInfo> color_format_tokenize(std::string_view text) {
-    // FN_MICRO_BENCH();
     std::vector<ColorFormatInfo> result;
-
     auto sz = text.size();
     // TODO: actually measure this. I *know* that if this is going to be thousands of elements long,
     //  reserving space will help, even without having measured, it's simple to reason about; every time it runs out of space
@@ -407,4 +405,12 @@ std::vector<ColorFormatInfo> color_format_tokenize(std::string_view text) {
         }
     }
     return result;
+}
+std::vector<ColorFormatInfo> color_format_tokenize_range(const char *begin, std::size_t len, std::size_t offset_of) {
+    auto res = color_format_tokenize(std::string_view{begin, len});
+    for(auto& e : res) {
+        e.begin += offset_of;
+        e.end += offset_of;
+    }
+    return res;
 }

@@ -66,7 +66,15 @@ from source).
   apply to quads, displaying the text. This needs to be manually [download at](https://download.savannah.gnu.org/releases/freetype/ "Get the latest version")
   and placed in the "deps" directory, so for it to work, I've extracted the archive
   
-### General domain problems / challenges
+### General domain problems / challenges - Things that need to be fixed _really_ soon
+
+Right now, when opening large files, over a thousand lines, the editor becomes *completely* unusable, due to how 
+the vertex data is generated and sent to the GPU. Since we clear the *entire* vertex buffer and rebuild it,
+then draw the *entire* buffer, we are obviously wasting a *BUNCH* of time on:
+- Possibly re-creating vertices that haven't changed (the ones that are used for character before the cursor ) where we 
+  are editing.
+- Doing a bunch of work with vertices that aren't even close to being displayed
+
 Text editing is fairly easy. But it comes with a list of somewhat difficult / interesting challanges,
 such as, what constitutes a line, _where_ in memory does a line begin (does it begin at index_at='\n', or index_after='\n')
 Choosing what to do here will have reverberating effects, which is interesting and a good learning experience

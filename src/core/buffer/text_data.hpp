@@ -13,6 +13,10 @@
 #include <string_view>
 #include <utility>
 
+namespace ui {
+    class View;
+}
+
 class TextData;
 enum CursorDirection { Forward, Back };
 enum TextRep { Char, Word, Line, Block, File };
@@ -72,6 +76,7 @@ public:
     int id{0};
     std::string name;
     BufferCursor cursor{};
+    ui::View* callback_view;
 
     TextData() = default;
     virtual ~TextData() = default;
@@ -86,6 +91,7 @@ public:
     virtual std::size_t get_cursor_pos() const = 0;
 
     virtual std::size_t size() const = 0;
+    virtual std::size_t capacity() const = 0;
     virtual bool empty() const { return size() == 0; };
     virtual std::size_t lines_count() const = 0;
 
@@ -96,6 +102,7 @@ public:
 
     virtual void step_to_line_end(Boundary boundary) = 0;
     virtual void step_to_line_begin(Boundary boundary) = 0;
+    virtual void register_view_callback(ui::View* view) = 0;
 
     virtual void set_file(fs::path p);
     virtual bool exist_on_disk() const;
@@ -163,6 +170,8 @@ public:
     explicit StdStringBuffer() : TextData(), store{} {}
     ~StdStringBuffer() override;
 
+    void register_view_callback(ui::View *view) override;
+
     /// EDITING
     void insert(char ch) override;
     void insert_str(const std::string_view &data) override;
@@ -175,6 +184,7 @@ public:
     /// CURSOR OPS
     size_t get_cursor_pos() const override;
     std::size_t size() const override;
+    size_t capacity() const override;
     void move_cursor(Movement m) override;
     void step_cursor_to(size_t pos) override;
     BufferCursor &get_cursor() override;
@@ -207,7 +217,7 @@ public:
     std::pair<BufferCursor, BufferCursor> get_cursor_rect() const override;
     std::string_view copy_range(std::pair<BufferCursor, BufferCursor> selected_range) override;
     void goto_next(std::string search) override;
-
+    std::string store;
 private:
     void char_move_forward(std::size_t count) override;
     void char_move_backward(std::size_t count) override;
@@ -221,7 +231,7 @@ private:
     void remove_word_backward(size_t i);
     void remove_line_forward(size_t i);
     void remove_line_backward(size_t i);
-    std::string store;
+
     std::string cached_search;
 
     // This variable is set/checked every time a view wants to display. So once

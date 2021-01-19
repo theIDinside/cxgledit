@@ -19,6 +19,8 @@
 
 /// ----------------- VIEW FACTORY FUNCTIONS -----------------
 
+constexpr auto LINES_DISPLAYABLE_DIFF = 0;
+
 namespace ui {
 
 std::unique_ptr<View> View::create_managed(TextData *data, const std::string &name, int w, int h, int x, int y,
@@ -37,7 +39,7 @@ std::unique_ptr<View> View::create_managed(TextData *data, const std::string &na
     v->y = y;
     v->font = FontLibrary::get_default_font();
     v->shader = ShaderLibrary::get_text_shader();
-    v->lines_displayable = int_floor(float(h) / float(v->font->get_row_advance())) - 7;
+    v->lines_displayable = int_floor(float(h) / float(v->font->get_row_advance())) - LINES_DISPLAYABLE_DIFF;
     v->vao = std::move(vao);
     v->data = data;
     v->vertexCapacity = reserveMemory / sizeof(TextVertex);
@@ -80,7 +82,7 @@ CommandView *CommandView::create_not_managed(const std::string &name, int width,
 void View::set_dimensions(int w, int h) {
     this->width = w;
     this->height = h;
-    lines_displayable = int_floor(float(h) / float(font->get_row_advance())) - 7;
+    lines_displayable = int_floor(float(h) / float(font->get_row_advance())) - LINES_DISPLAYABLE_DIFF;
     util::println("lines displayable updated to: {}", lines_displayable);
 }
 
@@ -99,6 +101,9 @@ void CommandView::set_prefix(const std::string &prefix) {
 /// ----------------- VIEW DRAW METHODS -----------------
 
 void View::draw(bool isActive) {
+    // TODO: re-work the drawing function, so that, when the GFX state is "unclean", instead of re-creating the entire memory (which can be very, very large)
+    //  we only rebuild what is necessary, upload that to the GPU and then draw. Possibly, we should not even bother with the off-screen contents,
+    //  thus *only* care about the contents that currently can be displayed
     using Pos = ui::core::ScreenPos;
     glEnable(GL_SCISSOR_TEST);
     // GL anchors x, y in the bottom left, with our orthographic view, we anchor from top left, thus we have to take y-h, instead of just taking y
@@ -133,6 +138,7 @@ void View::draw(bool isActive) {
         vao->draw();
         cursor->draw();
     } else {
+        // The top left corner of the view, in screen position
         auto xpos = AS(this->x + View::TEXT_LENGTH_FROM_EDGE, int);
         auto ypos = AS(this->y - font->get_row_advance(), int);
         font->create_vertex_data_for(this, Pos{xpos, ypos});
@@ -143,7 +149,6 @@ void View::draw(bool isActive) {
 }
 
 void View::forced_draw(bool isActive) {
-    // FN_MICRO_BENCH();
     glEnable(GL_SCISSOR_TEST);
     glScissor(x, y - height, this->width, this->height);
     auto[r,g,b] = bg_color;
@@ -167,6 +172,7 @@ void View::forced_draw(bool isActive) {
         this->vao->reserve_gpu_size(text_size * 2 + 2);
         this->vertexCapacity = (text_size * 6 * 2 + 2);
     }
+
     font->create_vertex_data_in(vao.get(), this, AS(this->x + View::TEXT_LENGTH_FROM_EDGE, int),
                                        this->y - font->get_row_advance());
     vao->flush_and_draw();
@@ -339,7 +345,7 @@ View *View::create(TextData *data, const std::string &name, int w, int h, int x,
     v->x = x;
     v->y = y;
     v->font = FontLibrary::get_default_font();
-    v->lines_displayable = int_floor(float(h) / float(v->font->get_row_advance())) - 7;
+    v->lines_displayable = int_floor(float(h) / float(v->font->get_row_advance())) - LINES_DISPLAYABLE_DIFF;
     v->shader = ShaderLibrary::get_text_shader();
     v->vao = std::move(vao);
     v->data = data;
@@ -390,6 +396,25 @@ void View::draw_modal_view(int selected, std::vector<TextDrawable>& drawables) {
 
 void View::set_projection(Matrix projection) {
     this->mvp = projection;
+}
+
+std::pair<std::string_view, std::string_view> View::debug_print_boundary_lines() {
+    auto top_line = cursor->line;
+    auto end_line = top_line + lines_displayable;
+
+    auto buf = get_text_buffer();
+    auto total = buf->to_string_view();
+
+    auto top_line_idx = buf->meta_data.line_begins[top_line];
+    auto top_len = buf->meta_data.line_begins[top_line+1] - buf->meta_data.line_begins[top_line];
+
+
+    auto bot_line_idx = buf->meta_data.line_begins[end_line];
+    auto bot_len = buf->meta_data.line_begins[end_line+1] - buf->meta_data.line_begins[end_line];
+
+    std::string_view top{total.data() + top_line_idx, static_cast<size_t>(top_len)};
+    std::string_view bot{total.data() + bot_line_idx, static_cast<size_t>(bot_len)};
+    return {top, bot};
 }
 
 void CommandView::draw() {

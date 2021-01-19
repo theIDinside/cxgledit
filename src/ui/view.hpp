@@ -46,6 +46,8 @@ struct View {
                         ViewType type = ViewType::Text);
 
     void draw(bool isActive = false);
+    /// This forces the View to re-create all the vertex data, and update some of it's dimension info
+    /// this becomes useful when we have resized the window, and/or the view, as suddenly, the amount of lines that can be displayed changes, etc
     void forced_draw(bool isActive = false);
     void draw_command_view(const std::string &prefix, std::optional<std::vector<ColorizeTextRange>> colorInfo);
     void draw_statusbar();
@@ -83,6 +85,8 @@ struct View {
     int scrolled = 0;
     Boxed<ViewCursor> cursor;
     ViewType type = ViewType::Text;
+
+    std::pair<std::string_view, std::string_view> debug_print_boundary_lines();
 };
 
 class CommandView {

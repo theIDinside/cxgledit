@@ -58,3 +58,4 @@ std::vector<ColorFormatInfo> format_tokens(const std::vector<Token>& tokens);
 
 
 std::vector<ColorFormatInfo> color_format_tokenize(std::string_view text);
+std::vector<ColorFormatInfo> color_format_tokenize_range(const char* begin, std::size_t len, std::size_t offsetof);

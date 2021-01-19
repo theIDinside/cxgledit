@@ -130,6 +130,7 @@ public:
     int size_bearing_difference_max;
 
     void create_vertex_data_for(ui::View *pView, ui::core::ScreenPos startingTopLeftPos);
+    void create_vertex_data_for_only_visible(ui::View *pView, ui::core::ScreenPos startingTopLeftPos);
 
 private:
     // glyph_info* data = info;

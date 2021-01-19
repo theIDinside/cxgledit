@@ -8,7 +8,7 @@
 #include <ui/core/opengl.hpp>
 #include <ui/editor_window.hpp>
 #include <ui/status_bar.hpp>
-#include <ui/view.hpp>
+#include <ui/view.hpp>e
 #include <utility>
 #include <utils/fileutil.hpp>
 #include <ranges>
@@ -769,6 +769,7 @@ void App::input_command_or_newline() {
         active_view = active_window->view;
         if (mode != CXMode::Search) { mode = CXMode::Normal; }
     } else if (mode == CXMode::Normal) {
+        auto pos = active_buffer->cursor.pos;
         active_buffer->insert('\n');
         if(not is_within(active_buffer->cursor.line, active_view->cursor->line, active_view->cursor->line + active_view->lines_displayable)) {
             active_view->scroll(ui::Scroll::Down, 1);
@@ -828,15 +829,22 @@ void App::app_debug() {
     util::println("---- Layout tree (negative id's are branch nodes, positive leaf nodes ---- ");
     dump_layout_tree(root_layout);
     util::println("---------------------------\n");
-#endif
     auto &dm = DataManager::get_instance();
     util::println("Available buffers in re-use list: {}", dm.reuseable_buffers());
     dm.print_all_managed();
+#endif
+    auto [top, bot] = active_view->debug_print_boundary_lines();
+
+    util::println("- Top line: '{}' - Bottom line: {}", top, bot);
+
     util::println("APPDEBUG: Buffer line: {}\t Cursor line: {}\tDisplayable lines in view: {} - Scrolled: {}",
                   active_window->get_text_buffer()->cursor.line, active_window->view->cursor->line,
                   active_window->view->lines_displayable, active_window->view->scrolled);
-    util::println("Current settings serialized:\n{}", serialize(config));
+    util::println("Active buffer size: {} \t Reserved capacity: {}", active_buffer->size(), active_buffer->capacity());
+
 }
+
+
 WindowDimensions App::get_window_dimension() { return win_dimensions; }
 
 WindowDimensions App::win_dimensions{0, 0};

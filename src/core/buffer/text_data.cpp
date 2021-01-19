@@ -4,6 +4,7 @@
 
 #include "text_data.hpp"
 #include <core/strops.hpp>
+#include <ui/view.hpp>
 
 // FIXME: Fix word move forward / backward, so that cursor info data is recorded correctly. It's a mess right now
 // FIXME: Fix line move backward, forward seems to work perfectly fine, line position, column info etc
@@ -617,6 +618,12 @@ void StdStringBuffer::goto_next(std::string search) {
         step_cursor_to(pos);
         util::println("Move {} -> {}", oldpos, cursor.pos);
     }
+}
+size_t StdStringBuffer::capacity() const {
+    return store.capacity();
+}
+void StdStringBuffer::register_view_callback(ui::View *view) {
+    this->callback_view = view;
 }
 
 /// ----------- NON-PURE VIRTUAL ABSTRACT IMPL METHODS ----------------
