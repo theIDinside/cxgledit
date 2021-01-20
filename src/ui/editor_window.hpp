@@ -12,34 +12,29 @@
 class TextData;
 using Color = Vec3f;
 
-
 namespace ui {
-    // Forward declarations
-    class View;
-    class StatusBar;
+// Forward declarations
+class View;
+class StatusBar;
 
-    struct EditorWindow {
-        View *view = nullptr;
-        StatusBar *status_bar = nullptr;
-        int ui_layout_id;
-        ui::core::DimInfo dimInfo;
+struct EditorWindow {
+    View *view = nullptr;
+    StatusBar *status_bar = nullptr;
+    int ui_layout_id;
+    ui::core::DimInfo dimInfo;
+    void draw(bool force_redraw = false);
+    ~EditorWindow();
+    [[nodiscard]] TextData *get_text_buffer() const;
+    // static EditorWindow *create(std::optional<TextData *> textData, glm::mat4 projection, int layout_id, core::DimInfo dimInfo);
+    static EditorWindow *create(std::optional<TextData *> textData, Matrix projection, int layout_id,
+                                core::DimInfo dimInfo);
 
-        void draw(bool force_redraw = false);
-        ~EditorWindow();
+    void update_layout(core::DimInfo dim_info);
+    void set_projection(Matrix projection) const;
+    bool active = false;
+    void handle_click(int x, int y);
 
-        [[nodiscard]] TextData *get_text_buffer() const;
-
-        // static EditorWindow *create(std::optional<TextData *> textData, glm::mat4 projection, int layout_id, core::DimInfo dimInfo);
-
-        static EditorWindow *create(std::optional<TextData *> textData, Matrix projection, int layout_id,
-                                    core::DimInfo dimInfo);
-
-        void update_layout(core::DimInfo dim_info);
-        void set_projection(Matrix projection) const;
-        bool active = false;
-        void handle_click(int x, int y);
-
-        void set_view_colors(Color bg, Color fg);
-        void set_font(SimpleFont *pFont);
-    };
-}
+    void set_view_colors(Color bg, Color fg);
+    void set_font(SimpleFont *pFont);
+};
+}// namespace ui

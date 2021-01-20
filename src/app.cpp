@@ -5,13 +5,13 @@
 
 #include "app.hpp"
 #include <core/buffer/data_manager.hpp>
+#include <ranges>
 #include <ui/core/opengl.hpp>
 #include <ui/editor_window.hpp>
 #include <ui/status_bar.hpp>
 #include <ui/view.hpp>e
 #include <utility>
 #include <utils/fileutil.hpp>
-#include <ranges>
 
 /// Utility macro for getting registered App pointer with GLFW
 #define get_app_handle(window) (App *) glfwGetWindowUserPointer(window)
@@ -524,10 +524,10 @@ void App::kb_command(KeyInput input) {
                     this->graceful_exit();
                 }
             } break;
-            case GLFW_KEY_N: {// NEXT
-                if (mode == CXMode::Search) {
+            case GLFW_KEY_N: {
+                if (mode == CXMode::Search) { // NEXT result from search
                     find_next_in_active(last_searched);
-                } else {
+                } else {    // go to NEXT window
                     auto current_window = active_window;
                     current_window->active = false;
                     rotate_container(editor_views, 1);
@@ -693,11 +693,17 @@ void App::handle_edit_input(KeyInput input) {
                 }
             }
         } break;
-        case GLFW_KEY_INSERT:
-            break;
+        case GLFW_KEY_INSERT: {
+        } break;
         case GLFW_KEY_PAGE_UP: {
+            active_window->get_text_buffer()->move_cursor(
+                    Movement::Line(active_window->view->lines_displayable, CursorDirection::Back));
+            active_window->view->scroll_to(active_window->view->cursor->views_top_line -
+                                           active_window->view->lines_displayable);
         } break;
         case GLFW_KEY_PAGE_DOWN: {
+            active_window->get_text_buffer()->move_cursor(Movement::Line(active_window->view->lines_displayable, CursorDirection::Forward));
+            active_window->view->scroll_to(active_window->view->cursor->views_top_line + active_window->view->lines_displayable);
         } break;
     }
     // N.B. this was moved from charCallback because typing in ÖÄÅ right now, crashes the application as the textual data lives inside a std::string
@@ -774,14 +780,13 @@ void App::cycle_command_or_move_cursor(Cycle cycle) {
     } else if (mode == CXMode::Normal) {
         active_buffer->move_cursor(Movement::Line(1, curs_direction));
         if (active_buffer->mark_set) { active_buffer->clear_marks(); }
-        if(not is_within(active_buffer->cursor.line, active_view)) {
-            if(cycle == Cycle::Forward) {
+        if (not is_within(active_buffer->cursor.line, active_view)) {
+            if (cycle == Cycle::Forward) {
                 active_view->scroll_to(active_view->cursor->views_top_line + 1);
             } else {
                 active_view->scroll_to(active_view->cursor->views_top_line - 1);
             }
         }
-
     }
 }
 
@@ -821,9 +826,7 @@ void App::app_debug() {
                   active_window->get_text_buffer()->cursor.line, active_window->view->cursor->views_top_line,
                   active_window->view->lines_displayable, active_window->view->scrolled);
     util::println("Active buffer size: {} \t Reserved capacity: {}", active_buffer->size(), active_buffer->capacity());
-
 }
-
 
 WindowDimensions App::get_window_dimension() { return win_dimensions; }
 
@@ -891,8 +894,8 @@ void App::update_all_editor_windows() {
 ui::CommandView *App::get_command_view() const { return command_view.get(); }
 
 void App::editor_window_goto(int line) {
-    auto& md = active_window->get_text_buffer()->meta_data;
-    if(md.line_begins.size() > line) {
+    auto &md = active_window->get_text_buffer()->meta_data;
+    if (md.line_begins.size() > line) {
         active_window->get_text_buffer()->step_cursor_to(md.line_begins[line]);
         active_window->view->scroll_to(line);
     } else {
@@ -966,7 +969,7 @@ void App::find_next_in_active(const std::string &search) {
     last_searched = search;
     auto pos = active_window->get_text_buffer()->cursor.pos;
     active_window->get_text_buffer()->goto_next(search);
-    if(not is_within(active_window->get_text_buffer()->cursor.line, active_window->view)) {
+    if (not is_within(active_window->get_text_buffer()->cursor.line, active_window->view)) {
         active_window->view->scroll_to(active_window->get_text_buffer()->cursor.line);
     }
     if (pos == active_window->get_text_buffer()->cursor.pos) {
@@ -1022,19 +1025,18 @@ void App::close_active() {
 void App::reload_configuration() {
     auto cfgData = ConfigFileData::load_cfg_data(config.file_path);
     config = Configuration::from_parsed_map(cfgData);
-    auto& fl = FontLibrary::get_instance();
-    if(!fl.get_font_with_size(config.views.font_pixel_size)) {
+    auto &fl = FontLibrary::get_instance();
+    if (!fl.get_font_with_size(config.views.font_pixel_size)) {
         auto font_cfg_name = fmt::format("FreeMono{}", config.views.font_pixel_size);
-        FontConfig font_cfg
-                {.name = font_cfg_name,
-                .path = "assets/fonts/FreeMono.ttf",
-                .pixel_size = config.views.font_pixel_size,
-                .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
+        FontConfig font_cfg{.name = font_cfg_name,
+                            .path = "assets/fonts/FreeMono.ttf",
+                            .pixel_size = config.views.font_pixel_size,
+                            .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
         fl.load_font(font_cfg, true);
     }
     util::println("New config:\n{}", serialize(config));
 
-    for(auto ew : editor_views) {
+    for (auto ew : editor_views) {
         ew->set_view_colors(config.views.bg_color, config.views.fg_color);
         ew->set_font(FontLibrary::get_default_font());
     }
