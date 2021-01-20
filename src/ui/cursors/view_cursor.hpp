@@ -35,7 +35,7 @@ namespace ui {
         Matrix mvp;
         View *view = nullptr;
         Shader *shader = nullptr;
-        int line{};
+        int views_top_line{};
         int width{};
         int height{};
         int pos_x;

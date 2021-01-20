@@ -439,12 +439,11 @@ void App::kb_command(KeyInput input) {
                 break;
             case GLFW_KEY_UP: {
                 active_window->get_text_buffer()->move_cursor(Movement::Line(3, CursorDirection::Back));
-                active_view->goto_buffer_position();
+                active_view->scroll_to(active_view->cursor->views_top_line - 3);
             } break;
             case GLFW_KEY_DOWN: {
                 active_window->get_text_buffer()->move_cursor(Movement::Line(3, CursorDirection::Forward));
-                active_view->goto_buffer_position();
-                // active_view->scroll(static_cast<ui::Scroll>(key), 3);
+                active_view->scroll_to(active_view->cursor->views_top_line + 3);
             } break;
             case GLFW_KEY_RIGHT:
                 modify_movement_op(modifier);
@@ -456,11 +455,11 @@ void App::kb_command(KeyInput input) {
                 break;
             case GLFW_KEY_HOME:// GOTO FILE BEGIN
                 active_window->get_text_buffer()->step_cursor_to(0);
-                active_window->view->goto_buffer_position();
+                active_view->scroll_to(0);
                 break;
             case GLFW_KEY_END:// GOTO FILE END
                 active_window->get_text_buffer()->step_cursor_to(active_window->get_text_buffer()->size());
-                active_window->view->goto_buffer_position();
+                active_view->scroll_to(active_window->get_text_buffer()->size());
                 break;
             case GLFW_KEY_DELETE:
                 if (not active_buffer->mark_set) {
@@ -675,10 +674,6 @@ void App::handle_edit_input(KeyInput input) {
                     active_buffer->remove(Movement::Char(range, CursorDirection::Forward));
                     active_buffer->clear_marks();
                 }
-
-                if(not is_within(active_buffer->cursor.line, active_view)) {
-                    active_view->scroll(ui::Scroll::Up, 1);
-                }
             }
         } break;
         case GLFW_KEY_DELETE: {
@@ -701,16 +696,8 @@ void App::handle_edit_input(KeyInput input) {
         case GLFW_KEY_INSERT:
             break;
         case GLFW_KEY_PAGE_UP: {
-            auto rows_per_page = active_view->height / active_view->font->get_row_advance();
-            active_window->get_text_buffer()->move_cursor(Movement::Line(rows_per_page, CursorDirection::Back));
-            active_view->goto_buffer_position();
-            // active_view->scroll(ui::Scroll::Up, rows_per_page);
         } break;
         case GLFW_KEY_PAGE_DOWN: {
-            auto rows_per_page = active_view->height / active_view->font->get_row_advance() + 2;
-            // active_view->scroll(ui::Scroll::Down, rows_per_page);
-            active_window->get_text_buffer()->move_cursor(Movement::Line(rows_per_page, CursorDirection::Forward));
-            active_view->goto_buffer_position();
         } break;
     }
     // N.B. this was moved from charCallback because typing in ÖÄÅ right now, crashes the application as the textual data lives inside a std::string
@@ -771,9 +758,6 @@ void App::input_command_or_newline() {
     } else if (mode == CXMode::Normal) {
         auto pos = active_buffer->cursor.pos;
         active_buffer->insert('\n');
-        if(not is_within(active_buffer->cursor.line, active_view->cursor->line, active_view->cursor->line + active_view->lines_displayable)) {
-            active_view->scroll(ui::Scroll::Down, 1);
-        }
     }
 }
 
@@ -788,17 +772,13 @@ void App::cycle_command_or_move_cursor(Cycle cycle) {
             ci.cycle_current_command_arguments(cycle);
         }
     } else if (mode == CXMode::Normal) {
-        auto page_line_size = active_view->lines_displayable;
         active_buffer->move_cursor(Movement::Line(1, curs_direction));
         if (active_buffer->mark_set) { active_buffer->clear_marks(); }
-        if (not is_within(active_buffer->cursor.line, active_view->cursor->line,
-                          active_view->cursor->line + page_line_size)) {
-            if (cycle == Cycle::Forward) {
-                auto steps = active_buffer->cursor.line - (active_view->cursor->line + page_line_size);
-                active_view->scroll(ui::Scroll::Down, steps);
+        if(not is_within(active_buffer->cursor.line, active_view)) {
+            if(cycle == Cycle::Forward) {
+                active_view->scroll_to(active_view->cursor->views_top_line + 1);
             } else {
-                auto steps = (active_view->cursor->line - active_buffer->cursor.line);
-                active_view->scroll(ui::Scroll::Up, steps);
+                active_view->scroll_to(active_view->cursor->views_top_line - 1);
             }
         }
 
@@ -838,7 +818,7 @@ void App::app_debug() {
     util::println("- Top line: '{}' - Bottom line: {}", top, bot);
 
     util::println("APPDEBUG: Buffer line: {}\t Cursor line: {}\tDisplayable lines in view: {} - Scrolled: {}",
-                  active_window->get_text_buffer()->cursor.line, active_window->view->cursor->line,
+                  active_window->get_text_buffer()->cursor.line, active_window->view->cursor->views_top_line,
                   active_window->view->lines_displayable, active_window->view->scrolled);
     util::println("Active buffer size: {} \t Reserved capacity: {}", active_buffer->size(), active_buffer->capacity());
 
@@ -911,30 +891,25 @@ void App::update_all_editor_windows() {
 ui::CommandView *App::get_command_view() const { return command_view.get(); }
 
 void App::editor_window_goto(int line) {
-    auto l = active_view->get_cursor()->line;
-    auto buf = active_view->get_text_buffer();
-    if (line >= buf->meta_data.line_begins.size()) {
-        buf->step_cursor_to(buf->size());
-        auto scroll_amt = buf->meta_data.line_begins.size() - l;
-        active_view->scroll(ui::Scroll::Down, scroll_amt);
+    auto& md = active_window->get_text_buffer()->meta_data;
+    if(md.line_begins.size() > line) {
+        active_window->get_text_buffer()->step_cursor_to(md.line_begins[line]);
+        active_window->view->scroll_to(line);
     } else {
-        auto pos = buf->meta_data.line_begins[line];
-        buf->step_cursor_to(pos);
-        if (l < line) {
-            auto scroll_amt = line - l;
-            active_view->scroll(ui::Scroll::Down, scroll_amt);
-        } else {
-            auto scroll_amt = l - line;
-            active_view->scroll(ui::Scroll::Up, scroll_amt);
-        }
+        active_window->get_text_buffer()->step_cursor_to(active_window->get_text_buffer()->size());
+        // This is a safe function. If line is > line size, it will just scroll to last
+        active_window->view->scroll_to(line);
     }
 }
+
 void App::restore_input() {
     active_view = active_window->view;
     active_buffer = active_view->get_text_buffer();
     command_view->input_buffer->clear();
 }
+
 ui::EditorWindow *App::get_active_window() const { return active_window; }
+
 void App::fwrite_active_to_disk(const std::string &path) {
     auto p = fs::path{path};
     // this is just wrapped for now, since the if/else branch are identical
@@ -991,11 +966,13 @@ void App::find_next_in_active(const std::string &search) {
     last_searched = search;
     auto pos = active_window->get_text_buffer()->cursor.pos;
     active_window->get_text_buffer()->goto_next(search);
+    if(not is_within(active_window->get_text_buffer()->cursor.line, active_window->view)) {
+        active_window->view->scroll_to(active_window->get_text_buffer()->cursor.line);
+    }
     if (pos == active_window->get_text_buffer()->cursor.pos) {
         command_view->draw_message(fmt::format("no more '{}' found", last_searched));
     } else {
         command_view->draw_message(fmt::format("search: {}", last_searched));
-        active_window->view->goto_buffer_position();
     }
 }
 

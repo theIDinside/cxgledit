@@ -6,6 +6,7 @@
 #include <GLFW/glfw3.h>
 
 #include "cursors/view_cursor.hpp"
+#include "view_enums.hpp"
 #include <core/buffer/text_data.hpp>
 
 #include <core/math/vector.hpp>
@@ -25,17 +26,6 @@ auto convert_to_gl_anchor(int item_top_y, int item_height) -> int;
 
 namespace ui {
 
-enum class ViewType {
-    Text,
-    Command,
-    Modal
-};
-
-enum class Scroll {
-    Up = GLFW_KEY_UP,
-    Down = GLFW_KEY_DOWN,
-};
-
 struct View {
     ~View();
     static constexpr auto TEXT_LENGTH_FROM_EDGE = 4u;
@@ -52,14 +42,11 @@ struct View {
     void draw_command_view(const std::string &prefix, std::optional<std::vector<ColorizeTextRange>> colorInfo);
     void draw_statusbar();
     void draw_modal_view(int selected, std::vector<TextDrawable>& drawables);
+    void scroll_to(int line);
 
     void set_projection(Matrix projection);
     void set_dimensions(int w, int h);
     void anchor_at(int x, int y);
-    void scroll(Scroll direction, int linesToScroll);
-    void scroll_to(int line);
-    // TODO(urgent): make sure that view-scrolling-to-buffer works, this is useful
-    void goto_buffer_position();
 
     SimpleFont *get_font();
     void set_font(SimpleFont *new_font);
@@ -83,6 +70,7 @@ struct View {
     Shader *shader = nullptr;
     std::size_t vertexCapacity{0};
     int scrolled = 0;
+    int lines_scrolled = 0;
     Boxed<ViewCursor> cursor;
     ViewType type = ViewType::Text;
 

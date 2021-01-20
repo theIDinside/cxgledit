@@ -3,15 +3,17 @@
 //
 
 #pragma once
-#include "view.hpp"
-#include <ui/core/layout.hpp>
+
+#include "view_enums.hpp"
 #include <core/commands/command_interpreter.hpp>
+#include <core/math/matrix.hpp>
+#include <ui/core/layout.hpp>
+#include <vector>
 
 class TextData;
 
 namespace ui {
 class View;
-
 
 enum ModalContentsType {
     List,
@@ -40,13 +42,12 @@ struct ModalPopup {
     int choices = 0;
     int character_width = 0;
     int lines = 0;
-    // static ModalPopup * create(glm::mat4 projection);
     static ModalPopup* create(Matrix projection);
     void show(core::DimInfo dimension);
     void anchor_to(int x, int y);
     void register_actions(std::vector<PopupItem> item);
     void draw();
-    void cycle_choice(ui::Scroll scroll);
+    void cycle_choice(Scroll scroll);
     PopupItem get_choice();
 };
 

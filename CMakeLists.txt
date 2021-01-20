@@ -59,7 +59,7 @@ set(UI_RENDER_SOURCES
         src/ui/core/opengl.cpp src/ui/core/opengl.hpp
         src/ui/modal.cpp src/ui/modal.hpp
         src/ui/panel.cpp src/ui/panel.hpp
-        )
+        src/ui/view_enums.hpp)
 
 set(UTIL_SOURCES
         src/utils/utils.cpp src/utils/utils.hpp

@@ -562,27 +562,30 @@ void SimpleFont::add_colorized_text_gpu_data(VAO *vao, std::vector<TextDrawable>
 
 void SimpleFont::create_vertex_data_for(ui::View* view, const ui::core::ScreenPos startingTopLeftPos) {
     // FN_MICRO_BENCH();
-    auto text = view->get_text_buffer()->to_string_view();
+    auto buf = view->get_text_buffer();
+    auto character_start = buf->meta_data.line_begins[view->cursor->views_top_line];
+    auto char_end = 0;
+    if(view->cursor->views_top_line + view->lines_displayable >= buf->meta_data.line_begins.size() - 1) {
+        char_end = buf->size();
+    } else {
+        auto end_line = view->cursor->views_top_line + view->lines_displayable;
+        char_end = buf->meta_data.line_begins[end_line+1];
+    }
+    auto total_characters = char_end - character_start;
+    auto reserve = total_characters * 2;
+
+    auto total_text = view->get_text_buffer()->to_string_view();
     auto view_cursor = view->get_cursor();
-    auto buf_cursor = view->get_text_buffer()->cursor;
-    assert(row_height == view->font->get_row_advance());
     // TODO(use cy2 for when we select multiple lines): right now only one line can be selected, which is why cy2 is not used
     GLfloat cx1, cx2, cy1, cy2;
     auto bufPtr = view->get_text_buffer();
 
     auto [cursor_a, cursor_b] = bufPtr->get_cursor_rect();
-    int data_index_pos = cursor_a.pos;
-    int data_index_pos_end = cursor_b.pos;
-
-    if(view->vao->vbo->data.capacity() <= gpu_mem_required_for_quads<TextVertex>(text.size())) {
-        view->vao->vbo->data.clear();
-        view->vao->vbo->data.reserve(gpu_mem_required_for_quads<TextVertex>(text.size()));
-    } else {
-
-    }
+    int data_index_pos = cursor_a.pos - character_start;
+    int data_index_pos_end = cursor_b.pos - character_start;
 
     view->vao->vbo->data.clear();
-    view->vao->vbo->data.reserve(gpu_mem_required_for_quads<TextVertex>(text.size()));
+    view->vao->vbo->data.reserve(gpu_mem_required_for_quads<TextVertex>(reserve));
     auto &store = view->vao->vbo->data;
     auto[start_x, start_y] = startingTopLeftPos;
     auto x = start_x;
@@ -596,9 +599,10 @@ void SimpleFont::create_vertex_data_for(ui::View* view, const ui::core::ScreenPo
     // auto tokens = tokenize(text);
     // keywords_ranges.reserve(tokens.size());
 
-    std::vector<ColorFormatInfo> formatted_tokens = color_format_tokenize(text);
+    std::string_view text{total_text.data() + character_start, (unsigned)total_characters};
+    auto formatted_tokens = color_format_tokenize_range(total_text.data() + character_start, total_characters, character_start);
     auto item_it = formatted_tokens.begin();
-    auto pos = 0;
+    auto pos = character_start;
     bool have_text = !text.empty();
     auto xpos = float(x);
     auto ypos = float(y);
@@ -691,7 +695,7 @@ void SimpleFont::create_vertex_data_for(ui::View* view, const ui::core::ScreenPo
 void SimpleFont::create_vertex_data_for_only_visible(ui::View *view, ui::core::ScreenPos startingTopLeftPos) {
     auto buf = view->get_text_buffer();
     auto buf_curs = view->get_text_buffer()->get_cursor();
-    auto top_line = std::max(view->cursor->line - 40, 0);
+    auto top_line = std::max(view->cursor->views_top_line - 40, 0);
     auto total_lines = view->lines_displayable;
     auto bottom_line = top_line + total_lines + 40;
     assert(row_height == view->font->get_row_advance());

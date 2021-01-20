@@ -54,7 +54,7 @@ static inline bool is_delimiter(char ch) {
 namespace fs = std::filesystem;
 
 struct TextMetaData {
-    std::vector<int> line_begins{};
+    std::vector<int> line_begins{0};
     std::string buf_name{};
 };
 

@@ -7,6 +7,7 @@
 #include <core/math/vector.hpp>
 #include <optional>
 #include <ui/core/layout.hpp>
+#include <ui/render/font.hpp>
 
 class TextData;
 using Color = Vec3f;
@@ -18,8 +19,8 @@ namespace ui {
     class StatusBar;
 
     struct EditorWindow {
-        View *view;
-        StatusBar *status_bar;
+        View *view = nullptr;
+        StatusBar *status_bar = nullptr;
         int ui_layout_id;
         ui::core::DimInfo dimInfo;
 

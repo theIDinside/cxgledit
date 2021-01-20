@@ -19,7 +19,7 @@
 
 /// ----------------- VIEW FACTORY FUNCTIONS -----------------
 
-constexpr auto LINES_DISPLAYABLE_DIFF = 0;
+constexpr auto  LINES_DISPLAYABLE_DIFF = 2;
 
 namespace ui {
 
@@ -39,7 +39,7 @@ std::unique_ptr<View> View::create_managed(TextData *data, const std::string &na
     v->y = y;
     v->font = FontLibrary::get_default_font();
     v->shader = ShaderLibrary::get_text_shader();
-    v->lines_displayable = int_floor(float(h) / float(v->font->get_row_advance())) - LINES_DISPLAYABLE_DIFF;
+    v->lines_displayable = int_ceil(float(h) / float(v->font->get_row_advance())) - LINES_DISPLAYABLE_DIFF;
     v->vao = std::move(vao);
     v->data = data;
     v->vertexCapacity = reserveMemory / sizeof(TextVertex);
@@ -82,7 +82,7 @@ CommandView *CommandView::create_not_managed(const std::string &name, int width,
 void View::set_dimensions(int w, int h) {
     this->width = w;
     this->height = h;
-    lines_displayable = int_floor(float(h) / float(font->get_row_advance())) - LINES_DISPLAYABLE_DIFF;
+    lines_displayable = int_ceil(float(h) / float(font->get_row_advance())) - LINES_DISPLAYABLE_DIFF;
     util::println("lines displayable updated to: {}", lines_displayable);
 }
 
@@ -236,102 +236,6 @@ void View::draw_command_view(const std::string &prefix, std::optional<std::vecto
     }
 }
 
-void View::goto_buffer_position() {
-    auto view_begin = cursor->line;
-    auto view_end = view_begin + lines_displayable;
-    if(not is_within(data->cursor.line, view_begin, view_end)) {
-        scroll_to(data->cursor.line);
-    }
-}
-
-
-// TODO: make it so, if view is outside of where the buffer cursor is, when navigational keys are pressed, zoom right into where
-//  it is.
-void View::scroll_to(int line) {
-    auto [win_width, win_height] = ::App::get_window_dimension();
-
-    if(line < cursor->line) { // means we need to => scroll up
-        auto linesToScroll = (cursor->line + lines_displayable) - line;
-        auto scroll_pos = scrolled + (linesToScroll * font->get_row_advance());
-        scrolled = std::min(scroll_pos, 0);
-
-        // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
-        auto MVP = my_screen_projection_2D(win_width, win_height + scrolled, scrolled);
-        set_projection(MVP);
-        cursor->line -= linesToScroll;
-        cursor->line = std::max(cursor->line, 0);
-    } else { // means we need to => scroll down
-        auto lineAnchorOfLastPage = get_text_buffer()->lines_count() - lines_displayable;
-        if(line > lineAnchorOfLastPage) {
-            auto linesToScroll = lineAnchorOfLastPage - cursor->line;
-            scrolled -= (linesToScroll * font->get_row_advance());
-            /// Old dependency on GLM, left here just so I can remember what the hell I did, and how I came to that conclusion.
-            /// auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
-
-            auto MVP = my_screen_projection_2D(win_width, win_height + scrolled, scrolled);
-            set_projection(MVP);
-            cursor->line += linesToScroll;
-            cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable));
-        } else {
-            auto linesToScroll = line - cursor->line;
-            scrolled -= (linesToScroll * font->get_row_advance());
-            // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
-            auto MVP = my_screen_projection_2D(win_width, win_height + scrolled, scrolled);
-            set_projection(MVP);
-            cursor->line += linesToScroll;
-            cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable));
-        }
-    }
-}
-
-void View::scroll(Scroll direction, int linesToScroll) {
-    /// TODO: add data so that the view cursor knows the entire range of lines being displayed
-    ///  this is so that if we want to jump on a line that currently is displayed in view, we don't scroll down the view to it
-    //// we can just scroll the buffer cursor position instead.
-    auto [win_width, win_height] = ::App::get_window_dimension();
-    switch (direction) {
-        case Scroll::Up: {
-            /// TODO: Bounds check so we prohibit the user from scrolling up where no lines can be. Which would be bad UX
-            if(cursor->line - linesToScroll < 0) {
-                cursor->line = 0;
-                scrolled = 0;
-                auto MVP = my_screen_projection_2D(win_width, win_height + scrolled, scrolled);
-                set_projection(MVP);
-                // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
-            } else {
-                auto scroll_pos = scrolled + (linesToScroll * font->get_row_advance());
-                scrolled = std::min(scroll_pos, 0);
-                auto MVP = my_screen_projection_2D(win_width, win_height + scrolled, scrolled);
-                set_projection(MVP);
-                cursor->line -= linesToScroll;
-                cursor->line = std::max(cursor->line, 0);
-            }
-        } break;
-        case Scroll::Down: {
-            int last_view_top_line = std::max(AS(get_text_buffer()->meta_data.line_begins.size(), int) - lines_displayable, 0);
-            if(cursor->line + linesToScroll >= last_view_top_line) {
-                util::println("Lines to scroll: {}, Lines displayable: {} - Max view anchor position: {}. Buffer lines: {}", linesToScroll, lines_displayable, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable), get_text_buffer()->meta_data.line_begins.size());
-                auto diff = (cursor->line + linesToScroll) - int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable);
-                scrolled -= (diff * font->get_row_advance());
-                auto MVP = my_screen_projection_2D(win_width, win_height + scrolled, scrolled);
-                set_projection(MVP);
-                // auto p = glm::ortho(0.0f, static_cast<float>(win_width), static_cast<float>(scrolled), static_cast<float>(win_height + scrolled));
-
-                cursor->line += diff;
-                cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable));
-            } else {
-                /// TODO: Bounds check so we prohibit the user from scrolling down where no lines are. Which would be bad UX
-                // scrolled is not lines scrolled, but the amount of pixels we've moved the projection north/south
-                scrolled -= (linesToScroll * font->get_row_advance());
-                auto MVP = my_screen_projection_2D(win_width, win_height + scrolled, scrolled);
-                set_projection(MVP);
-                cursor->line += linesToScroll;
-                cursor->line = std::min(cursor->line, int(get_text_buffer()->meta_data.line_begins.size() - lines_displayable));
-            }
-        } break;
-    }
-}
-
 View *View::create(TextData *data, const std::string &name, int w, int h, int x, int y, ViewType type) {
     auto reserveMemory_Quads =
             gpu_mem_required_for_quads<TextVertex>(1024);// reserve GPU memory for at least 1024 characters.
@@ -345,7 +249,7 @@ View *View::create(TextData *data, const std::string &name, int w, int h, int x,
     v->x = x;
     v->y = y;
     v->font = FontLibrary::get_default_font();
-    v->lines_displayable = int_floor(float(h) / float(v->font->get_row_advance())) - LINES_DISPLAYABLE_DIFF;
+    v->lines_displayable = int_ceil(float(h) / float(v->font->get_row_advance())) - LINES_DISPLAYABLE_DIFF;
     v->shader = ShaderLibrary::get_text_shader();
     v->vao = std::move(vao);
     v->data = data;
@@ -399,7 +303,7 @@ void View::set_projection(Matrix projection) {
 }
 
 std::pair<std::string_view, std::string_view> View::debug_print_boundary_lines() {
-    auto top_line = cursor->line;
+    auto top_line = cursor->views_top_line;
     auto end_line = top_line + lines_displayable;
 
     auto buf = get_text_buffer();
@@ -415,6 +319,15 @@ std::pair<std::string_view, std::string_view> View::debug_print_boundary_lines()
     std::string_view top{total.data() + top_line_idx, static_cast<size_t>(top_len)};
     std::string_view bot{total.data() + bot_line_idx, static_cast<size_t>(bot_len)};
     return {top, bot};
+}
+void View::scroll_to(int line) {
+    int linesInBuffer = get_text_buffer()->meta_data.line_begins.size();
+    int maxScrollableTopLine = std::max(0, linesInBuffer - lines_displayable + (lines_displayable / 2));
+    if(line < maxScrollableTopLine) {
+        cursor->views_top_line = std::max(line, 0);
+    } else {
+        cursor->views_top_line = maxScrollableTopLine;
+    }
 }
 
 void CommandView::draw() {
