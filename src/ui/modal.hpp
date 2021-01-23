@@ -3,8 +3,8 @@
 //
 
 #pragma once
-
 #include "view_enums.hpp"
+#include <core/buffer/file_context.hpp>
 #include <core/commands/command_interpreter.hpp>
 #include <core/math/matrix.hpp>
 #include <ui/core/layout.hpp>
@@ -29,6 +29,7 @@ struct PopupItem {
     std::string displayable;
     PopupActionType type;
     std::optional<Commands> command{};
+    static std::vector<PopupItem> make_items_from_context(const FileContext& context);
 };
 
 struct ModalPopup {

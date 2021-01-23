@@ -4,8 +4,7 @@ So I've written small fun text editors, running in a Linux terminal, which is fu
 write one for Windows, that looks and feels like a terminal editor such as vim or whatever, but renders
 using OpenGL.
 
-At least I got it up and running to this, after much swearing. I have 0 knowledge about OpenGL so that's really where
-the interesting challenge lies. Watching tutorials online show *no* decent text rendering, and the ones that do
+I have 0 knowledge about OpenGL so that's really where the interesting challenge lies. Watching tutorials online show *no* decent text rendering, and the ones that do
 either creates a bunch of textures for each character, or they create a texture atlas (which I ended up doing with some 
 help) yet and still issue *one drawcall per character* - which kind of defeats the purpose of having the texture
 atlast to begin with. So some hacking lead me to writing the SimpleFont class that can scan text (right now it's just std::string,
@@ -56,7 +55,7 @@ from source).
     - this dependency has been removed. Considering only a tiny amount of functions & types were necesseary, a Matrix & Vector and orthographic projection call
     it makes no sense to keep it, since I know how do that stuff by hand now.
 - [x] GLFW - Window library, handles some of the nasty GL / Window creation and input stuff for us
-- [x] fmtlib - because WHO the F* uses iostream for any output to console in C++ anymore, when fmtlib is even faster than printf?!
+- [x] fmtlib - because WHO the F* uses iostream for any output to console in C++ anymore, when fmtlib is even "faster" than printf?!
 
 ### Manual installation
 - GLAD, OpenGL loader that setups symbols and addresses for function calls into the OpenGL API, if i'm not mistaken.
@@ -83,3 +82,10 @@ source of bugs. When you want to delete a views_top_line, you don't want to mess
 Thus some abstraction is good here, such as "item boundary" or just boundary. This way we can query our datastructure for,
 "find beginning of views_top_line", with a parameter of Boundary::Inside or Boundary::Outside, specifying what we mean in that
 specific instance.
+
+
+
+### Features to add
+- Vim-esque stuff, like a insert mode, command/navigation mode
+- Some form of GNU Tags kind of system, or possible interop with it
+- Output console, for when running external commands / command line utilities

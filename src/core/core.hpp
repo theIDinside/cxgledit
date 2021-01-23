@@ -105,3 +105,5 @@ template <typename View>
 inline bool is_within(int cursor_line, View* view) {
     return (cursor_line >= view->cursor->views_top_line) && (cursor_line <= (view->cursor->views_top_line + view->lines_displayable));
 }
+
+template<class> inline constexpr bool always_false_v = false;

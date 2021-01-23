@@ -8,3 +8,8 @@ horizontal_layout_only = "on";
 width = "1920";
 height = "1080";
 monitors = "1";
+
+[cursor]
+color = "0.4 0.5 0.4 0.5";
+caret_style = "block";
+caret_line_width = "6";

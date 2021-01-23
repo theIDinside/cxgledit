@@ -3,6 +3,8 @@
 //
 
 #include "data_manager.hpp"
+#include "std_string_buffer.hpp"
+
 #include <ranges>
 
 int DataManager::buffers_count = 0;

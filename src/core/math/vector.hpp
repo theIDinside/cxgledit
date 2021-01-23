@@ -112,3 +112,6 @@ using Vec3d = Vec3<double>;
 using Vec4i = Vec4<int>;
 using Vec4f = Vec4<GLfloat>;
 using Vec4d = Vec4<double>;
+
+using RGBColor = Vec3f;
+using RGBAColor = Vec4f;

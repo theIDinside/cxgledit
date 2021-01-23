@@ -39,6 +39,7 @@ int main(int argc, const char **argv) {
  *      thus doesn't have the suckyness of freetype, which must be installed manually in the deps folder
  * TODO(feature, minor): make application file-type aware. This can have multiple uses, one is described in app.cpp when it comes to reloading
  *      settings from a .cxe file, while editing a .cxe file
+ * TODO(feature, minor): undo/redo operations.
  * Add some debug code for OpenGL and read up about OpenGL
  *
     GLint s;

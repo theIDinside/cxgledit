@@ -40,6 +40,7 @@ namespace ui {
         int height{};
         int pos_x;
         int pos_y;
+        RGBAColor caret_color = {1.0, 0.0, 0.2, .4};
         std::unique_ptr<CursorVAO> cursor_data;
         std::unique_ptr<CursorVAO> line_shade_data;
     };

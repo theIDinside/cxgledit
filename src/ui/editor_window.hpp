@@ -3,14 +3,19 @@
 //
 
 #pragma once
-#include "modal.hpp"
-#include <core/math/vector.hpp>
+// Sys headers
 #include <optional>
+// Local
+#include "modal.hpp"
+#include <app.hpp>
+#include <cfg/types/cursor_options.hpp>
+#include <core/math/vector.hpp>
 #include <ui/core/layout.hpp>
 #include <ui/render/font.hpp>
+#include <cfg/configuration.hpp>
 
 class TextData;
-using Color = Vec3f;
+using RGBColor = Vec3f;
 
 namespace ui {
 // Forward declarations
@@ -34,7 +39,10 @@ struct EditorWindow {
     bool active = false;
     void handle_click(int x, int y);
 
-    void set_view_colors(Color bg, Color fg);
+    void set_view_colors(RGBColor bg, RGBColor fg);
     void set_font(SimpleFont *pFont);
+
+    void set_caret_style(Configuration::Cursor style);
+    FileContext file_context();
 };
 }// namespace ui

@@ -76,21 +76,48 @@ std::string serialize(const Configuration &cfg) {
     ss << "[views]\n";
     ss << "background_color = " << cfg.views.bg_color << ";\n";
     ss << "foreground_color = " << cfg.views.fg_color << ";\n";
-    ss << "font_pixel_size = " << "\"" << cfg.views.font_pixel_size << "\";\n";
-    ss << "horizontal_layout_only = " << "\"" << (cfg.views.horizontal_layout_only ? "on" : "off") << "\";\n\n";
+    ss << "font_pixel_size = "
+       << "\"" << cfg.views.font_pixel_size << "\";\n";
+    ss << "horizontal_layout_only = "
+       << "\"" << (cfg.views.horizontal_layout_only ? "on" : "off") << "\";\n\n";
 
     ss << "[window]\n";
-    ss << "width = " << "\"" << cfg.window.width << "\";\n";
-    ss << "height = " << "\"" << cfg.window.height << "\";\n";
-    ss << "monitors = " << "\"" << cfg.window.monitors << "\";\n";
+    ss << "width = "
+       << "\"" << cfg.window.width << "\";\n";
+    ss << "height = "
+       << "\"" << cfg.window.height << "\";\n";
+    ss << "monitors = "
+       << "\"" << cfg.window.monitors << "\";\n";
 
+    int default_caret_line_width = 6;
+    auto caret_style_opt = serialize_caret_option(cfg.cursor.cursor_style, default_caret_line_width);
+    ss << "[cursor]\n";
+    ss << "color = "
+            << "\"" << cfg.cursor.color << "\";\n";
+    ss << "caret_style = "
+       << "\"" << caret_style_opt << "\";\n";
+    ss << "caret_line_width = "
+       << "\"" << default_caret_line_width << "\";\n";
 
     return ss.str();
 }
 
-Color parse_color(const std::string &str_item) {
+RGBColor parse_rgb_color(const std::string &str_item) {
     std::stringstream ss{str_item};
-    Color c;
+    RGBColor c;
+    int idx = 0;
+    std::string t;
+    while (std::getline(ss, t, ' ')) {
+        auto res = std::stod(t);
+        c[idx] = res;
+        idx++;
+    }
+    return c;
+}
+
+RGBAColor parse_rgba_color(const std::string &str_item) {
+    std::stringstream ss{str_item};
+    RGBAColor c;
     int idx = 0;
     std::string t;
     while (std::getline(ss, t, ' ')) {
@@ -113,15 +140,35 @@ Configuration Configuration::from_parsed_map(const ConfigFileData &configFileDat
     }
 
     if (configFileData.has_table("views")) {
-        auto strBackgroundColor = configFileData.get_str_value("views", "background_color").value_or("0.05 0.052 0.0742123");
+        auto strBackgroundColor =
+                configFileData.get_str_value("views", "background_color").value_or("0.05 0.052 0.0742123");
         auto strForegroundColor = configFileData.get_str_value("views", "foreground_color").value_or("1 1 1");
         auto strFontPixelSize = configFileData.get_str_value("views", "font_pixel_size").value_or("24");
         auto strHorizontalLayoutOnly = configFileData.get_str_value("views", "horizontal_layout_only").value_or("on");
 
-        cfg.views.bg_color = parse_color(strBackgroundColor);
-        cfg.views.fg_color = parse_color(strForegroundColor);
+        cfg.views.bg_color = parse_rgb_color(strBackgroundColor);
+        cfg.views.fg_color = parse_rgb_color(strForegroundColor);
         cfg.views.font_pixel_size = std::stoi(strFontPixelSize);
         cfg.views.horizontal_layout_only = (strHorizontalLayoutOnly == "on");
+    }
+    if (configFileData.has_table("cursor")) {
+        auto caret_color = configFileData.get_str_value("cursor", "color").value_or("0.3 0 0.5 0.5");
+        auto caret_style_str = configFileData.get_str_value("cursor", "caret_style").value_or("line");
+        auto caret_line_width_str = configFileData.get_str_value("cursor", "caret_line_width").value_or("6");
+
+        if (caret_style_str == "block") {
+            cfg.cursor.cursor_style = CaretStyleBlock{};
+        } else {
+            auto caret_line_width = 6;// default value if user wrote a NAN in the cfg
+            try {
+                caret_line_width = std::stoi(caret_line_width_str);
+            } catch (std::exception &e) {// user wrote a non-number thus parsing it crashed
+                // TODO: print errors to window/message bar for user, with (possibly) some diagnostics
+                cfg.cursor.cursor_style = CaretStyleLine{caret_line_width};
+            }
+            cfg.cursor.cursor_style = CaretStyleLine{caret_line_width};
+        }
+        cfg.cursor.color = parse_rgba_color(caret_color);
     }
     cfg.file_path = configFileData.file_path;
     return cfg;

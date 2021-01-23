@@ -9,7 +9,7 @@
 #include <ui/core/opengl.hpp>
 #include <ui/editor_window.hpp>
 #include <ui/status_bar.hpp>
-#include <ui/view.hpp>e
+#include <ui/view.hpp>
 #include <utility>
 #include <utils/fileutil.hpp>
 
@@ -421,6 +421,11 @@ void App::kb_command(KeyInput input) {
         mode = CXMode::Normal;
     }
 
+    if(key == GLFW_KEY_M && mode == CXMode::Popup) {
+        toggle_modal_popup();
+        return;
+    }
+
     if (mode == CXMode::Command) {
         util::println("ctrl-commands disabled in command input mode.");
     } else if (mode == CXMode::Normal || mode == CXMode::Actions) {
@@ -593,35 +598,7 @@ void App::handle_edit_input(KeyInput input) {
         } break;
         case GLFW_KEY_ENTER: {
             if (mode == CXMode::Popup) {
-                auto selected = modal_popup->get_choice();
-                switch (selected.type) {
-                    case ui::PopupActionType::Insert:
-                        toggle_modal_popup();
-                        active_buffer->insert_str(selected.displayable);
-                        break;
-                    case ui::PopupActionType::AppCommand:
-                        util::println("Selected command: {}", selected.displayable);
-                        toggle_modal_popup();
-                        switch (selected.command.value_or(Commands::Fail)) {
-                            case Commands::OpenFile:
-                                toggle_command_input("open", Commands::OpenFile);
-                                break;
-                            case Commands::WriteFile:
-                                toggle_command_input("write", Commands::WriteFile);
-                                break;
-                            case Commands::GotoLine:
-                                toggle_command_input("goto", Commands::GotoLine);
-                                break;
-                            case Commands::UserCommand:
-                                break;
-                            case Commands::Search:
-                                toggle_command_input("find", Commands::Search);
-                                break;
-                            case Commands::Fail:
-                                break;
-                        }
-                        break;
-                }
+                handle_modal_selection(modal_popup->get_choice());
             } else {
                 input_command_or_newline();
             }
@@ -842,9 +819,8 @@ void App::new_editor_window(SplitStrategy splitStrategy) {
         push_node(l, layout_id, ui::core::LayoutType::Horizontal);
         auto active_editor_win = active_window;
         auto ew = EditorWindow::create({}, mvp, layout_id, l->right->dimInfo);
+        ew->set_caret_style(config.cursor);
         ew->set_view_colors(config.views.bg_color, config.views.fg_color);
-        // ew->view->set_projection(projection);
-        // ew->status_bar->ui_view->set_projection(projection);
         ew->view->set_projection(mvp);
         ew->status_bar->ui_view->set_projection(mvp);
 
@@ -857,9 +833,8 @@ void App::new_editor_window(SplitStrategy splitStrategy) {
         active_window->active = true;
     } else {
         auto ew = EditorWindow::create({}, mvp, layout_id, DimInfo{0, win_height, win_width, win_height});
+        ew->set_caret_style(config.cursor);
         ew->set_view_colors(config.views.bg_color, config.views.fg_color);
-        // ew->view->set_projection(projection);
-        //ew->status_bar->ui_view->set_projection(projection);
         ew->view->set_projection(mvp);
         ew->status_bar->ui_view->set_projection(mvp);
         editor_views.push_back(ew);
@@ -947,12 +922,11 @@ void App::toggle_modal_popup() {
         priorMode = mode;
         mode = CXMode::Popup;
         modal_shown = true;
-        std::vector<ui::PopupItem> items;
-        items.push_back(ui::PopupItem{"Goto", ui::PopupActionType::AppCommand, Commands::GotoLine});
-        items.push_back(ui::PopupItem{"Find in file", ui::PopupActionType::AppCommand, Commands::Search});
-        items.push_back(ui::PopupItem{"Save all", ui::PopupActionType::AppCommand, Commands::WriteFile});
-        items.push_back(ui::PopupItem{"Open file", ui::PopupActionType::AppCommand, Commands::OpenFile});
-        modal_popup->register_actions(items);
+
+        FileContext fileContextInfo = active_window->file_context();
+
+        std::vector<ui::PopupItem> context_specific_items = ui::PopupItem::make_items_from_context(fileContextInfo);
+        modal_popup->register_actions(context_specific_items);
         auto x = active_window->view->cursor->pos_x;
         auto y = active_window->view->cursor->pos_y;
         modal_popup->anchor_to(x + 10, y);
@@ -1022,8 +996,8 @@ void App::close_active() {
 }
 
 // TODO: make application aware of .cxe files, so that when editing an .cxe file, user can press some key, to automatically load the settings in it
-void App::reload_configuration() {
-    auto cfgData = ConfigFileData::load_cfg_data(config.file_path);
+void App::reload_configuration(fs::path cfg_path) {
+    auto cfgData = ConfigFileData::load_cfg_data(cfg_path);
     config = Configuration::from_parsed_map(cfgData);
     auto &fl = FontLibrary::get_instance();
     if (!fl.get_font_with_size(config.views.font_pixel_size)) {
@@ -1039,8 +1013,47 @@ void App::reload_configuration() {
     for (auto ew : editor_views) {
         ew->set_view_colors(config.views.bg_color, config.views.fg_color);
         ew->set_font(FontLibrary::get_default_font());
+        ew->set_caret_style(config.cursor);
     }
     draw_all(true);
+}
+
+void App::handle_modal_selection(const ui::PopupItem& selected) {
+    switch (selected.type) {
+        case ui::PopupActionType::Insert:
+            toggle_modal_popup();
+            active_buffer->insert_str(selected.displayable);
+            break;
+        case ui::PopupActionType::AppCommand:
+            util::println("Selected command: {}", selected.displayable);
+            toggle_modal_popup();
+            switch (selected.command.value_or(Commands::Fail)) {
+                case Commands::OpenFile:
+                    toggle_command_input("open", Commands::OpenFile);
+                    break;
+                case Commands::WriteFile:
+                    toggle_command_input("write", Commands::WriteFile);
+                    break;
+                case Commands::GotoLine:
+                    toggle_command_input("goto", Commands::GotoLine);
+                    break;
+                case Commands::UserCommand:
+                    break;
+                case Commands::Search:
+                    toggle_command_input("find", Commands::Search);
+                    break;
+                case Commands::Fail:
+                    break;
+                case Commands::GotoHeader:
+                    break;
+                case Commands::ReloadConfiguration:
+                    reload_configuration();
+                    break;
+                case Commands::GotoSource:
+                    break;
+            }
+            break;
+    }
 }
 
 void Register::push_view(std::string_view data) {

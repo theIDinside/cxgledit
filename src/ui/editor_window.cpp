@@ -13,6 +13,9 @@
 /// just having a pointer here, could *very* well lead me to believe at some point that null can't be passed here
 /// when it can.
 
+#undef min
+#undef max
+
 namespace ui {
 
 EditorWindow *EditorWindow::create(std::optional<TextData *> textData, Matrix projection, int layout_id,
@@ -93,13 +96,34 @@ void EditorWindow::handle_click(int x, int yPOS) {
               "inside this region");
     }
 }
-void EditorWindow::set_view_colors(Color bg, Color fg) {
+void EditorWindow::set_view_colors(RGBColor bg, RGBColor fg) {
     view->fg_color = fg;
     view->bg_color = bg;
 }
 void EditorWindow::set_font(SimpleFont *pFont) {
     view->font = pFont;
-    view->cursor->setup_dimensions(8, pFont->max_glyph_height + 4);
+    view->cursor->setup_dimensions(view->cursor->width, pFont->max_glyph_height + 4);
+}
+
+void EditorWindow::set_caret_style(Configuration::Cursor style) {
+    view->cursor->caret_color = style.color;
+    std::visit(
+            [this](auto &&style) {
+                using T = std::decay_t<decltype(style)>;
+                if constexpr (std::is_same_v<T, CaretStyleLine>) {
+                    fmt::print("Line width to set: {}", style.width);
+                    this->view->cursor->width = style.width;
+                } else if constexpr (std::is_same_v<T, CaretStyleBlock>) {
+                    this->view->cursor->width = this->view->font->max_glyph_width - 2;
+                } else {
+                    static_assert(always_false_v<T>, "non exhaustive visitor");
+                }
+            },
+            style.cursor_style);
+}
+
+FileContext EditorWindow::file_context() {
+    return get_text_buffer()->file_context();
 }
 
 }// namespace ui

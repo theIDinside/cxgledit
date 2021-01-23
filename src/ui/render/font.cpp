@@ -7,9 +7,11 @@
 #include <ui/syntax_highlighting.hpp>
 #include <ui/view.hpp>
 #include <ui/core/layout.hpp>
+#include <core/buffer/std_string_buffer.hpp>
 
 // Sys headers
 #include <algorithm>
+#include <numeric>
 #include <vector>
 #include <ranges>
 

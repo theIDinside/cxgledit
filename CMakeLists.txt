@@ -28,8 +28,6 @@ FetchContent_Declare(
         SOURCE_DIR ${PROJECT_SOURCE_DIR}/deps/glfw
 )
 
-FetchContent_MakeAvailable(fmt glfw)
-
 if (NOT fmt_POPULATED)
     FetchContent_Populate(fmt)
     add_subdirectory(${fmt_SOURCE_DIR} ${fmt_BINARY_DIR})
@@ -39,6 +37,10 @@ if (NOT glfw_POPULATED)
     FetchContent_Populate(glfw)
     add_subdirectory(${glfw_SOURCE_DIR} ${glfw_BINARY_DIR})
 endif ()
+
+FetchContent_MakeAvailable(fmt glfw)
+
+
 
 set(UI_RENDER_SOURCES
         src/ui/managers/font_library.cpp src/ui/managers/font_library.hpp
@@ -73,19 +75,21 @@ set(CORE_SOURCE
         src/core/buffer/data_manager.cpp src/core/buffer/data_manager.hpp
         src/cfg/configuration.cpp src/cfg/configuration.hpp
         src/core/math/vector.cpp src/core/math/vector.hpp
-        src/core/math/matrix.cpp src/core/math/matrix.hpp)
+        src/core/math/matrix.cpp src/core/math/matrix.hpp src/core/buffer/file_context.cpp src/core/buffer/file_context.hpp src/core/buffer/std_string_buffer.cpp src/core/buffer/std_string_buffer.hpp)
 
 set(COMMANDS_SOURCE
         src/core/commands/command_interpreter.cpp src/core/commands/command_interpreter.hpp
         src/core/commands/file_manager.cpp src/core/commands/file_manager.hpp)
 
-add_executable(cxgledit
+set(SOURCES
         src/main.cpp
         src/app.cpp
         ${CORE_SOURCE}
         ${UI_RENDER_SOURCES}
         ${UTIL_SOURCES}
-        ${COMMANDS_SOURCE} )
+        ${COMMANDS_SOURCE} src/cfg/types/cursor_options.hpp)
+
+add_executable(cxgledit ${SOURCES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${GLFW_DIR}/include")
 set(GLFW_BUILD_EXAMPLES OFF CACHE INTERNAL "Build the GLFW example programs")
@@ -115,11 +119,12 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${DEP_DIR}/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${FT_DIR}/include)
 message("OpenGL libraries are set to: ${OPENGL_LIBRARIES}. CMAKE_DL_LIBS set to: ${CMAKE_DL_LIBS}")
 
-target_link_libraries(cxgledit fmt::fmt ${OPENGL_LIBRARIES} glfw ${GLFW_LIBRARIES} glad ${CMAKE_DL_LIBS} freetype)
+target_link_libraries(cxgledit fmt ${OPENGL_LIBRARIES} glfw ${GLFW_LIBRARIES} glad ${CMAKE_DL_LIBS} freetype)
 
 add_library(keybound SHARED deps/include/bindingslib/keybindings.cpp)
 add_dependencies(cxgledit keybound)
 target_compile_definitions(keybound PRIVATE "GLFW_INCLUDE_NONE")
+
 # TODO(count character occurence, using avx): set add_definitions(-DINTRINSICS_ENABLED) when feature is implemented
 if (CMAKE_BUILD_TYPE STREQUAL Release)
     # set -DINTRINSICS_ENABLED, when AVX2 character occurence scanning is implemented
@@ -134,11 +139,12 @@ if (CMAKE_BUILD_TYPE STREQUAL Release)
             ${PROJECT_SOURCE_DIR}/test_src ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE}/test)
 
 elseif(CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
-    add_definitions(-DDEBUG)
-    set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} /Ot2 /DNDEBUG /Zi /Gy)
+    message("Setting up variables for RelWithDebInfo")
+    set(CMAKE_C_FLAGS "/DNDEBUG /Ot2 /Z7 /Gy ${CMAKE_C_FLAGS}")
+    message(Cmake flags for RelWithDebInfo: ${CMAKE_C_FLAGS})
     message("Build type is ${CMAKE_BUILD_TYPE}. Copying assets to ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO}/assets")
     message("Debug has instrumentation features enabled.")
-    target_compile_definitions(cxgledit PUBLIC INSTRUMENTATION KEEP_LOGS IS_DEBUG)
+    target_compile_definitions(cxgledit PUBLIC INSTRUMENTATION KEEP_LOGS IS_DEBUG DEBUG)
     add_custom_command(TARGET cxgledit POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${PROJECT_SOURCE_DIR}/assets ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO}/assets)
@@ -147,10 +153,9 @@ elseif(CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
             ${PROJECT_SOURCE_DIR}/test_src ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO}/test)
 else ()
     # set -DINTRINSICS_ENABLED, when AVX2 character occurence scanning is implemented
-    add_definitions(-DDEBUG)
     message("Build type is ${CMAKE_BUILD_TYPE}. Copying assets to ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}/assets")
     message("Debug has instrumentation features enabled.")
-    target_compile_definitions(cxgledit PUBLIC INSTRUMENTATION KEEP_LOGS IS_DEBUG)
+    target_compile_definitions(cxgledit PUBLIC INSTRUMENTATION KEEP_LOGS IS_DEBUG DEBUG)
     add_custom_command(TARGET cxgledit POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${PROJECT_SOURCE_DIR}/assets ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}/assets)

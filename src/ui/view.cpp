@@ -3,16 +3,15 @@
 //
 
 #include "view.hpp"
+#include <core/buffer/std_string_buffer.hpp>
+// Managers
+#include <core/buffer/data_manager.hpp>
+#include <ui/managers/shader_library.hpp>
+#include <ui/managers/font_library.hpp>
+#include <core/commands/command_interpreter.hpp>
+// Sys headers
 #include <utility>
 #include <vector>
-
-// Managers
-#include <app.hpp>
-#include <core/buffer/data_manager.hpp>
-// #include <core/commands/command_interpreter.hpp>
-// #include <ui/managers/font_library.hpp>
-// #include <ui/managers/shader_library.hpp>
-
 
 #undef min
 #undef max

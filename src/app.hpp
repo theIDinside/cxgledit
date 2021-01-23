@@ -95,7 +95,6 @@ public:
     void app_debug();
     void kb_command(KeyInput input);
 
-
     void update_all_editor_windows();
     void input_command_or_newline();
     void cycle_command_or_move_cursor(Cycle cycle);
@@ -109,7 +108,7 @@ public:
     void handle_edit_input(KeyInput input);
     void find_next_in_active(const std::string& search);
 
-    void reload_configuration();
+    void reload_configuration(fs::path cfg_path = "./assets/cxconfig.cxe");
 
 private:
     void cleanup();
@@ -135,4 +134,5 @@ private:
 
     static WindowDimensions win_dimensions;
     void close_active();
+    void handle_modal_selection(const ui::PopupItem&selected);
 };

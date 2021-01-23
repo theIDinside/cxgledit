@@ -13,10 +13,12 @@ class App;
 enum class Commands {
     OpenFile,
     WriteFile,
+    WriteAllFiles,
     GotoLine,
     UserCommand,
     Search,
-    Fail
+    Fail, GotoHeader, ReloadConfiguration,
+    GotoSource
 };
 
 enum class Cycle : int {

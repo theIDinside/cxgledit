@@ -3,8 +3,6 @@
 //
 
 #pragma once
-#include <core/math/vector.hpp>
-
 #include <algorithm>
 #include <filesystem>
 #include <map>
@@ -12,12 +10,15 @@
 #include <string>
 #include <string_view>
 
+#include "types/cursor_options.hpp"
+#include <core/math/vector.hpp>
+
 namespace fs = std::filesystem;
 
 using StrView = std::string_view;
 using Table = std::map<StrView, StrView>;
 using ParsedView = std::map<std::string, Table>;
-using Color = Vec3f;
+
 
 struct ConfigFileData {
     std::string raw_file_data;
@@ -25,7 +26,7 @@ struct ConfigFileData {
     fs::path file_path;
     [[nodiscard]] std::optional<std::string> get_str_value(const std::string& table, std::string_view key) const;
     [[nodiscard]] bool has_table(const std::string& table) const;
-    [[nodiscard]] static ConfigFileData load_cfg_data(const fs::path& file_path = "assets/cxconfig");
+    [[nodiscard]] static ConfigFileData load_cfg_data(const fs::path& file_path = "assets/cxconfig.cxe");
 };
 
 ConfigFileData cfg_parse(std::string&& data);
@@ -83,22 +84,32 @@ StrView parse_value(It begin, It end) {
     return sview;
 }
 
+
 struct Configuration {
-    struct {
-        Color bg_color{0.05f, 0.052f, 0.0742123f};
-        Color fg_color{1.0f, 1.0f, 1.0f};
+    // We don't pollute the namespace with these small-context types
+    struct Views {
+        RGBColor bg_color{0.05f, 0.052f, 0.0742123f};
+        RGBColor fg_color{1.0f, 1.0f, 1.0f};
         int font_pixel_size = 24;
         bool horizontal_layout_only = true;
     } views;
-    struct {
+
+    struct Window {
         int width{1024};
         int height{768};
         int monitors{1};
     } window;
 
+    struct Cursor {
+        RGBAColor color;
+        // Variant style options, defined in ./types/<header>.hpp
+        CaretStyleOption cursor_style;
+    } cursor;
+
     fs::path file_path;
     static Configuration from_parsed_map(const ConfigFileData& parsedView);
     static Configuration make_default();
+
 };
 
 std::string serialize(const Configuration& cfg);
