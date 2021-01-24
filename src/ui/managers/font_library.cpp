@@ -10,12 +10,17 @@ FontLibrary &FontLibrary::get_instance() {
 }
 void FontLibrary::load_font(const FontConfig &config, bool setAsDefault) {
     const auto &[name, path, pixel_size, char_range] = config;
-    auto font = SimpleFont::setup_font(path, pixel_size, char_range);
-    cached_fonts.emplace(name, std::move(font));
-    font_sizes.emplace(pixel_size, cached_fonts[name].get());
-    if (setAsDefault) { default_font_key = name; }
-    util::println("Font {} stored. {} fonts has been loaded. Default font set to {}", name, cached_fonts.size(),
-                  default_font_key);
+    if(cached_fonts.contains(name)) {
+        util::println("Font by that name/key is already loaded");
+    } else {
+        auto font = SimpleFont::setup_font(path, pixel_size, char_range);
+        cached_fonts.emplace(name, std::move(font));
+        font_sizes.emplace(pixel_size, cached_fonts[name].get());
+        if (setAsDefault) { default_font_key = name; }
+        util::println("Font {} stored. {} fonts has been loaded. Default font set to {}", name, cached_fonts.size(),
+                      default_font_key);
+    }
+
 }
 
 SimpleFont *FontLibrary::get_default_font() {

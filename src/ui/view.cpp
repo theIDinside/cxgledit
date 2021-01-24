@@ -138,9 +138,15 @@ void View::draw(bool isActive) {
         cursor->draw();
     } else {
         // The top left corner of the view, in screen position
-        auto xpos = AS(this->x + View::TEXT_LENGTH_FROM_EDGE, int);
-        auto ypos = AS(this->y - font->get_row_advance(), int);
-        font->create_vertex_data_for(this, Pos{xpos, ypos});
+        const auto xpos = AS(x + View::TEXT_LENGTH_FROM_EDGE, int);
+        const auto ypos = AS(y - font->get_row_advance(), int);
+        const Pos p{xpos, ypos};
+        if(auto fCtxInfo = get_text_buffer()->file_context(); fCtxInfo.type == ContexTypes::CPPHeader || fCtxInfo.type == ContexTypes::CPPSource) {
+            font->create_vertex_data_for_syntax(this, p);
+        } else {
+            font->create_vertex_data_no_highlighting(this, p);
+        }
+
         vao->flush_and_draw();
         cursor->forced_draw();
     }

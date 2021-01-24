@@ -31,10 +31,16 @@ load configuration from that active file. Right now loading a file like this wor
 type awareness is not yet implemented. It's not hard to do though.
 ![Configuration of editor](docs/img/config_example.PNG)
 
+Bookmark a line by Ctrl+b, show bookmarks list for file by Ctrl+Shift+B. All keybindings, and features bound to change.
+For instance, having to hit ctrl+shift is not particularly ergonomic. Most likely I will land in a Vim-esque style,
+where we have Insert/Normal mode and a Command mode (I call it 'Actions', since the mode 'Command' is currently occupied
+by the Commandline input mode. Possibly could be renamed to CommandLine mode, but it's just... confusing to have multiple
+modes named "Command"-something).
+![First iteration of bookmark feature](docs/img/bookmarks_first_iteration.PNG)
 
 ### Features on display:
 - Split editor windows
-- Command input & auto completion (the grayed out part is what it can auto-complete to). If the user hits tab, 
+- CommandInput input & auto completion (the grayed out part is what it can auto-complete to). If the user hits tab, 
 it fills out, if the user hits key up/down it will cycle through the alternatives. This command bar, should probably be in a separate
   panel instead, so that the entire list could be shown and cycled through
   

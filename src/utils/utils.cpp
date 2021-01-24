@@ -13,7 +13,7 @@ auto to_string(CXMode mode) -> const char * {
             return "CXMode::Normal";
         case CXMode::Actions:
             return "CXMode::Actions";
-        case CXMode::Command:
+        case CXMode::CommandInput:
             return "CXMode::Command";
         case CXMode::Popup:
             return "CXMode::Popup";

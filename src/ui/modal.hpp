@@ -16,7 +16,8 @@ namespace ui {
 class View;
 
 enum ModalContentsType {
-    List,
+    ActionList,
+    Bookmarks,
     Item
 };
 
@@ -26,10 +27,11 @@ enum class PopupActionType {
 };
 
 struct PopupItem {
+    int item_index = 0;
     std::string displayable;
     PopupActionType type;
     std::optional<Commands> command{};
-    static std::vector<PopupItem> make_items_from_context(const FileContext& context);
+    static std::vector<PopupItem> make_action_list_from_context(const FileContext& context);
 };
 
 struct ModalPopup {

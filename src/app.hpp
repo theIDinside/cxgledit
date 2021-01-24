@@ -98,7 +98,8 @@ public:
     void update_all_editor_windows();
     void input_command_or_newline();
     void cycle_command_or_move_cursor(Cycle cycle);
-    void toggle_modal_popup();
+
+    void toggle_modal_popup(ui::ModalContentsType = ui::ModalContentsType::ActionList);
 
     /**
      * Handle keyboard input, when we are in "edit" mode, meaning when we are editing actual text.
@@ -109,6 +110,9 @@ public:
     void find_next_in_active(const std::string& search);
 
     void reload_configuration(fs::path cfg_path = "./assets/cxconfig.cxe");
+
+    void handle_char_input(int codepoint);
+    void handle_key_input(KeyInput input, int action);
 
 private:
     void cleanup();
@@ -135,4 +139,5 @@ private:
     static WindowDimensions win_dimensions;
     void close_active();
     void handle_modal_selection(const ui::PopupItem&selected);
+    void handle_command_input(KeyInput input);
 };

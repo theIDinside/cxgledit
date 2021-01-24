@@ -3,6 +3,7 @@
 //
 
 #include "editor_window.hpp"
+#include <core/buffer/bookmark.hpp>
 #include <core/buffer/data_manager.hpp>
 #include <ui/managers/font_library.hpp>
 #include <ui/managers/shader_library.hpp>
@@ -124,6 +125,14 @@ void EditorWindow::set_caret_style(Configuration::Cursor style) {
 
 FileContext EditorWindow::file_context() {
     return get_text_buffer()->file_context();
+}
+
+const std::vector<Bookmark>& EditorWindow::get_bookmarks() const {
+    return get_text_buffer()->meta_data.bookmarks;
+}
+
+void EditorWindow::set_bookmark() {
+    get_text_buffer()->set_bookmark();
 }
 
 }// namespace ui

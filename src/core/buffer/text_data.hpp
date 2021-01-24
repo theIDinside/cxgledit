@@ -3,15 +3,16 @@
 //
 
 #pragma once
-#include <core/core.hpp>
-#include <utils/strops.hpp>
+#include "bookmark.hpp"
 #include "file_context.hpp"
 #include <cassert>
+#include <core/core.hpp>
 #include <filesystem>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
+#include <utils/strops.hpp>
 
 namespace ui {
     class View;
@@ -38,17 +39,16 @@ struct Movement {
      */
 };
 
-/// Abstract class. This is used here, so we can swap out the horrible std::string
-/// as the underlying data structure, once we got an interesting program up and running.
-
-class TextDataIterator;
-
 /// UNSAFE: Checks character +1 beyond where ch points to.
 
 enum DelimiterSize { None, One, Two };
 
-static inline bool is_delimiter(char ch) {
+static inline bool is_delimiter_2(char ch) {
     return ((ch == ' ') || (ch == '\n') || (ch == '-') || (ch == '>') || (ch == '.') || ch == '(' || ch == ')');
+}
+
+static inline bool is_delimiter(char ch) {
+    return !std::isalnum(ch) && ch != '_';
 }
 
 namespace fs = std::filesystem;
@@ -56,6 +56,7 @@ namespace fs = std::filesystem;
 struct TextMetaData {
     std::vector<int> line_begins{0};
     std::string buf_name{};
+    std::vector<Bookmark> bookmarks{};
 };
 
 enum class BufferTypeInfo { CommandInput, StatusBar, EditBuffer, Modal };
@@ -76,7 +77,6 @@ public:
     int id{0};
     std::string name;
     BufferCursor cursor{};
-    ui::View* callback_view;
 
     TextData() = default;
     virtual ~TextData() = default;
@@ -102,7 +102,7 @@ public:
 
     virtual void step_to_line_end(Boundary boundary) = 0;
     virtual void step_to_line_begin(Boundary boundary) = 0;
-    virtual void register_view_callback(ui::View* view) = 0;
+
 
     virtual void set_file(fs::path p);
     virtual bool exist_on_disk() const;
@@ -112,6 +112,7 @@ public:
     virtual void clear_metadata();
     virtual bool has_metadata() { return has_meta_data && not meta_data.line_begins.empty(); }
     virtual bool is_pristine() const { return state_is_pristine; }
+    virtual void set_bookmark() = 0;
 #ifdef DEBUG
     virtual std::string to_std_string() const = 0;
     virtual std::string_view to_string_view() = 0;

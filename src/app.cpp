@@ -32,21 +32,50 @@ static constexpr auto pressed_or_repeated = [](auto action) -> bool { return act
 static constexpr auto pressed = [](auto action) -> bool { return action == GLFW_PRESS; };
 static constexpr auto repeated = [](auto action) -> bool { return action == GLFW_REPEAT; };
 
+static auto char_input_callback(GLFWwindow *window, unsigned int codepoint) {
+    auto app = get_app_handle(window);
+    app->handle_char_input(codepoint);
+};
+
+static auto key_callbacks(GLFWwindow *window, int key, int scancode, int action, int mods) {
+    auto app = get_app_handle(window);
+    const auto input = KeyInput{key, mods};
+    app->handle_key_input(input, action);
+
+    // app->command_view->show_last_message = false;
+};
+
 static void initialize_static_resources() {
 
-    FontConfig default_font_cfg{.name = "FreeMono24",
-                                .path = "assets/fonts/FreeMono.ttf",
-                                .pixel_size = 24,
-                                .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
-    FontConfig default_font_cfg_18{.name = "FreeMono18",
-                                   .path = "assets/fonts/FreeMono.ttf",
-                                   .pixel_size = 18,
-                                   .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
+    FontConfig source_code_regular24{.name = "SourceCodePro24",
+                                     .path = "assets/fonts/SourceCodePro-Regular.ttf",
+                                     .pixel_size = 24,
+                                     .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
 
-    FontConfig default_font_cfg_13{.name = "FreeMono12",
-                                   .path = "assets/fonts/FreeMono.ttf",
-                                   .pixel_size = 12,
-                                   .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
+    FontConfig source_code_semibold24{.name = "SourceCodeProSemiBold24",
+                                      .path = "assets/fonts/SourceCodePro-Semibold.ttf",
+                                      .pixel_size = 24,
+                                      .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
+
+    FontConfig source_code_bold24{.name = "SourceCodeProBold24",
+                                  .path = "assets/fonts/SourceCodePro-Bold.ttf",
+                                  .pixel_size = 24,
+                                  .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
+
+    FontConfig source_code_regular18{.name = "SourceCodePro18",
+                                     .path = "assets/fonts/SourceCodePro-Regular.ttf",
+                                     .pixel_size = 18,
+                                     .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
+
+    FontConfig source_code_semibold18{.name = "SourceCodeProSemiBold18",
+                                      .path = "assets/fonts/SourceCodePro-Semibold.ttf",
+                                      .pixel_size = 18,
+                                      .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
+
+    FontConfig source_code_bold18{.name = "SourceCodeProBold18",
+                                  .path = "assets/fonts/SourceCodePro-Bold.ttf",
+                                  .pixel_size = 18,
+                                  .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
 
     ShaderConfig text_shader{.name = "text",
                              .vs_path = "assets/shaders/textshader.vs",
@@ -55,34 +84,16 @@ static void initialize_static_resources() {
                                .vs_path = "assets/shaders/cursor.vs",
                                .fs_path = "assets/shaders/cursor.fs"};
 
-    FontLibrary::get_instance().load_font(default_font_cfg, true);
-    FontLibrary::get_instance().load_font(default_font_cfg_18, false);
-    FontLibrary::get_instance().load_font(default_font_cfg_13, false);
+    FontLibrary::get_instance().load_font(source_code_regular18, true);
+    FontLibrary::get_instance().load_font(source_code_semibold18, true);
+    FontLibrary::get_instance().load_font(source_code_bold18, true);
+
+    FontLibrary::get_instance().load_font(source_code_regular24, true);
+    FontLibrary::get_instance().load_font(source_code_semibold24, true);
+    FontLibrary::get_instance().load_font(source_code_bold24, true);
 
     ShaderLibrary::get_instance().load_shader(text_shader);
     ShaderLibrary::get_instance().load_shader(cursor_shader);
-}
-
-static auto initialize_key_callbacks() {
-    util::println("Configuring action bindings");
-    return [](auto window, int key, int scancode, int action, int mods) {
-        auto app = get_app_handle(window);
-        const auto input = KeyInput{key, mods};
-        // app->command_view->show_last_message = false;
-        if (pressed(action)) {
-            if (mods & GLFW_MOD_CONTROL) {
-                app->kb_command(input);
-            } else {
-                app->handle_edit_input(input);
-            }
-        } else if (repeated(action)) {
-            if (mods & GLFW_MOD_CONTROL) {
-                app->kb_command(input);
-            } else {
-                app->handle_edit_input(input);
-            }
-        }
-    };
 }
 
 void framebuffer_callback(GLFWwindow *window, int width, int height) {
@@ -220,55 +231,7 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
     auto &ci = CommandInterpreter::get_instance();
     ci.register_application(instance);
 
-    auto char_input_callback = [](auto window, auto codepoint) {
-        auto app = get_app_handle(window);
-        // TODO(feature, major, huge maybe): Unicode support. But why would we want that? Source code should and can only use ASCII. If you plan on using something else? Well fuck off then.
-        if (app->mode == CXMode::Normal) {
-            if (codepoint >= 32 && codepoint <= 126) {
-                app->active_buffer->insert((char) codepoint);
-                app->command_view->show_last_message = false;
-                app->command_view->show_last_message = false;
-            }
-        } else if (app->mode == CXMode::Command) {
-            if (codepoint >= 32 && codepoint <= 126) {
-                app->active_buffer->insert((char) codepoint);
-                app->command_view->show_last_message = false;
-                auto &ci = CommandInterpreter::get_instance();
-                ci.evaluate_current_input();
-            } else {
-            }
-        } else if (app->mode == CXMode::Actions) {
-
-        } else if (app->mode == CXMode::Search) {
-            app->mode = CXMode::Normal;
-            if (codepoint >= 32 && codepoint <= 126) {
-                app->active_buffer->insert((char) codepoint);
-                app->command_view->show_last_message = false;
-                app->command_view->show_last_message = false;
-            }
-        }
-    };
-
     glfwSetCharCallback(window, char_input_callback);
-    auto key_callbacks = [](auto window, int key, int scancode, int action, int mods) {
-        auto app = get_app_handle(window);
-        const auto input = KeyInput{key, mods};
-        // app->command_view->show_last_message = false;
-        if (pressed(action)) {
-            if (mods & GLFW_MOD_CONTROL) {
-                app->kb_command(input);
-            } else {
-                app->handle_edit_input(input);
-            }
-        } else if (repeated(action)) {
-            if (mods & GLFW_MOD_CONTROL) {
-                app->kb_command(input);
-            } else {
-                app->handle_edit_input(input);
-            }
-        }
-    };
-
     glfwSetKeyCallback(window, key_callbacks);
     glfwSetMouseButtonCallback(window, [](auto window, auto button, auto action, auto mods) {
         double xpos, ypos;
@@ -421,13 +384,13 @@ void App::kb_command(KeyInput input) {
         mode = CXMode::Normal;
     }
 
-    if(key == GLFW_KEY_M && mode == CXMode::Popup) {
+    if (key == GLFW_KEY_M && mode == CXMode::Popup) {
         toggle_modal_popup();
         return;
     }
 
-    if (mode == CXMode::Command) {
-        util::println("ctrl-commands disabled in command input mode.");
+    if (mode == CXMode::CommandInput) {
+        this->handle_command_input(input);
     } else if (mode == CXMode::Normal || mode == CXMode::Actions) {
         switch (key) {
             case CTRL_L_ANGLE_BRACKET:
@@ -477,7 +440,7 @@ void App::kb_command(KeyInput input) {
                     active_buffer->clear_marks();
                 }
                 break;
-            case GLFW_KEY_BACKSPACE:
+            case GLFW_KEY_BACKSPACE: {
                 if (not active_buffer->mark_set) {
                     active_buffer->remove(Movement::Word(1, CursorDirection::Back));
                 } else {
@@ -487,52 +450,36 @@ void App::kb_command(KeyInput input) {
                     active_buffer->remove(Movement::Char(range, CursorDirection::Forward));
                     active_buffer->clear_marks();
                 }
-
-                break;
-            case GLFW_KEY_Q: {
-                auto active_buf = active_window->get_text_buffer();
-                if (!active_buf->empty()) {
-                    auto id = active_buf->id;
-                    DataManager::get_instance().request_close(id);
-                    auto layoutToDestroy = find_by_id(root_layout, active_window->ui_layout_id);
-                    if (layoutToDestroy == layoutToDestroy->parent->left) {
-                        if (layoutToDestroy->parent == root_layout) {
-                            auto new_root = layoutToDestroy->parent->right;
-                            set_new_root(root_layout, new_root);
-                        } else {
-                            promote_node(layoutToDestroy->parent->right);
-                        }
-                    } else {
-                        if (layoutToDestroy->parent == root_layout) {
-                            auto new_root = layoutToDestroy->parent->left;
-                            set_new_root(root_layout, new_root);
-                        } else {
-                            promote_node(layoutToDestroy->parent->left);
-                        }
-                    }
-
-                    if (editor_views.back() == active_window) {
-                        assert(active_window->view->td_id == id);
-                        editor_views.pop_back();
-                        delete active_window;
-                        active_window = editor_views.back();
-                        active_window->active = true;
-                    } else {
-                        PANIC("Somehow non-active window was deleted");
-                    }
-
-                    active_view = active_window->view;
-                    active_buffer = active_view->get_text_buffer();
-                    update_all_editor_windows();
-                    draw_all(true);
+            } break;
+            case GLFW_KEY_B: {
+                if (modifier & GLFW_MOD_SHIFT) {
+                    toggle_modal_popup(ui::ModalContentsType::Bookmarks);
                 } else {
-                    this->graceful_exit();
+                    active_window->set_bookmark();
+                    auto bms = active_window->get_bookmarks();
+                    util::println("Bookmark list: ");
+                    for (const auto &b : bms) { util::println("Line #{} - '{}'", b.line_number, b.line_contents); }
                 }
             } break;
+            case GLFW_KEY_C: {// COPY
+                if (active_buffer->mark_set) {
+                    auto view = active_buffer->copy_range(active_buffer->get_cursor_rect());
+                    copy_register.push_view(view);
+                }
+            } break;
+            case GLFW_KEY_D:// DEBUG
+                app_debug();
+                break;
+            case GLFW_KEY_F:// FIND
+                toggle_command_input("find", Commands::Search);
+                break;
+            case GLFW_KEY_M: {// MODAL
+                toggle_modal_popup();
+            } break;
             case GLFW_KEY_N: {
-                if (mode == CXMode::Search) { // NEXT result from search
+                if (mode == CXMode::Search) {// NEXT result from search
                     find_next_in_active(last_searched);
-                } else {    // go to NEXT window
+                } else {// go to NEXT window
                     auto current_window = active_window;
                     current_window->active = false;
                     rotate_container(editor_views, 1);
@@ -542,33 +489,21 @@ void App::kb_command(KeyInput input) {
                     active_view = active_window->view;
                 }
             } break;
-            case GLFW_KEY_C: {// COPY
-                if (active_buffer->mark_set) {
-                    auto view = active_buffer->copy_range(active_buffer->get_cursor_rect());
-                    copy_register.push_view(view);
-                }
-            } break;
-            case GLFW_KEY_V: {// PASTE
-                auto data = copy_register.get_last();
-                if (data) { active_buffer->insert_str(*data); }
-            } break;
-            case GLFW_KEY_M: {// MODAL
-                toggle_modal_popup();
-            } break;
             case GLFW_KEY_G:// GOTO
                 toggle_command_input("goto", Commands::GotoLine);
                 break;
             case GLFW_KEY_O:// OPEN
                 toggle_command_input("open", Commands::OpenFile);
                 break;
-            case GLFW_KEY_D:// DEBUG
-                app_debug();
-                break;
+            case GLFW_KEY_Q: {
+                close_active();
+            } break;
+            case GLFW_KEY_V: {// PASTE
+                auto data = copy_register.get_last();
+                if (data) { active_buffer->insert_str(*data); }
+            } break;
             case GLFW_KEY_W:// WRITE
                 toggle_command_input("write", Commands::WriteFile);
-                break;
-            case GLFW_KEY_F:// FIND
-                toggle_command_input("find", Commands::Search);
                 break;
         }
     }
@@ -604,7 +539,7 @@ void App::handle_edit_input(KeyInput input) {
             }
         } break;
         case GLFW_KEY_TAB: {
-            if (mode == CXMode::Command) {
+            if (mode == CXMode::CommandInput) {
                 CommandInterpreter::get_instance().auto_complete();
             } else {
                 active_buffer->insert_str("    ");
@@ -630,14 +565,14 @@ void App::handle_edit_input(KeyInput input) {
             if (modal_shown && mode == CXMode::Popup) {
                 toggle_modal_popup();
                 util::println("Disable popup");
-            } else if (mode == CXMode::Command) {
-                mode = CXMode::Command;
+            } else if (mode == CXMode::CommandInput) {
+                mode = CXMode::CommandInput;
                 disable_command_input();
             } else if (mode == CXMode::Normal) {
             }
         } break;
         case GLFW_KEY_BACKSPACE: {
-            if (mode == CXMode::Command) {
+            if (mode == CXMode::CommandInput) {
                 active_buffer->remove(Movement::Char(1, CursorDirection::Back));
                 auto &ci = CommandInterpreter::get_instance();
                 ci.evaluate_current_input();
@@ -654,7 +589,7 @@ void App::handle_edit_input(KeyInput input) {
             }
         } break;
         case GLFW_KEY_DELETE: {
-            if (mode == CXMode::Command) {
+            if (mode == CXMode::CommandInput) {
                 active_buffer->remove(Movement::Char(1, CursorDirection::Forward));
                 auto &ci = CommandInterpreter::get_instance();
                 ci.evaluate_current_input();
@@ -679,13 +614,15 @@ void App::handle_edit_input(KeyInput input) {
                                            active_window->view->lines_displayable);
         } break;
         case GLFW_KEY_PAGE_DOWN: {
-            active_window->get_text_buffer()->move_cursor(Movement::Line(active_window->view->lines_displayable, CursorDirection::Forward));
-            active_window->view->scroll_to(active_window->view->cursor->views_top_line + active_window->view->lines_displayable);
+            active_window->get_text_buffer()->move_cursor(
+                    Movement::Line(active_window->view->lines_displayable, CursorDirection::Forward));
+            active_window->view->scroll_to(active_window->view->cursor->views_top_line +
+                                           active_window->view->lines_displayable);
         } break;
     }
     // N.B. this was moved from charCallback because typing in ÖÄÅ right now, crashes the application as the textual data lives inside a std::string
     // which gets passed around through layers of structures, and these characters can't be represented as single bytes.
-    command_view->active = (mode == CXMode::Command);
+    command_view->active = (mode == CXMode::CommandInput);
 }
 
 void App::graceful_exit() {
@@ -697,11 +634,11 @@ void App::graceful_exit() {
 
 void App::toggle_command_input(const std::string &prefix, Commands commandInput) {
     util::println("Toggling command input");
-    if (mode == CXMode::Command) {
+    if (mode == CXMode::CommandInput) {
         mode = CXMode::Normal;
         disable_command_input();
     } else if (mode == CXMode::Normal) {
-        mode = CXMode::Command;
+        mode = CXMode::CommandInput;
         auto &ci = CommandInterpreter::get_instance();
         ci.set_current_command_read(commandInput);
         active_buffer = command_view->command_view->get_text_buffer();
@@ -732,7 +669,7 @@ void App::set_error_message(const std::string &msg) {
 }
 
 void App::input_command_or_newline() {
-    if (mode == CXMode::Command) {
+    if (mode == CXMode::CommandInput) {
         CommandInterpreter::get_instance().execute_command();
         /// Setting active input to text editor again
         active_buffer = active_window->get_text_buffer();
@@ -746,7 +683,7 @@ void App::input_command_or_newline() {
 
 void App::cycle_command_or_move_cursor(Cycle cycle) {
     auto curs_direction = cycle == Cycle::Forward ? CursorDirection::Forward : CursorDirection::Back;
-    if (mode == CXMode::Command) {
+    if (mode == CXMode::CommandInput) {
         auto &ci = CommandInterpreter::get_instance();
         if (ci.has_command_waiting()) {
             ci.cycle_current_command_arguments(cycle);
@@ -911,7 +848,7 @@ void App::fwrite_active_to_disk(const std::string &path) {
     }
 }
 
-void App::toggle_modal_popup() {
+void App::toggle_modal_popup(ui::ModalContentsType contents) {
     static CXMode priorMode;
     util::println("Toggle modal");
     if (modal_shown || mode == CXMode::Popup) {
@@ -919,17 +856,37 @@ void App::toggle_modal_popup() {
         mode = priorMode;
         priorMode = CXMode::Popup;
     } else if (mode == CXMode::Normal) {
+        switch (contents) {
+            case ui::ActionList: {
+                FileContext fileContextInfo = active_window->file_context();
+                std::vector<ui::PopupItem> context_specific_items =
+                        ui::PopupItem::make_action_list_from_context(fileContextInfo);
+                modal_popup->register_actions(context_specific_items);
+                auto x = active_window->view->cursor->pos_x;
+                auto y = active_window->view->cursor->pos_y;
+                modal_popup->anchor_to(x + 10, y);
+            } break;
+            case ui::Bookmarks: {
+                auto bookmarks = active_window->get_bookmarks();
+                std::vector<ui::PopupItem> context_specific_items;
+                auto idx = 0;
+                for (auto &b : bookmarks) {
+                    context_specific_items.push_back(ui::PopupItem{.item_index = idx++, .displayable = b.line_contents,
+                                                                   .type = ui::PopupActionType::AppCommand,
+                                                                   .command = Commands::GotoBookmark});
+                }
+                modal_popup->register_actions(context_specific_items);
+                auto x = active_window->view->cursor->pos_x;
+                auto y = active_window->view->cursor->pos_y;
+                modal_popup->anchor_to(x + 10, y);
+            } break;
+            case ui::Item: {
+
+            } break;
+        }
+        modal_shown = true;
         priorMode = mode;
         mode = CXMode::Popup;
-        modal_shown = true;
-
-        FileContext fileContextInfo = active_window->file_context();
-
-        std::vector<ui::PopupItem> context_specific_items = ui::PopupItem::make_items_from_context(fileContextInfo);
-        modal_popup->register_actions(context_specific_items);
-        auto x = active_window->view->cursor->pos_x;
-        auto y = active_window->view->cursor->pos_y;
-        modal_popup->anchor_to(x + 10, y);
     }
 }
 
@@ -954,6 +911,46 @@ void App::find_next_in_active(const std::string &search) {
 }
 
 void App::close_active() {
+    /*
+    auto active_buf = active_window->get_text_buffer();
+    if (!active_buf->empty()) {
+        auto id = active_buf->id;
+        DataManager::get_instance().request_close(id);
+        auto layoutToDestroy = find_by_id(root_layout, active_window->ui_layout_id);
+        if (layoutToDestroy == layoutToDestroy->parent->left) {
+            if (layoutToDestroy->parent == root_layout) {
+                auto new_root = layoutToDestroy->parent->right;
+                set_new_root(root_layout, new_root);
+            } else {
+                promote_node(layoutToDestroy->parent->right);
+            }
+        } else {
+            if (layoutToDestroy->parent == root_layout) {
+                auto new_root = layoutToDestroy->parent->left;
+                set_new_root(root_layout, new_root);
+            } else {
+                promote_node(layoutToDestroy->parent->left);
+            }
+        }
+
+        if (editor_views.back() == active_window) {
+            assert(active_window->view->td_id == id);
+            editor_views.pop_back();
+            delete active_window;
+            active_window = editor_views.back();
+            active_window->active = true;
+        } else {
+            PANIC("Somehow non-active window was deleted");
+        }
+
+        active_view = active_window->view;
+        active_buffer = active_view->get_text_buffer();
+        update_all_editor_windows();
+        draw_all(true);
+    } else {
+        this->graceful_exit();
+    }
+*/
     auto active_buf = active_view->get_text_buffer();
     if (!active_buf->empty()) {
         auto id = active_buf->id;
@@ -1018,7 +1015,7 @@ void App::reload_configuration(fs::path cfg_path) {
     draw_all(true);
 }
 
-void App::handle_modal_selection(const ui::PopupItem& selected) {
+void App::handle_modal_selection(const ui::PopupItem &selected) {
     switch (selected.type) {
         case ui::PopupActionType::Insert:
             toggle_modal_popup();
@@ -1037,6 +1034,11 @@ void App::handle_modal_selection(const ui::PopupItem& selected) {
                 case Commands::GotoLine:
                     toggle_command_input("goto", Commands::GotoLine);
                     break;
+                case Commands::GotoBookmark: {
+                    auto bookmarks = active_window->get_bookmarks();
+                    auto selected_bm_index = selected.item_index;
+                    editor_window_goto(bookmarks[selected_bm_index].line_number);
+                } break;
                 case Commands::UserCommand:
                     break;
                 case Commands::Search:
@@ -1052,6 +1054,63 @@ void App::handle_modal_selection(const ui::PopupItem& selected) {
                 case Commands::GotoSource:
                     break;
             }
+            break;
+    }
+}
+
+void App::handle_char_input(int codepoint) {
+    // TODO(feature, major, huge maybe): Unicode support. But why would we want that? Source code should and can only use ASCII. If you plan on using something else? Well fuck off then.
+    if (mode == CXMode::Normal) {
+        if (codepoint >= 32 && codepoint <= 126) {
+            active_buffer->insert((char) codepoint);
+            command_view->show_last_message = false;
+        }
+    } else if (mode == CXMode::CommandInput) {
+        if (codepoint >= 32 && codepoint <= 126) {
+            active_buffer->insert((char) codepoint);
+            command_view->show_last_message = false;
+            auto &ci = CommandInterpreter::get_instance();
+            ci.evaluate_current_input();
+        } else {
+        }
+    } else if (mode == CXMode::Actions) {
+
+    } else if (mode == CXMode::Search) {
+        mode = CXMode::Normal;
+        if (codepoint >= 32 && codepoint <= 126) {
+            active_buffer->insert((char) codepoint);
+            command_view->show_last_message = false;
+        }
+    }
+}
+
+void App::handle_key_input(KeyInput input, int action) {
+    auto &[_, mods] = input;
+    if (pressed(action)) {
+        if (mods & GLFW_MOD_CONTROL) {
+            kb_command(input);
+        } else {
+            handle_edit_input(input);
+        }
+    } else if (repeated(action)) {
+        if (mods & GLFW_MOD_CONTROL) {
+            kb_command(input);
+        } else {
+            handle_edit_input(input);
+        }
+    }
+}
+
+void App::handle_command_input(KeyInput input) {
+    const auto &[key, modifier] = input;
+    switch (key) {
+        case KEY_BACKSPACE: {
+            active_buffer->remove(Movement::Word(1, CursorDirection::Back));
+            auto &ci = CommandInterpreter::get_instance();
+            ci.evaluate_current_input();
+        } break;
+        default:
+            util::println("Ctrl+key commands disabled in command input mode");
             break;
     }
 }

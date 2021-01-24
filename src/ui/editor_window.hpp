@@ -14,6 +14,7 @@
 #include <ui/render/font.hpp>
 #include <cfg/configuration.hpp>
 
+class Bookmark;
 class TextData;
 using RGBColor = Vec3f;
 
@@ -44,5 +45,7 @@ struct EditorWindow {
 
     void set_caret_style(Configuration::Cursor style);
     FileContext file_context();
+    const std::vector<Bookmark>& get_bookmarks() const;
+    void set_bookmark();
 };
 }// namespace ui

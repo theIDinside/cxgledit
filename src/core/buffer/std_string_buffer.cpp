@@ -224,6 +224,11 @@ void StdStringBuffer::insert(char ch) {
         if (has_meta_data) {
             md_lines.insert(md_lines.begin() + cursor.line, cursor.pos);
             std::for_each(md_lines.begin() + cursor.line + 1, md_lines.end(), [](auto &e) { e += 1; });
+            for(auto& b : meta_data.bookmarks) { // we only bookkeep line numbers for bookmarks, as the metadata has a separate index for line begins
+                if(b.line_number > cursor.line) {
+                    b.line_number++;
+                }
+            }
         }
         cursor.line++;
         cursor.col_pos = 0;
@@ -311,9 +316,8 @@ void StdStringBuffer::remove_ch_forward(size_t i) {
 }
 void StdStringBuffer::remove_ch_backward(size_t i) {
     if ((int) cursor.pos - (int) i >= 0) {
-        auto pos = cursor.pos;
         step_cursor_to(cursor.pos - i);
-        store.erase(pos - i, i);
+        store.erase(cursor.pos, i);
         rebuild_metadata();
         this->state_is_pristine = false;
         data_is_pristine = false;
@@ -531,14 +535,14 @@ void StdStringBuffer::rebuild_metadata() {
     if (has_meta_data && (data_is_pristine == false) && info == BufferTypeInfo::EditBuffer) {
         if (has_meta_data) {
             auto line_indices = str::count_newlines(store.data(), store.size());
-            auto buf_name = meta_data.buf_name;
-            this->meta_data = TextMetaData{std::move(line_indices), std::move(buf_name)};
+            this->meta_data.line_begins = std::move(line_indices);
         }
         data_is_pristine = true;
     } else if(info == BufferTypeInfo::Modal) {
-        auto line_indices = str::count_newlines(store.data(), store.size());
-        auto buf_name = meta_data.buf_name;
-        this->meta_data = TextMetaData{std::move(line_indices), std::move(buf_name)};
+        if (has_meta_data) {
+            auto line_indices = str::count_newlines(store.data(), store.size());
+            this->meta_data.line_begins = std::move(line_indices);
+        }
     }
     state_is_pristine = false;
     data_is_pristine = true;
@@ -603,9 +607,7 @@ void StdStringBuffer::goto_next(std::string search) {
 size_t StdStringBuffer::capacity() const {
     return store.capacity();
 }
-void StdStringBuffer::register_view_callback(ui::View *view) {
-    this->callback_view = view;
-}
+
 FileContext StdStringBuffer::file_context() const {
     if(auto ext = file_path.filename().extension(); ext == ".cpp" || ext == ".c") {
         return FileContext{.type = ContexTypes::CPPSource, .path = file_path};
@@ -616,4 +618,17 @@ FileContext StdStringBuffer::file_context() const {
     } else {
         return FileContext{.type = ContexTypes::Unhandled, .path = file_path};
     }
+}
+
+void StdStringBuffer::set_bookmark() {
+    auto& bm = meta_data.bookmarks;
+    auto line_begin = find_line_start(cursor.pos);
+    auto line_end = find_line_end(cursor.pos);
+    auto line_contents = store.substr(line_begin, line_end - line_begin);
+    bm.emplace_back(cursor.line, std::move(line_contents));
+    // TODO: this really is wasting CPU time. if we keep it sorted, we should find
+    std::sort(bm.begin(), bm.end(), [](auto& ba, auto& bb) {
+       return ba.line_number < bb.line_number;
+    });
+    util::println("Set bookmark at {}: '{}'", cursor.line, meta_data.bookmarks.back().line_contents);
 }

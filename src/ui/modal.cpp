@@ -19,7 +19,7 @@ ui::ModalPopup *ui::ModalPopup::create(Matrix projection) {
     auto m = new ModalPopup{};
     view->set_projection(projection);
     m->view = view;
-    m->type = ModalContentsType::List;
+    m->type = ModalContentsType::ActionList;
     m->dimInfo = {0, 0, 0, 0};
     m->data = input_buffer;
     return m;
@@ -91,18 +91,19 @@ void ui::ModalPopup::anchor_to(int x, int y) {
 
 ui::PopupItem ui::ModalPopup::get_choice() { return dialogData[selected]; }
 
-std::vector<ui::PopupItem> ui::PopupItem::make_items_from_context(const FileContext &context) {
+std::vector<ui::PopupItem> ui::PopupItem::make_action_list_from_context(const FileContext &context) {
     std::vector<ui::PopupItem> result;
+    auto index = 0;
     switch (context.type) {
         case CPPHeader: {
             result.push_back(
-                    ui::PopupItem{"Goto Implementation file", ui::PopupActionType::AppCommand, Commands::GotoSource});
+                    ui::PopupItem{index++, "Goto Implementation file", ui::PopupActionType::AppCommand, Commands::GotoSource});
         } break;
         case CPPSource: {
-            result.push_back(ui::PopupItem{"Goto header", ui::PopupActionType::AppCommand, Commands::GotoHeader});
+            result.push_back(ui::PopupItem{index++, "Goto header", ui::PopupActionType::AppCommand, Commands::GotoHeader});
         } break;
         case Config: {
-            result.push_back(ui::PopupItem{"Load this configuration", ui::PopupActionType::AppCommand,
+            result.push_back(ui::PopupItem{index++, "Load this configuration", ui::PopupActionType::AppCommand,
                                            Commands::ReloadConfiguration});
         } break;
         case Unhandled: {
@@ -113,10 +114,10 @@ std::vector<ui::PopupItem> ui::PopupItem::make_items_from_context(const FileCont
             PANIC("All cases for PopupItem based on FileContext not yet implemented");
         }
     }
-    result.push_back(ui::PopupItem{"Goto", ui::PopupActionType::AppCommand, Commands::GotoLine});
-    result.push_back(ui::PopupItem{"Open file", ui::PopupActionType::AppCommand, Commands::OpenFile});
-    result.push_back(ui::PopupItem{"Find in file", ui::PopupActionType::AppCommand, Commands::Search});
-    result.push_back(ui::PopupItem{"Save file", ui::PopupActionType::AppCommand, Commands::WriteFile});
-    result.push_back(ui::PopupItem{"Save all", ui::PopupActionType::AppCommand, Commands::WriteAllFiles});
+    result.push_back(ui::PopupItem{index++, "Goto", ui::PopupActionType::AppCommand, Commands::GotoLine});
+    result.push_back(ui::PopupItem{index++, "Open file", ui::PopupActionType::AppCommand, Commands::OpenFile});
+    result.push_back(ui::PopupItem{index++, "Find in file", ui::PopupActionType::AppCommand, Commands::Search});
+    result.push_back(ui::PopupItem{index++, "Save file", ui::PopupActionType::AppCommand, Commands::WriteFile});
+    result.push_back(ui::PopupItem{index++, "Save all", ui::PopupActionType::AppCommand, Commands::WriteAllFiles});
     return result;
 }

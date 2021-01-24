@@ -129,7 +129,9 @@ public:
     int max_glyph_height;
     int size_bearing_difference_max;
 
-    void create_vertex_data_for(ui::View *pView, ui::core::ScreenPos startingTopLeftPos);
+    void create_vertex_data_for_syntax(ui::View *pView, ui::core::ScreenPos startingTopLeftPos);
+    void create_vertex_data_no_highlighting(ui::View *pView, ui::core::ScreenPos startingTopLeftPos);
+
     void create_vertex_data_for_only_visible(ui::View *pView, ui::core::ScreenPos startingTopLeftPos);
 
 private:

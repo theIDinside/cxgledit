@@ -562,7 +562,116 @@ void SimpleFont::add_colorized_text_gpu_data(VAO *vao, std::vector<TextDrawable>
     }
 }
 
-void SimpleFont::create_vertex_data_for(ui::View* view, const ui::core::ScreenPos startingTopLeftPos) {
+void SimpleFont::create_vertex_data_no_highlighting(ui::View *view, ui::core::ScreenPos startingTopLeftPos) {
+    // FN_MICRO_BENCH();
+    auto buf = view->get_text_buffer();
+    auto character_start = buf->meta_data.line_begins[view->cursor->views_top_line];
+    auto char_end = 0;
+    if(view->cursor->views_top_line + view->lines_displayable >= buf->meta_data.line_begins.size() - 1) {
+        char_end = buf->size();
+    } else {
+        auto end_line = view->cursor->views_top_line + view->lines_displayable;
+        char_end = buf->meta_data.line_begins[end_line+1];
+    }
+    auto total_characters = char_end - character_start;
+    auto reserve = total_characters * 2;
+
+    auto total_text = view->get_text_buffer()->to_string_view();
+    auto view_cursor = view->get_cursor();
+    // TODO(use cy2 for when we select multiple lines): right now only one line can be selected, which is why cy2 is not used
+    GLfloat cx1, cx2, cy1, cy2;
+    auto bufPtr = view->get_text_buffer();
+
+    auto [cursor_a, cursor_b] = bufPtr->get_cursor_rect();
+    int data_index_pos = cursor_a.pos - character_start;
+    int data_index_pos_end = cursor_b.pos - character_start;
+
+    view->vao->vbo->data.clear();
+    view->vao->vbo->data.reserve(gpu_mem_required_for_quads<TextVertex>(reserve));
+    auto &store = view->vao->vbo->data;
+    auto[start_x, start_y] = startingTopLeftPos;
+    auto x = start_x;
+    auto y = start_y;
+
+    auto r = 1.0f;
+    auto g = 1.0f;
+    auto b = 1.0f;
+
+    // auto words = text_elements(text);
+    // auto tokens = tokenize(text);
+    // keywords_ranges.reserve(tokens.size());
+
+    std::string_view text{total_text.data() + character_start, (unsigned)total_characters};
+    auto pos = character_start;
+    bool have_text = !text.empty();
+    auto xpos = float(x);
+    auto ypos = float(y);
+    if (not have_text) {
+        view_cursor->update_cursor_data(x, y - 6);
+    } else {
+        // TODO(optimization): change so that instead of doing IF-THEN_ELSE inside this for loop for every character
+        //  make it so, that it checks IF we are inside range, then draw the data up until last character, then iterate 1 step
+        //  and check again
+        for (auto c = text.begin(); c != text.end(); c++, pos++, data_index_pos--, data_index_pos_end--) {
+            auto &glyph = this->glyph_cache[*c];
+            if (*c == '\n') {
+                if (data_index_pos == 0) {
+                    if (bufPtr->mark_set) {
+                        cx1 = x;
+                        cy1 = y - 6;
+                    } else {
+                        view_cursor->update_cursor_data(x, y - 6);
+                    }
+                }
+                if (data_index_pos_end == 0) { cx2 = x; }
+                x = start_x;
+                y -= row_height;
+                continue;
+            }
+            xpos = float(x) + glyph.bearing.x;
+            ypos = float(y) - static_cast<float>(glyph.size.y - glyph.bearing.y);
+            auto x0 = float(glyph.x0) / float(t->width);
+            auto x1 = float(glyph.x1) / float(t->width);
+            auto y0 = float(glyph.y0) / float(t->height);
+            auto y1 = float(glyph.y1) / float(t->height);
+            auto w = float(glyph.x1 - glyph.x0);
+            auto h = float(glyph.y1 - glyph.y0);
+            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+            store.emplace_back(xpos, ypos, x0, y1, r, g, b);
+            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
+            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
+            store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
+            if (data_index_pos == 0) {
+                if (bufPtr->mark_set) {
+                    cx1 = x;
+                    cy1 = y - 6;
+                } else {
+                    view_cursor->update_cursor_data(xpos, y - 6);
+                }
+            }
+            if (data_index_pos_end == 0) { cx2 = x; }
+            x += glyph.advance;
+        }
+    }
+
+    if (bufPtr->mark_set) {
+        if (cursor_b.pos == text.size()) cx2 = x;
+        // TODO: implement multi-line selection. selecting multiple lines on the backend is super-easy as the data
+        //  structure is simply a 1-dimensional stream of characters, displaying it properly isn't as easy
+        //  and there are multiple ways to represent this. We can push "quads" to a vector, one per each line
+        //  or we can do like in some editors and not have the "selection" visualization at all, but just leave kind of like
+        //  an empty [] half-transparent marker where the selection begins (kind of like how 4coder does it)
+        view_cursor->set_line_rect(cx1, cx2, cy1);
+    } else if (view->get_text_buffer()->get_cursor_pos() == view->get_text_buffer()->size()) {
+        xpos = float(x);
+        ypos = float(y);
+        view_cursor->update_cursor_data(xpos, y - 6);
+    }
+}
+
+
+void SimpleFont::create_vertex_data_for_syntax(ui::View* view, const ui::core::ScreenPos startingTopLeftPos) {
     // FN_MICRO_BENCH();
     auto buf = view->get_text_buffer();
     auto character_start = buf->meta_data.line_begins[view->cursor->views_top_line];
@@ -832,7 +941,7 @@ void SimpleFont::create_vertex_data_for_only_visible(ui::View *view, ui::core::S
             view_cursor->update_cursor_data(xpos, y - 6);
         }
     } else {
-        create_vertex_data_for(view, startingTopLeftPos);
+        create_vertex_data_for_syntax(view, startingTopLeftPos);
     }
 }
 
@@ -851,4 +960,3 @@ int SimpleFont::calculate_text_width(std::string_view str) {
     }
     return std::max(width_in_pixels, acc);
 }
-

@@ -5,12 +5,13 @@
 #pragma once
 #include "text_data.hpp"
 
+
 class StdStringBuffer : public TextData {
 public:
     explicit StdStringBuffer() : TextData(), store{} {}
     ~StdStringBuffer() override;
 
-    void register_view_callback(ui::View *view) override;
+    // void register_view_callback(ui::View *view) override;
 
     /// EDITING
     void insert(char ch) override;
@@ -46,7 +47,9 @@ public:
     void set_string(std::string& data) override;
 #endif
 
+    // Meta data
     void rebuild_metadata() override;
+    void set_bookmark() override;
 
     // void set_mark(int pos) override;
     // void set_mark_range(int begin, int length) override;

@@ -15,9 +15,12 @@ enum class Commands {
     WriteFile,
     WriteAllFiles,
     GotoLine,
+    GotoBookmark,
     UserCommand,
     Search,
-    Fail, GotoHeader, ReloadConfiguration,
+    Fail,
+    GotoHeader,
+    ReloadConfiguration,
     GotoSource
 };
 
