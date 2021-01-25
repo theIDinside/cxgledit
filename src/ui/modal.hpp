@@ -26,6 +26,7 @@ enum class PopupActionType {
     AppCommand, // for when the users selects an item meant to run a command that the App class understands
 };
 
+
 struct PopupItem {
     int item_index = 0;
     std::string displayable;
@@ -52,6 +53,7 @@ struct ModalPopup {
     void draw();
     void cycle_choice(Scroll scroll);
     PopupItem get_choice();
+    void maybe_delete_selected();
 };
 
 }// namespace ui

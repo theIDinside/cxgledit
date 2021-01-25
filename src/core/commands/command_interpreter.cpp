@@ -232,9 +232,10 @@ void CommandInterpreter::parse_command(std::string_view str) {
         if (auto pos = str.find(' '); pos == std::string_view::npos) {
             try {
                 auto v = std::stoi(std::string{str});
-                auto f = FontLibrary::get_instance().get_font_with_size(v);
-                if (f) {
-                    ctx->get_active_window()->view->set_font(*f);
+                auto& fl = FontLibrary::get_instance();
+                auto f = FontLibrary::get_instance().get_font(fl.get_default_font_name(), v);
+                if (f != nullptr) {
+                    ctx->get_active_window()->view->set_font(f);
                 } else {
                     ctx->get_command_view()->draw_error_message(fmt::format("No font with size {} found!", v));
                 }

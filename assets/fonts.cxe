@@ -1,0 +1,11 @@
+[SourceCodePro]
+asset = "assets/fonts/SourceCodePro-Regular.ttf";
+sizes = "24 20 22 18 16 14 12";
+
+[SourceCodeProSemiBold]
+asset = "assets/fonts/SourceCodePro-Semibold.ttf";
+sizes = "24 20 22 18 16 14 12";
+
+[SourceCodeProBold]
+asset = "assets/fonts/SourceCodePro-Bold.ttf";
+sizes = "24 20 22 18 16 14 12";

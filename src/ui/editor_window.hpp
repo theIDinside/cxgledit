@@ -47,5 +47,6 @@ struct EditorWindow {
     FileContext file_context();
     const std::vector<Bookmark>& get_bookmarks() const;
     void set_bookmark();
+    void remove_bookmark(int index);
 };
 }// namespace ui

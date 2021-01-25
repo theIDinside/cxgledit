@@ -9,21 +9,27 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "types/cursor_options.hpp"
 #include <core/math/vector.hpp>
+#include <ui/managers/font_library.hpp>
+
 
 namespace fs = std::filesystem;
+
+class FontConfig;
 
 using StrView = std::string_view;
 using Table = std::map<StrView, StrView>;
 using ParsedView = std::map<std::string, Table>;
-
-
+ParsedView parse_config_data(const std::string& data);
+std::vector<FontConfig> parse_font_configs(const fs::path& cfg);
 struct ConfigFileData {
     std::string raw_file_data;
     ParsedView parsed_data;
     fs::path file_path;
+
     [[nodiscard]] std::optional<std::string> get_str_value(const std::string& table, std::string_view key) const;
     [[nodiscard]] bool has_table(const std::string& table) const;
     [[nodiscard]] static ConfigFileData load_cfg_data(const fs::path& file_path = "assets/cxconfig.cxe");
@@ -84,6 +90,11 @@ StrView parse_value(It begin, It end) {
     return sview;
 }
 
+struct FontConfiguration {
+    std::string name;
+    std::string asset_path;
+    std::vector<int> sizes;
+};
 
 struct Configuration {
     // We don't pollute the namespace with these small-context types

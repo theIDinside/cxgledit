@@ -91,6 +91,10 @@ void ui::ModalPopup::anchor_to(int x, int y) {
 
 ui::PopupItem ui::ModalPopup::get_choice() { return dialogData[selected]; }
 
+void ui::ModalPopup::maybe_delete_selected() {
+
+}
+
 std::vector<ui::PopupItem> ui::PopupItem::make_action_list_from_context(const FileContext &context) {
     std::vector<ui::PopupItem> result;
     auto index = 0;

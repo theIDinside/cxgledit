@@ -266,6 +266,7 @@ View *View::create(TextData *data, const std::string &name, int w, int h, int x,
 void View::set_font(SimpleFont *new_font) {
     font = new_font;
     cursor->setup_dimensions(cursor->width, font->max_glyph_height + 4);
+    lines_displayable = int_ceil(float(height) / float(font->get_row_advance())) - LINES_DISPLAYABLE_DIFF;
     forced_draw(true);
 }
 View::~View() {

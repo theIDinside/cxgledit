@@ -624,7 +624,14 @@ void StdStringBuffer::set_bookmark() {
     auto& bm = meta_data.bookmarks;
     auto line_begin = find_line_start(cursor.pos);
     auto line_end = find_line_end(cursor.pos);
-    auto line_contents = store.substr(line_begin, line_end - line_begin);
+
+    std::string_view v{store.c_str()+line_begin, static_cast<std::size_t>(line_end - line_begin)};
+    auto it = std::ranges::find_if(v, [](auto e){
+        return !std::isspace(e);
+    });
+
+    v.remove_prefix(std::distance(v.begin(), it));
+    std::string line_contents{v};
     bm.emplace_back(cursor.line, std::move(line_contents));
     // TODO: this really is wasting CPU time. if we keep it sorted, we should find
     std::sort(bm.begin(), bm.end(), [](auto& ba, auto& bb) {

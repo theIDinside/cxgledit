@@ -133,7 +133,7 @@ public:
     void create_vertex_data_no_highlighting(ui::View *pView, ui::core::ScreenPos startingTopLeftPos);
 
     void create_vertex_data_for_only_visible(ui::View *pView, ui::core::ScreenPos startingTopLeftPos);
-
+    int get_pixel_size() const;
 private:
     // glyph_info* data = info;
     int pixel_size{};

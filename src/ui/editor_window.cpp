@@ -104,6 +104,7 @@ void EditorWindow::set_view_colors(RGBColor bg, RGBColor fg) {
 void EditorWindow::set_font(SimpleFont *pFont) {
     view->font = pFont;
     view->cursor->setup_dimensions(view->cursor->width, pFont->max_glyph_height + 4);
+
 }
 
 void EditorWindow::set_caret_style(Configuration::Cursor style) {
@@ -133,6 +134,10 @@ const std::vector<Bookmark>& EditorWindow::get_bookmarks() const {
 
 void EditorWindow::set_bookmark() {
     get_text_buffer()->set_bookmark();
+}
+
+void EditorWindow::remove_bookmark(int index) {
+    get_text_buffer()->meta_data.bookmarks.erase(get_text_buffer()->meta_data.bookmarks.begin() + index);
 }
 
 }// namespace ui

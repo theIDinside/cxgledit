@@ -2,19 +2,16 @@
 // Created by 46769 on 2021-01-17.
 //
 #include "configuration.hpp"
+
 #include <fstream>
 #include <sstream>
 
-// TODO: this looks horrible. But it works for now
-ConfigFileData cfg_parse(std::string &&file_data) {
-    ConfigFileData cfgFile{.raw_file_data = std::move(file_data), .parsed_data = {}};
-    // auto& data = *ptrData;
-    auto &[data, parsed, _] = cfgFile;
+ParsedView parse_config_data(const std::string &data) {
+    ParsedView parsed{};
     StrView key, val;
     std::string current_table{};
     LexerState state = LexerState::Table;
     auto e = data.end();
-
     for (auto i = data.begin(); i < e; i++) {
         if (*i == '[') {
             state = LexerState::Table;
@@ -67,6 +64,15 @@ ConfigFileData cfg_parse(std::string &&file_data) {
             parsed[current_table][insert_key] = insert_val;
         }
     }
+    return parsed;
+}
+
+// TODO: this looks horrible. But it works for now
+ConfigFileData cfg_parse(std::string &&file_data) {
+    ConfigFileData cfgFile{.raw_file_data = std::move(file_data), .parsed_data = {}};
+    // auto& data = *ptrData;
+    auto &[data, parsed, _] = cfgFile;
+    parsed = parse_config_data(data);
     return cfgFile;
 }
 std::string to_string(StrView str) { return std::string{str}; }
@@ -101,7 +107,6 @@ std::string serialize(const Configuration &cfg) {
 
     return ss.str();
 }
-
 RGBColor parse_rgb_color(const std::string &str_item) {
     std::stringstream ss{str_item};
     RGBColor c;
@@ -114,7 +119,6 @@ RGBColor parse_rgb_color(const std::string &str_item) {
     }
     return c;
 }
-
 RGBAColor parse_rgba_color(const std::string &str_item) {
     std::stringstream ss{str_item};
     RGBAColor c;
@@ -177,6 +181,45 @@ Configuration Configuration::make_default() {
     Configuration c;
     c.file_path = "assets/config.cxe";
     return c;
+}
+
+std::vector<FontConfig> parse_font_configs(const fs::path &cfg) {
+    std::vector<FontConfig> result;
+    std::ifstream f{cfg};
+    std::string buf;
+    buf.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+    auto parsed = parse_config_data(buf);
+    for(auto& [font_name, table] : parsed) {
+        if(!table.contains("asset")) {
+            util::println("Failed to parse config data for {} due to asset path not being defined. usage: \n\tasset = \"... path ...\";");
+        } else {
+            auto asset_path = table.at("asset");
+            asset_path.remove_suffix(1);
+            asset_path.remove_prefix(1);
+            if(!table.contains("sizes")) {
+                util::println("No sizes set for font, using 1 default (18). Setting example: \n\tsizes = \"[12 13 18]\"");
+                result.emplace_back(font_name, std::string{asset_path}, 18);
+            } else {
+                auto sizes_data = table.at("sizes");
+                sizes_data.remove_prefix(1);
+                sizes_data.remove_suffix(1);
+                std::string d{sizes_data};
+                std::stringstream ss{d};
+                std::vector<int> sizes;
+                std::string t;
+                while (std::getline(ss, t, ' ')) {
+                    auto res = std::stoi(t);
+                    sizes.push_back(res);
+                }
+                for(auto s : sizes) {
+                    result.emplace_back(font_name, std::string{asset_path}, s);
+                }
+            }
+
+        }
+    }
+    util::println("Parsed {} font configurations", result.size());
+    return result;
 }
 
 std::optional<std::string> ConfigFileData::get_str_value(const std::string &table, std::string_view key) const {

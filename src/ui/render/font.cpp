@@ -960,3 +960,6 @@ int SimpleFont::calculate_text_width(std::string_view str) {
     }
     return std::max(width_in_pixels, acc);
 }
+int SimpleFont::get_pixel_size() const {
+    return pixel_size;
+}

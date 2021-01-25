@@ -45,37 +45,25 @@ static auto key_callbacks(GLFWwindow *window, int key, int scancode, int action,
     // app->command_view->show_last_message = false;
 };
 
+// TODO: add some configuration for loading these, so it's not statically hard coded into the source code
 static void initialize_static_resources() {
 
-    FontConfig source_code_regular24{.name = "SourceCodePro24",
-                                     .path = "assets/fonts/SourceCodePro-Regular.ttf",
-                                     .pixel_size = 24,
-                                     .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
+    auto font_cfg_data = parse_font_configs("assets/fonts.cxe");
+    if(!font_cfg_data.empty()) {
+        for(const auto& fontConfig : font_cfg_data) {
+            FontLibrary::get_instance().load_font(fontConfig, true);
+        }
+    } else {
+        constexpr int pixel_sizes[5]{24, 22, 18, 14, 12};
+        for(auto ps : pixel_sizes) {
+            FontConfig source_code_bold{.name = "SourceCodeProBold",
+                    .path = "assets/fonts/SourceCodePro-Bold.ttf",
+                    .pixel_size = ps,
+                    .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
 
-    FontConfig source_code_semibold24{.name = "SourceCodeProSemiBold24",
-                                      .path = "assets/fonts/SourceCodePro-Semibold.ttf",
-                                      .pixel_size = 24,
-                                      .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
-
-    FontConfig source_code_bold24{.name = "SourceCodeProBold24",
-                                  .path = "assets/fonts/SourceCodePro-Bold.ttf",
-                                  .pixel_size = 24,
-                                  .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
-
-    FontConfig source_code_regular18{.name = "SourceCodePro18",
-                                     .path = "assets/fonts/SourceCodePro-Regular.ttf",
-                                     .pixel_size = 18,
-                                     .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
-
-    FontConfig source_code_semibold18{.name = "SourceCodeProSemiBold18",
-                                      .path = "assets/fonts/SourceCodePro-Semibold.ttf",
-                                      .pixel_size = 18,
-                                      .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
-
-    FontConfig source_code_bold18{.name = "SourceCodeProBold18",
-                                  .path = "assets/fonts/SourceCodePro-Bold.ttf",
-                                  .pixel_size = 18,
-                                  .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
+            FontLibrary::get_instance().load_font(source_code_bold, true);
+        }
+    }
 
     ShaderConfig text_shader{.name = "text",
                              .vs_path = "assets/shaders/textshader.vs",
@@ -83,14 +71,6 @@ static void initialize_static_resources() {
     ShaderConfig cursor_shader{.name = "cursor",
                                .vs_path = "assets/shaders/cursor.vs",
                                .fs_path = "assets/shaders/cursor.fs"};
-
-    FontLibrary::get_instance().load_font(source_code_regular18, true);
-    FontLibrary::get_instance().load_font(source_code_semibold18, true);
-    FontLibrary::get_instance().load_font(source_code_bold18, true);
-
-    FontLibrary::get_instance().load_font(source_code_regular24, true);
-    FontLibrary::get_instance().load_font(source_code_semibold24, true);
-    FontLibrary::get_instance().load_font(source_code_bold24, true);
 
     ShaderLibrary::get_instance().load_shader(text_shader);
     ShaderLibrary::get_instance().load_shader(cursor_shader);
@@ -221,7 +201,7 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
     auto cv = CommandView::create("command", app_width, text_row_advance * 1, 0, text_row_advance * 1);
     cv->command_view->set_projection(instance->mvp);
     instance->modal_popup = ui::ModalPopup::create(instance->mvp);
-
+    instance->modal_popup->view->font = FontLibrary::get_default_font(18);
     instance->command_view = std::move(cv);
 
     // TODO: remove these, these are just for simplicity when testing UI
@@ -589,7 +569,13 @@ void App::handle_edit_input(KeyInput input) {
             }
         } break;
         case GLFW_KEY_DELETE: {
-            if (mode == CXMode::CommandInput) {
+            if (mode == CXMode::Popup) {
+                if (modal_popup->type == ui::ModalContentsType::Bookmarks) {
+                    auto selected = modal_popup->get_choice();
+                    active_window->remove_bookmark(selected.item_index);
+                    modal_popup->dialogData.erase(modal_popup->dialogData.begin() + selected.item_index);
+                }
+            } else if (mode == CXMode::CommandInput) {
                 active_buffer->remove(Movement::Char(1, CursorDirection::Forward));
                 auto &ci = CommandInterpreter::get_instance();
                 ci.evaluate_current_input();
@@ -732,13 +718,15 @@ void App::app_debug() {
     util::println("Available buffers in re-use list: {}", dm.reuseable_buffers());
     dm.print_all_managed();
 #endif
+    // TODO: will crash if no window is loaded with data yet
     auto [top, bot] = active_view->debug_print_boundary_lines();
-
     util::println("- Top line: '{}' - Bottom line: {}", top, bot);
 
     util::println("APPDEBUG: Buffer line: {}\t Cursor line: {}\tDisplayable lines in view: {} - Scrolled: {}",
                   active_window->get_text_buffer()->cursor.line, active_window->view->cursor->views_top_line,
                   active_window->view->lines_displayable, active_window->view->scrolled);
+    auto& fl = FontLibrary::get_instance();
+    fl.print_loaded_fonts();
     util::println("Active buffer size: {} \t Reserved capacity: {}", active_buffer->size(), active_buffer->capacity());
 }
 
@@ -869,12 +857,13 @@ void App::toggle_modal_popup(ui::ModalContentsType contents) {
             case ui::Bookmarks: {
                 auto bookmarks = active_window->get_bookmarks();
                 std::vector<ui::PopupItem> context_specific_items;
-                auto idx = 0;
-                for (auto &b : bookmarks) {
-                    context_specific_items.push_back(ui::PopupItem{.item_index = idx++, .displayable = b.line_contents,
-                                                                   .type = ui::PopupActionType::AppCommand,
-                                                                   .command = Commands::GotoBookmark});
-                }
+                auto index = 0;
+                std::ranges::transform(bookmarks, std::back_inserter(context_specific_items), [&index](auto b) {
+                    return ui::PopupItem{.item_index = index++,
+                                         .displayable = b.line_contents,
+                                         .type = ui::PopupActionType::AppCommand,
+                                         .command = Commands::GotoBookmark};
+                });
                 modal_popup->register_actions(context_specific_items);
                 auto x = active_window->view->cursor->pos_x;
                 auto y = active_window->view->cursor->pos_y;
@@ -887,6 +876,7 @@ void App::toggle_modal_popup(ui::ModalContentsType contents) {
         modal_shown = true;
         priorMode = mode;
         mode = CXMode::Popup;
+        modal_popup->type = contents;
     }
 }
 
@@ -997,12 +987,13 @@ void App::reload_configuration(fs::path cfg_path) {
     auto cfgData = ConfigFileData::load_cfg_data(cfg_path);
     config = Configuration::from_parsed_map(cfgData);
     auto &fl = FontLibrary::get_instance();
-    if (!fl.get_font_with_size(config.views.font_pixel_size)) {
-        auto font_cfg_name = fmt::format("FreeMono{}", config.views.font_pixel_size);
-        FontConfig font_cfg{.name = font_cfg_name,
-                            .path = "assets/fonts/FreeMono.ttf",
-                            .pixel_size = config.views.font_pixel_size,
-                            .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
+    const auto& def_font = fl.get_default_font_name();
+    if(!fl.font_with_size_loaded(def_font, config.views.font_pixel_size)) {
+        const auto font_group = fl.get_font_group(def_font);
+        FontConfig font_cfg{.name = def_font,
+                .path = font_group.value()->asset_path.string(),
+                .pixel_size = config.views.font_pixel_size,
+                .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
         fl.load_font(font_cfg, true);
     }
     util::println("New config:\n{}", serialize(config));
@@ -1086,6 +1077,13 @@ void App::handle_char_input(int codepoint) {
 
 void App::handle_key_input(KeyInput input, int action) {
     auto &[_, mods] = input;
+
+    // TODO: Switch on mode here, and dispatch to relevant handler, instead of handling that inside next call stack
+    //  one way we can deal with operations that cancel a mode and go directly -> into another, would be to
+    //  return from each handler, a optional<KeyInput>, that way, instead of doing if-then-else here,
+    //  we just continually do if(...), if(...), if(...). It can be a *little* bit more costly, but it will also
+    //  mentally will make our model easier, as we won't have to triple check "did we push a canceling button now etc"
+
     if (pressed(action)) {
         if (mods & GLFW_MOD_CONTROL) {
             kb_command(input);
