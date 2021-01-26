@@ -157,7 +157,7 @@ enum GLFWKeys {
 #define MOUSE_BUTTON_MIDDLE MOUSE_BUTTON_3
 
 #define LIB __declspec(dllexport)
-enum class CXMode { Normal, Actions, CommandInput, Popup, Search };
+enum class CXMode { Normal, Actions, CommandInput, Popup, Search, MacroRecord };
 
 enum class Action {
     OpenFile,

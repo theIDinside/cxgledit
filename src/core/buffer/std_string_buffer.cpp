@@ -631,11 +631,13 @@ void StdStringBuffer::set_bookmark() {
     });
 
     v.remove_prefix(std::distance(v.begin(), it));
-    std::string line_contents{v};
-    bm.emplace_back(cursor.line, std::move(line_contents));
-    // TODO: this really is wasting CPU time. if we keep it sorted, we should find
-    std::sort(bm.begin(), bm.end(), [](auto& ba, auto& bb) {
-       return ba.line_number < bb.line_number;
-    });
-    util::println("Set bookmark at {}: '{}'", cursor.line, meta_data.bookmarks.back().line_contents);
+    if(not v.empty()) {
+        std::string line_contents{v};
+        bm.emplace_back(cursor.line, std::move(line_contents));
+        // TODO: this really is wasting CPU time. if we keep it sorted, we should find
+        std::sort(bm.begin(), bm.end(), [](auto& ba, auto& bb) {
+          return ba.line_number < bb.line_number;
+        });
+        util::println("Set bookmark at {}: '{}'", cursor.line, meta_data.bookmarks.back().line_contents);
+    }
 }

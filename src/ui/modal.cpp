@@ -74,7 +74,7 @@ void ui::ModalPopup::register_actions(std::vector<PopupItem> item) {
                     auto result = f->calculate_text_width(e.displayable);
                     return result;
                 });
-    auto dialogHeight = dialogData.size() * (FontLibrary::get_default_font()->get_row_advance() + 2);
+    auto dialogHeight = dialogData.size() * (view->get_font()->get_row_advance());
     auto dialogWidth = std::ranges::max(tRng);
     this->dimInfo.w = dialogWidth;
     this->dimInfo.h = dialogHeight;
@@ -89,10 +89,23 @@ void ui::ModalPopup::anchor_to(int x, int y) {
     view->y = y;
 }
 
-ui::PopupItem ui::ModalPopup::get_choice() { return dialogData[selected]; }
+std::optional<ui::PopupItem> ui::ModalPopup::get_choice() {
+    if(not dialogData.empty()) {
+        return dialogData[selected];
+    } else {
+        return {};
+    }
+}
 
 void ui::ModalPopup::maybe_delete_selected() {
-
+    if(not dialogData.empty()) {
+        dialogData.erase(dialogData.begin() + selected);
+        if(dialogData.size() == 0) {
+            selected = 0;
+        } else {
+            selected = std::min(selected, static_cast<int>(dialogData.size() - 1));
+        }
+    }
 }
 
 std::vector<ui::PopupItem> ui::PopupItem::make_action_list_from_context(const FileContext &context) {

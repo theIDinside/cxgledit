@@ -111,8 +111,15 @@ public:
 
     void reload_configuration(fs::path cfg_path = "./assets/cxconfig.cxe");
 
-    void handle_char_input(int codepoint);
+    void handle_text_input(int codepoint);
     void handle_key_input(KeyInput input, int action);
+
+    // Mode handlers
+    void handle_normal_input(KeyInput input, int action);
+    void handle_actions_input(KeyInput input, int action);
+    void handle_command_input(KeyInput input, int action);
+    void handle_popup_input(KeyInput input, int action);
+    void handle_macro_record_input(KeyInput input, int action);
 
 private:
     void cleanup();
@@ -138,6 +145,7 @@ private:
 
     static WindowDimensions win_dimensions;
     void close_active();
-    void handle_modal_selection(const ui::PopupItem&selected);
+    void handle_modal_selection(const std::optional<ui::PopupItem>& selected);
     void handle_command_input(KeyInput input);
+    void start_command_input(const std::string &prefix, Commands commandInput);
 };

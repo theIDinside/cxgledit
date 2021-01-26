@@ -52,7 +52,7 @@ struct ModalPopup {
     void register_actions(std::vector<PopupItem> item);
     void draw();
     void cycle_choice(Scroll scroll);
-    PopupItem get_choice();
+    std::optional<PopupItem> get_choice();
     void maybe_delete_selected();
 };
 
