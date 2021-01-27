@@ -133,6 +133,7 @@ const std::vector<Bookmark>& EditorWindow::get_bookmarks() const {
 }
 
 void EditorWindow::set_bookmark() {
+
     get_text_buffer()->set_bookmark();
 }
 

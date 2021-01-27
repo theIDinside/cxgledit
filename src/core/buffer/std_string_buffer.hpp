@@ -6,6 +6,7 @@
 #include "text_data.hpp"
 
 
+
 class StdStringBuffer : public TextData {
 public:
     explicit StdStringBuffer() : TextData(), store{} {}
@@ -56,9 +57,6 @@ public:
     void set_mark_at_cursor() override;
     void set_mark_from_cursor(int length) override;
     void clear_marks() override;
-
-    FileContext file_context() const override;
-
     std::pair<BufferCursor, BufferCursor> get_cursor_rect() const override;
     std::string_view copy_range(std::pair<BufferCursor, BufferCursor> selected_range) override;
     void goto_next(std::string search) override;
@@ -86,5 +84,5 @@ private:
     int find_line_end(int i);
     int find_next_delimiter(int i);
     int find_prev_delimiter(int i);
-    int find_line_start(int i);
+    int find_line_start(Boundary boundary, int i);
 };

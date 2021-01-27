@@ -341,164 +341,6 @@ constexpr auto should_ignore = [](auto key) {
            key == GLFW_KEY_RIGHT_ALT || key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT;
 };
 
-/// Keyboard input is tricky as f*ck. We have to remember to ignore modifier keys in this function, because we (rarely)
-/// want to treat those as single input keys, but a combination
-void App::kb_command(KeyInput input) {
-    const auto &[key, modifier] = input;
-    get_command_view()->show_last_message = false;
-    if (should_ignore(key)) { return; }
-    auto modify_movement_op = [this](auto mod) {
-        if (mod & GLFW_MOD_SHIFT) {
-            if (not active_buffer->mark_set) { active_buffer->set_mark_at_cursor(); }
-        } else {
-            if (active_buffer->mark_set) { active_buffer->clear_marks(); }
-        }
-    };
-    // util::println("CXMode: {}. Key & modifier = {} & {}", util::to_string(mode), key, modifier);
-    if (mode == CXMode::Search && key == KEY_N) {
-        util::println("find next result of {}", last_searched);
-        find_next_in_active(last_searched);
-    } else if (mode == CXMode::Search && key != KEY_N) {
-        util::println("Restoring mode");
-        mode = CXMode::Normal;
-    }
-    /*
-    if (mode == CXMode::Normal || mode == CXMode::Actions) {
-        switch (key) {
-            case CTRL_L_ANGLE_BRACKET:
-                toggle_command_input("command", Commands::UserCommand);
-                break;
-            case GLFW_KEY_ENTER: {
-                auto curr_pos = active_buffer->cursor.pos;
-                active_buffer->insert('\n');
-                active_buffer->step_cursor_to(curr_pos);
-            } break;
-            case GLFW_KEY_TAB:
-                active_buffer->insert_str("    ");
-                active_buffer->insert_str("    ");
-                break;
-            case GLFW_KEY_UP: {
-                active_window->get_text_buffer()->move_cursor(Movement::Line(3, CursorDirection::Back));
-                active_view->scroll_to(active_view->cursor->views_top_line - 3);
-            } break;
-            case GLFW_KEY_DOWN: {
-                active_window->get_text_buffer()->move_cursor(Movement::Line(3, CursorDirection::Forward));
-                active_view->scroll_to(active_view->cursor->views_top_line + 3);
-            } break;
-            case GLFW_KEY_RIGHT:
-                modify_movement_op(modifier);
-                active_buffer->move_cursor(Movement::Word(1, CursorDirection::Forward));
-                break;
-            case GLFW_KEY_LEFT:
-                modify_movement_op(modifier);
-                active_buffer->move_cursor(Movement::Word(1, CursorDirection::Back));
-                break;
-            case GLFW_KEY_HOME:// GOTO FILE BEGIN
-                active_window->get_text_buffer()->step_cursor_to(0);
-                active_view->scroll_to(0);
-                break;
-            case GLFW_KEY_END:// GOTO FILE END
-                active_window->get_text_buffer()->step_cursor_to(active_window->get_text_buffer()->size());
-                active_view->scroll_to(active_window->get_text_buffer()->size());
-                break;
-            case GLFW_KEY_DELETE:
-                if (not active_buffer->mark_set) {
-                    active_buffer->remove(Movement::Word(1, CursorDirection::Forward));
-                } else {
-                    auto [b, e] = active_buffer->get_cursor_rect();
-                    auto range = e.pos - b.pos;
-                    active_buffer->step_cursor_to(b.pos);
-                    active_buffer->remove(Movement::Char(range, CursorDirection::Forward));
-                    active_buffer->clear_marks();
-                }
-                break;
-            case GLFW_KEY_BACKSPACE: {
-                if (not active_buffer->mark_set) {
-                    active_buffer->remove(Movement::Word(1, CursorDirection::Back));
-                } else {
-                    auto [b, e] = active_buffer->get_cursor_rect();
-                    auto range = e.pos - b.pos;
-                    active_buffer->step_cursor_to(b.pos);
-                    active_buffer->remove(Movement::Char(range, CursorDirection::Forward));
-                    active_buffer->clear_marks();
-                }
-            } break;
-            case GLFW_KEY_B: {
-                if (modifier & GLFW_MOD_SHIFT) {
-                    toggle_modal_popup(ui::ModalContentsType::Bookmarks);
-                } else {
-                    active_window->set_bookmark();
-                    auto bms = active_window->get_bookmarks();
-                    util::println("Bookmark list: ");
-                    for (const auto &b : bms) { util::println("Line #{} - '{}'", b.line_number, b.line_contents); }
-                }
-            } break;
-            case GLFW_KEY_C: {// COPY
-                if (active_buffer->mark_set) {
-                    auto view = active_buffer->copy_range(active_buffer->get_cursor_rect());
-                    copy_register.push_view(view);
-                }
-            } break;
-            case GLFW_KEY_D:// DEBUG
-                app_debug();
-                break;
-            case GLFW_KEY_F:// FIND
-                toggle_command_input("find", Commands::Search);
-                break;
-            case GLFW_KEY_M: {// MODAL
-                toggle_modal_popup();
-            } break;
-            case GLFW_KEY_N: {
-                if (mode == CXMode::Search) {// NEXT result from search
-                    find_next_in_active(last_searched);
-                } else {// go to NEXT window
-                    auto current_window = active_window;
-                    current_window->active = false;
-                    rotate_container(editor_views, 1);
-                    active_window = editor_views.back();
-                    active_window->active = true;
-                    active_buffer = editor_views.back()->get_text_buffer();
-                    active_view = active_window->view;
-                }
-            } break;
-            case GLFW_KEY_G:// GOTO
-                toggle_command_input("goto", Commands::GotoLine);
-                break;
-            case GLFW_KEY_O:// OPEN
-                toggle_command_input("open", Commands::OpenFile);
-                break;
-            case GLFW_KEY_Q: {
-                close_active();
-            } break;
-            case GLFW_KEY_V: {// PASTE
-                auto data = copy_register.get_last();
-                if (data) { active_buffer->insert_str(*data); }
-            } break;
-            case GLFW_KEY_W:// WRITE
-                toggle_command_input("write", Commands::WriteFile);
-                break;
-        }
-    }
-    */
-}
-
-void App::handle_edit_input(KeyInput input) {
-    const auto &[key, modifier] = input;
-    get_command_view()->show_last_message = false;
-    auto modify_movement_op = [this](auto mod) {
-        if (mod & GLFW_MOD_SHIFT) {
-            if (not active_buffer->mark_set) { active_buffer->set_mark_at_cursor(); }
-        } else {
-            if (active_buffer->mark_set) { active_buffer->clear_marks(); }
-        }
-    };
-
-    if (mode == CXMode::Search) { mode = CXMode::Normal; }
-    // N.B. this was moved from charCallback because typing in ÖÄÅ right now, crashes the application as the textual data lives inside a std::string
-    // which gets passed around through layers of structures, and these characters can't be represented as single bytes.
-    command_view->active = (mode == CXMode::CommandInput);
-}
-
 void App::graceful_exit() {
     // TODO: ask user to save / discard unsaved changes
     // TODO: clean up GPU memory resources
@@ -756,6 +598,7 @@ void App::toggle_modal_popup(ui::ModalContentsType contents) {
             } break;
             case ui::Bookmarks: {
                 auto bookmarks = active_window->get_bookmarks();
+                if(bookmarks.empty()) return;
                 std::vector<ui::PopupItem> context_specific_items;
                 auto index = 0;
                 std::ranges::transform(bookmarks, std::back_inserter(context_specific_items), [&index](auto b) {
@@ -889,12 +732,16 @@ void App::reload_configuration(fs::path cfg_path) {
     auto &fl = FontLibrary::get_instance();
     const auto &def_font = fl.get_default_font_name();
     if (!fl.font_with_size_loaded(def_font, config.views.font_pixel_size)) {
+        util::println("no font with that size loaded. Creating new font texture atlas");
         const auto font_group = fl.get_font_group(def_font);
         FontConfig font_cfg{.name = def_font,
                             .path = font_group.value()->asset_path.string(),
                             .pixel_size = config.views.font_pixel_size,
                             .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
         fl.load_font(font_cfg, true);
+
+    } else {
+        fl.set_as_default(def_font, config.views.font_pixel_size);
     }
     util::println("New config:\n{}", serialize(config));
 
@@ -1000,7 +847,6 @@ void App::handle_key_input(KeyInput input, int action) {
     //  return from each handler, a optional<KeyInput>, that way, instead of doing if-then-else here,
     //  we just continually do if(...), if(...), if(...). It can be a *little* bit more costly, but it will also
     //  mentally will make our model easier, as we won't have to triple check "did we push a canceling button now etc"
-
     switch (mode) {
         case CXMode::Normal: {
             this->handle_normal_input(input, action);
@@ -1128,7 +974,7 @@ void App::handle_normal_input(KeyInput input, int action) {
                                                active_window->view->lines_displayable);
             } break;
         }
-    } else if (modifier == GLFW_MOD_CONTROL) {
+    } else if (modifier & GLFW_MOD_CONTROL) {
         switch (key) {
             case CTRL_L_ANGLE_BRACKET: {
                 start_command_input("command", Commands::UserCommand);
@@ -1147,9 +993,11 @@ void App::handle_normal_input(KeyInput input, int action) {
                 active_view->scroll_to(active_view->cursor->views_top_line + 3);
             } break;
             case GLFW_KEY_RIGHT:
+                buffer_set_mark_at_cursor(modifier);
                 active_buffer->move_cursor(Movement::Word(1, CursorDirection::Forward));
                 break;
             case GLFW_KEY_LEFT:
+                buffer_set_mark_at_cursor(modifier);
                 active_buffer->move_cursor(Movement::Word(1, CursorDirection::Back));
                 break;
             case GLFW_KEY_HOME:// GOTO FILE BEGIN
@@ -1183,10 +1031,14 @@ void App::handle_normal_input(KeyInput input, int action) {
                 }
             } break;
             case GLFW_KEY_B: {
-                active_window->set_bookmark();
-                auto bms = active_window->get_bookmarks();
-                util::println("Bookmark list: ");
-                for (const auto &b : bms) { util::println("Line #{} - '{}'", b.line_number, b.line_contents); }
+                if(modifier & GLFW_MOD_SHIFT) {
+                    toggle_modal_popup(ui::ModalContentsType::Bookmarks);
+                } else {
+                    active_window->set_bookmark();
+                    auto bms = active_window->get_bookmarks();
+                    util::println("Bookmark list: ");
+                    for (const auto &b : bms) { util::println("Line #{} - '{}'", b.line_number, b.line_contents); }
+                }
             } break;
             case GLFW_KEY_C: {// COPY
                 if (active_buffer->mark_set) {
@@ -1204,9 +1056,10 @@ void App::handle_normal_input(KeyInput input, int action) {
                 toggle_modal_popup();
             } break;
             case GLFW_KEY_N: {
+                const auto rotation_direction = (modifier & GLFW_MOD_SHIFT) ? -1 : 1;
                 auto current_window = active_window;
                 current_window->active = false;
-                rotate_container(editor_views, 1);
+                rotate_container(editor_views, 1 * rotation_direction);
                 active_window = editor_views.back();
                 active_window->active = true;
                 active_buffer = editor_views.back()->get_text_buffer();
@@ -1229,28 +1082,23 @@ void App::handle_normal_input(KeyInput input, int action) {
                 toggle_command_input("write", Commands::WriteFile);
                 break;
         }
-    } else if (modifier == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
+    } else if (modifier == GLFW_MOD_SHIFT) {
         switch (key) {
             case GLFW_KEY_RIGHT: {
                 buffer_set_mark_at_cursor(modifier);
-                active_buffer->move_cursor(Movement::Word(1, CursorDirection::Forward));
+                active_buffer->move_cursor(Movement::Char(1, CursorDirection::Forward));
             } break;
             case GLFW_KEY_LEFT:
                 buffer_set_mark_at_cursor(modifier);
-                active_buffer->move_cursor(Movement::Word(1, CursorDirection::Back));
+                active_buffer->move_cursor(Movement::Char(1, CursorDirection::Back));
                 break;
-            case GLFW_KEY_B: {
-                toggle_modal_popup(ui::ModalContentsType::Bookmarks);
+            case GLFW_KEY_HOME: {
+                buffer_set_mark_at_cursor(modifier);
+                active_buffer->step_to_line_begin(Boundary::Inside);
             } break;
-            case GLFW_KEY_N: {
-                auto current_window = active_window;
-                current_window->active = false;
-                rotate_container(editor_views, -1);
-                active_window = editor_views.back();
-                active_window->active = true;
-                active_buffer = editor_views.back()->get_text_buffer();
-                active_view = active_window->view;
-
+            case GLFW_KEY_END: {
+                buffer_set_mark_at_cursor(modifier);
+                active_buffer->step_to_line_end(Boundary::Outside);
             } break;
         }
     }
@@ -1261,7 +1109,15 @@ void App::handle_actions_input(KeyInput input, int action) {
 }
 
 void App::handle_command_input(KeyInput input, int action) {
+    auto &[key, mod] = input;
     util::println("Command Input Mode Input handler");
+
+    switch(key) {
+        case GLFW_KEY_ESCAPE:
+            disable_command_input();
+            break;
+    }
+
 }
 
 void App::handle_popup_input(KeyInput input, int action) {
@@ -1289,6 +1145,7 @@ void App::handle_popup_input(KeyInput input, int action) {
             }
         } break;
     }
+    INDEX_ASSERTION(modal_popup->selected, modal_popup->dialogData);
     util::println("Popup Mode Input handler");
 }
 

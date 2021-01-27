@@ -87,7 +87,7 @@ set(SOURCES
         ${CORE_SOURCE}
         ${UI_RENDER_SOURCES}
         ${UTIL_SOURCES}
-        ${COMMANDS_SOURCE} src/cfg/types/cursor_options.hpp src/core/buffer/bookmark.cpp src/core/buffer/bookmark.hpp)
+        ${COMMANDS_SOURCE} src/cfg/types/cursor_options.hpp src/core/buffer/bookmark.cpp src/core/buffer/bookmark.hpp src/core/buffer/text_rep.cpp src/core/buffer/text_rep.hpp)
 
 add_executable(cxgledit ${SOURCES})
 

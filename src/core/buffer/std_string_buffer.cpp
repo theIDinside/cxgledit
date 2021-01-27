@@ -4,8 +4,8 @@
 
 #include "std_string_buffer.hpp"
 #include "data_manager.hpp"
-#include <ui/view.hpp>
 #include <core/strops.hpp>
+#include <ui/view.hpp>
 
 void StdStringBuffer::move_cursor(Movement m) {
     switch (m.construct) {
@@ -19,7 +19,7 @@ void StdStringBuffer::move_cursor(Movement m) {
             m.dir == CursorDirection::Forward ? line_move_forward(m.count) : line_move_backward(m.count);
             break;
         default:
-        PANIC("Block and file movements not yet implemented");
+            PANIC("Block and file movements not yet implemented");
     }
     state_is_pristine = false;
 }
@@ -135,17 +135,32 @@ int StdStringBuffer::find_line_begin(int i) {
  * @param i
  * @return
  */
-int StdStringBuffer::find_line_start(int i) {
-    if (i <= 0) return 0;
-    if (store[i] == '\n') {
-        return i + 1;
-    } else {
-        for (; i > 0; --i) {
-            if (store[i] == '\n') { break; }
+int StdStringBuffer::find_line_start(Boundary boundary, int i) {
+    i -= 1;
+    if(boundary == Boundary::Outside) {
+        if (i <= 0) return 0;
+        if (store[i] == '\n') {
+            return i;
+        } else {
+            for (; i > 0; --i) {
+                if (store[i] == '\n') { break; }
+            }
+            if (i <= 0) return 0;// BOF - Beginning of file
+            else
+                return i + 1;// BOL - Beginning of line
         }
-        if (i <= 0) return 0;// BOF - Beginning of file
-        else
-            return i + 1;// BOL - Beginning of line
+    } else {
+        if (i <= 0) return 0;
+        if (store[i] == '\n') {
+            return i + 1;
+        } else {
+            for (; i > 0; --i) {
+                if (store[i] == '\n') { break; }
+            }
+            if (i <= 0) return 0;// BOF - Beginning of file
+            else
+                return i + 1;// BOL - Beginning of line
+        }
     }
 }
 
@@ -178,11 +193,11 @@ void StdStringBuffer::line_move_backward(std::size_t count) {
             if (count == 0) break;
         }
     }
-    auto line_length = (pos - find_line_start(pos - 1));
+    auto line_length = (pos - find_line_start(Boundary::Inside, pos));
     if (curr_column > line_length) {
         char_move_backward(cursor.pos - pos);
     } else {
-        auto p = find_line_start(pos - 1) + curr_column;
+        auto p = find_line_start(Boundary::Inside, pos) + curr_column;
         char_move_backward(cursor.pos - p);
     }
 }
@@ -224,10 +239,10 @@ void StdStringBuffer::insert(char ch) {
         if (has_meta_data) {
             md_lines.insert(md_lines.begin() + cursor.line, cursor.pos);
             std::for_each(md_lines.begin() + cursor.line + 1, md_lines.end(), [](auto &e) { e += 1; });
-            for(auto& b : meta_data.bookmarks) { // we only bookkeep line numbers for bookmarks, as the metadata has a separate index for line begins
-                if(b.line_number > cursor.line) {
-                    b.line_number++;
-                }
+            for (auto &b :
+                 meta_data
+                         .bookmarks) {// we only bookkeep line numbers for bookmarks, as the metadata has a separate index for line begins
+                if (b.line_number > cursor.line) { b.line_number++; }
             }
         }
         cursor.line++;
@@ -279,7 +294,7 @@ void StdStringBuffer::remove(const Movement &m) {
             // TODO: m.dir == CursorDirection::Forward ? this->remove_line_forward(m.count) : this->remove_line_backward(m.count);
             break;
         default:
-        PANIC("Removing other than char, word, line is an error at this point");
+            PANIC("Removing other than char, word, line is an error at this point");
     }
     this->state_is_pristine = false;
     data_is_pristine = false;
@@ -290,17 +305,13 @@ void StdStringBuffer::remove_ch_forward(size_t i) {
     if (cursor.pos + i < store.size()) {
         auto e = cursor.pos + i;
         for (auto index = cursor.pos; index < e && not line_deleted; index++) {
-            if (store[index] == '\n') {
-                line_deleted = true;
-            }
+            if (store[index] == '\n') { line_deleted = true; }
         }
         store.erase(cursor.pos, i);
     } else {
         auto sz = store.size();
         for (auto index = cursor.pos; index < sz && not line_deleted; index++) {
-            if (store[index] == '\n') {
-                line_deleted = true;
-            }
+            if (store[index] == '\n') { line_deleted = true; }
         }
         store.erase(cursor.pos);
     }
@@ -359,7 +370,7 @@ void StdStringBuffer::remove_word_backward(size_t count) {
 // TODO(simon): MAJOR CLEAN UP NEEDED!
 
 void StdStringBuffer::step_cursor_to(size_t pos) {
-    if(pos == 0) {
+    if (pos == 0) {
         cursor.pos = 0;
         cursor.line = 0;
         cursor.col_pos = 0;
@@ -387,7 +398,7 @@ void StdStringBuffer::step_cursor_to(size_t pos) {
                 auto i = cursor.line;
                 auto last_item = meta_data.line_begins.size() - 1;
                 auto lineToGoTo = 0;
-                if(meta_data.line_begins[i] == cursor.pos) i++;
+                if (meta_data.line_begins[i] == cursor.pos) i++;
                 for (; i < last_item; i++) {
                     if (pos >= meta_data.line_begins[i] && pos <= meta_data.line_begins[i + 1]) {
                         lineToGoTo = i;
@@ -426,7 +437,7 @@ void StdStringBuffer::step_cursor_to(size_t pos) {
         }
     }
 
-    auto col_pos_res = cursor.pos - find_line_start(cursor.pos - 1);
+    auto col_pos_res = cursor.pos - find_line_start(Boundary::Inside, cursor.pos);
     cursor.col_pos = std::max(0, col_pos_res);
     state_is_pristine = false;
 }
@@ -463,10 +474,10 @@ size_t StdStringBuffer::lines_count() const {
 }
 int StdStringBuffer::find_next_delimiter(int i) {
     auto sz = size();
-    if(is_delimiter(store[i])) {
+    if (is_delimiter(store[i])) {
         // we are already standing on whitespace... scan until we are no longer on whitespace
-        while(i < sz) {
-            if(not is_delimiter(store[i])) return i;
+        while (i < sz) {
+            if (not is_delimiter(store[i])) return i;
             i++;
         }
         return i;
@@ -538,7 +549,7 @@ void StdStringBuffer::rebuild_metadata() {
             this->meta_data.line_begins = std::move(line_indices);
         }
         data_is_pristine = true;
-    } else if(info == BufferTypeInfo::Modal) {
+    } else if (info == BufferTypeInfo::Modal) {
         if (has_meta_data) {
             auto line_indices = str::count_newlines(store.data(), store.size());
             this->meta_data.line_begins = std::move(line_indices);
@@ -586,7 +597,7 @@ void StdStringBuffer::insert_str_owned(const std::string &ref_data) {
 }
 
 StdStringBuffer::~StdStringBuffer() {
-    if(DataManager::get_instance().is_managed(id)) {
+    if (DataManager::get_instance().is_managed(id)) {
         DataManager::get_instance().print_all_managed();
         // TODO: this is just here, so we always can be sure that during the life time of the program, the buffers don't accidentally destroy themselves
         //  this will be removed.
@@ -597,47 +608,40 @@ StdStringBuffer::~StdStringBuffer() {
 void StdStringBuffer::goto_next(std::string search) {
     auto pos = store.find(search, cursor.pos + 1);
     auto oldpos = cursor.pos;
-    if(pos != std::string::npos) {
+    if (pos != std::string::npos) {
         cached_search = search;
         util::println("found '{}' at {}: [{}]", search, pos, store.substr(pos, search.size()));
         step_cursor_to(pos);
         util::println("Move {} -> {}", oldpos, cursor.pos);
     }
 }
-size_t StdStringBuffer::capacity() const {
-    return store.capacity();
-}
-
-FileContext StdStringBuffer::file_context() const {
-    if(auto ext = file_path.filename().extension(); ext == ".cpp" || ext == ".c") {
-        return FileContext{.type = ContexTypes::CPPSource, .path = file_path};
-    } else if(ext == ".hpp" || ext == ".h") {
-        return FileContext{.type = ContexTypes::CPPHeader, .path = file_path};
-    } else if(ext == ".cxe") {
-        return FileContext{.type = ContexTypes::Config, .path = file_path};
-    } else {
-        return FileContext{.type = ContexTypes::Unhandled, .path = file_path};
-    }
-}
+size_t StdStringBuffer::capacity() const { return store.capacity(); }
 
 void StdStringBuffer::set_bookmark() {
-    auto& bm = meta_data.bookmarks;
-    auto line_begin = find_line_start(cursor.pos);
+    auto &bm = meta_data.bookmarks;
+    if (std::ranges::any_of(bm, [l = cursor.line](auto &b) { return b.line_number == l; })) { return; }
+    auto line_begin = find_line_start(Boundary::Inside, cursor.pos);
     auto line_end = find_line_end(cursor.pos);
 
-    std::string_view v{store.c_str()+line_begin, static_cast<std::size_t>(line_end - line_begin)};
-    auto it = std::ranges::find_if(v, [](auto e){
-        return !std::isspace(e);
-    });
+    // TODO: i can't be bothered to fix this right now. Due to how text data works, find_line_start and begin
+    //  returns cursor positions on different boundary types. find_line_end finds returns boundary_inside,
+    //  find_line_start finds boundary_outside, meaning it finds the previous soonest '\n and adds +1 to that
+    //  while find_line_end finds the next '\n' and subtracts 1 from that, since when we want a line,
+    //  we want the actual logical representation of that data (the actual characters, not the computer data, i.e. newlines,
+    //  tabs, etc)
+    if(line_begin > line_end) {
+        return;
+    }
+
+    std::string_view v{store.c_str() + line_begin, static_cast<std::size_t>(line_end - line_begin)};
+    auto it = std::ranges::find_if(v, [](auto e) { return !std::isspace(e); });
 
     v.remove_prefix(std::distance(v.begin(), it));
-    if(not v.empty()) {
+    if (not v.empty()) {
         std::string line_contents{v};
         bm.emplace_back(cursor.line, std::move(line_contents));
         // TODO: this really is wasting CPU time. if we keep it sorted, we should find
-        std::sort(bm.begin(), bm.end(), [](auto& ba, auto& bb) {
-          return ba.line_number < bb.line_number;
-        });
+        std::sort(bm.begin(), bm.end(), [](auto &ba, auto &bb) { return ba.line_number < bb.line_number; });
         util::println("Set bookmark at {}: '{}'", cursor.line, meta_data.bookmarks.back().line_contents);
     }
 }

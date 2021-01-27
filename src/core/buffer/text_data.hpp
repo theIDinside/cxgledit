@@ -147,7 +147,7 @@ public:
 
     void set_name(std::string buffer_name);
 
-    virtual FileContext file_context() const = 0;
+    virtual FileContext file_context() const;
 
 protected:
     /**

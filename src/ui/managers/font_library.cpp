@@ -24,9 +24,10 @@ void FontLibrary::load_font(const FontConfig &config, bool setAsDefault) {
         auto font = SimpleFont::setup_font(path, pixel_size, char_range);
         cached_fonts.emplace(name, path);
         cached_fonts.at(name).add_font(std::move(font));
+
         if (setAsDefault) {
-            default_font_key = name;
-            default_font_size = pixel_size;
+            set_as_default(config.name, config.pixel_size);
+            util::println("Default font set to {} {}px", default_font_key, default_font_size);
         }
         util::println("Font {} stored. {} font groups has been loaded. Default font set to {} with pixel size {}", name, cached_fonts.size(),
                       default_font_key, default_font_size);

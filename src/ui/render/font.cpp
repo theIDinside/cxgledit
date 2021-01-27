@@ -37,7 +37,7 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
     FT_Face face;
     FT_Init_FreeType(&ft);
     FT_New_Face(ft, path.c_str(), 0, &face);
-    FT_Set_Pixel_Sizes(face, 0, pixel_size);
+    FT_Set_Pixel_Sizes(face, pixel_size, pixel_size);
     // FT_Set_Char_Size(face, 0, 16 << 6, 96, 96);
 
     // quick and dirty max texture size estimate
@@ -108,7 +108,11 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
         png_data[i * 4 + 3] = 0xff;
     }
 
-    auto png_filename = fmt::format("{}_{}_output.png", path, pixel_size);
+    auto output_path = fs::current_path() / fmt::format("{}_{}_output.png", path, pixel_size);
+
+    auto png_filename = fmt::format("{}", output_path.string());
+
+    util::println("Writing file to {}", png_filename);
 
     stbi_write_png(png_filename.c_str(), tex_width, tex_height, 4, png_data, tex_width * 4);
     free(png_data);

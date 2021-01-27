@@ -299,7 +299,9 @@ void View::draw_modal_view(int selected, std::vector<TextDrawable>& drawables) {
     }
     font->add_colorized_text_gpu_data(vao.get(), drawables);
     vao->flush_and_draw();
-    cursor->set_line_rect(drawables[selected].xpos, drawables[selected].xpos + width, drawables[selected].ypos - 4, font->row_height - 2);
+    if(not drawables.empty())
+        cursor->set_line_rect(drawables[selected].xpos, drawables[selected].xpos + width, drawables[selected].ypos - 4, font->row_height - 2);
+
     cursor->forced_draw();
     glDisable(GL_SCISSOR_TEST);
 }
@@ -318,13 +320,21 @@ std::pair<std::string_view, std::string_view> View::debug_print_boundary_lines()
     auto top_line_idx = buf->meta_data.line_begins[top_line];
     auto top_len = buf->meta_data.line_begins[top_line+1] - buf->meta_data.line_begins[top_line];
 
-
-    auto bot_line_idx = buf->meta_data.line_begins[end_line];
-    auto bot_len = buf->meta_data.line_begins[end_line+1] - buf->meta_data.line_begins[end_line];
-
-    std::string_view top{total.data() + top_line_idx, static_cast<size_t>(top_len)};
-    std::string_view bot{total.data() + bot_line_idx, static_cast<size_t>(bot_len)};
-    return {top, bot};
+    if(end_line < buf->meta_data.line_begins.size()) {
+        auto bot_line_idx = buf->meta_data.line_begins[end_line];
+        auto bot_len = buf->meta_data.line_begins[end_line+1] - buf->meta_data.line_begins[end_line];
+        std::string_view top{total.data() + top_line_idx, static_cast<size_t>(top_len)};
+        std::string_view bot{total.data() + bot_line_idx, static_cast<size_t>(bot_len)};
+        return {top, bot};
+    } else if(buf->meta_data.line_begins.size() > 1) {
+        auto bot_line_idx = buf->meta_data.line_begins.back();
+        auto bot_len = *buf->meta_data.line_begins.rbegin() - *(buf->meta_data.line_begins.rbegin() + 1);
+        std::string_view top{total.data() + top_line_idx, static_cast<size_t>(top_len)};
+        std::string_view bot{total.data() + bot_line_idx, static_cast<size_t>(bot_len)};
+        return {top, bot};
+    } else {
+        return {total, total};
+    }
 }
 void View::scroll_to(int line) {
     int linesInBuffer = get_text_buffer()->meta_data.line_begins.size();

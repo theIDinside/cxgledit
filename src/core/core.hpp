@@ -11,16 +11,43 @@
 constexpr auto SWEDISH_LAST_ALPHA_CHAR_UNICODE = 0x00f6u;
 
 #define AS(value, type) static_cast<type>(value)
-
 #define int_ceil(value) static_cast<int>(std::ceil(value))
 
+#ifdef DEBUG
+constexpr auto DEBUG_IS_ON = true;
+#else
+constexpr auto DEBUG_IS_ON = false;
+#endif
 
-template<typename T> concept FloatingPoint = requires(T t) {
+/// Assertion that checks if index is not outside of containers size, or that it's 0 when container is empty
+#define INDEX_ASSERTION(index, container)                                                                              \
+    if constexpr (DEBUG_IS_ON) {                                                                                       \
+        asserts::index_assertion(__FUNCSIG__, __FILE__, __LINE__, index, container);                                   \
+    }
+
+namespace asserts {
+template<typename Container>
+concept ContainerAssertable = requires(Container c) {
+    c.empty();
+    c.size();
+};
+
+template<ContainerAssertable C>
+constexpr bool index_assertion(const char *fn_name, const char *file, int line_number, int index, C c) {
+    if (not(index < AS(c.size(), int) || (index == 0 && c.empty()))) {
+        util::println("Assertion failed ({}:{}): Type: 'Index assertion': {} not < {}", index, c.size());
+        std::abort();
+    }
+    return true;
+}
+}// namespace asserts
+
+template<typename T>
+concept FloatingPoint = requires(T t) {
     std::is_floating_point_v<T>;
 };
 
-
-template <FloatingPoint FP>
+template<FloatingPoint FP>
 constexpr int as_int(FP value) {
     return AS(std::round(value), int);
 }
@@ -28,8 +55,6 @@ constexpr int as_int(FP value) {
 /// Boxed = owned & RAII'd
 template<typename T>
 using Boxed = std::unique_ptr<T>;
-
-
 
 template<typename... Args>
 void panic(const char *message, Args... args) {
@@ -86,24 +111,25 @@ concept RangeType = requires(Range r) {
     r.end;
 };
 
-template <RangeType Range>
+template<RangeType Range>
 inline bool is_within(int value, Range range) {
     return (value >= range.begin) && (value <= range.end);
 }
 
-template <RangeType Range>
+template<RangeType Range>
 inline bool is_within(Range inner, Range outer) {
     return (inner.begin >= outer.begin) && (inner.end <= outer.end);
-
 }
 
 inline bool is_within(int value, int range_begin, int range_end) {
     return (value >= range_begin) && (value <= range_end);
 }
 
-template <typename View>
-inline bool is_within(int cursor_line, View* view) {
-    return (cursor_line >= view->cursor->views_top_line) && (cursor_line <= (view->cursor->views_top_line + view->lines_displayable));
+template<typename View>
+inline bool is_within(int cursor_line, View *view) {
+    return (cursor_line >= view->cursor->views_top_line) &&
+           (cursor_line <= (view->cursor->views_top_line + view->lines_displayable));
 }
 
-template<class> inline constexpr bool always_false_v = false;
+template<class>
+inline constexpr bool always_false_v = false;

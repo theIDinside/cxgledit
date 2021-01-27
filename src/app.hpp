@@ -93,20 +93,12 @@ public:
 
     void reload_keybindings();
     void app_debug();
-    void kb_command(KeyInput input);
 
     void update_all_editor_windows();
     void input_command_or_newline();
     void cycle_command_or_move_cursor(Cycle cycle);
 
     void toggle_modal_popup(ui::ModalContentsType = ui::ModalContentsType::ActionList);
-
-    /**
-     * Handle keyboard input, when we are in "edit" mode, meaning when we are editing actual text.
-     * @param i
-     * @param i1
-     */
-    void handle_edit_input(KeyInput input);
     void find_next_in_active(const std::string& search);
 
     void reload_configuration(fs::path cfg_path = "./assets/cxconfig.cxe");

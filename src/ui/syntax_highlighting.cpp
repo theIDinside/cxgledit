@@ -106,7 +106,7 @@ static bool is_qualifier_ish(std::string_view token) {
 std::optional<Token> named(std::string_view &text, std::size_t pos) {
     auto sz = text.size();
     auto begin = pos;
-    for (auto i = pos; i < sz; i++) {
+    for (auto i = pos; i < sz - 1; i++) {
         if (not named_ch_ok(text[i])) {
             if (is_qualifier_ish(text.substr(begin, i - begin))) {
                 last_lexed = TokenType::Qualifier;

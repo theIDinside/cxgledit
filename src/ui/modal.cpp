@@ -46,16 +46,19 @@ void ui::ModalPopup::draw() {
 }
 
 void ui::ModalPopup::cycle_choice(ui::Scroll scroll) {
+    if(dialogData.empty()) {
+        return;
+    }
     switch (scroll) {
         case ui::Scroll::Up: {
             if (selected - 1 < 0) {
-                selected = choices - 1;
+                selected = dialogData.size() - 1;
             } else {
                 selected--;
             }
         } break;
         case ui::Scroll::Down: {
-            if (selected + 1 >= choices) {
+            if (selected + 1 >= dialogData.size()) {
                 selected = 0;
             } else {
                 selected++;
@@ -100,7 +103,12 @@ std::optional<ui::PopupItem> ui::ModalPopup::get_choice() {
 void ui::ModalPopup::maybe_delete_selected() {
     if(not dialogData.empty()) {
         dialogData.erase(dialogData.begin() + selected);
-        if(dialogData.size() == 0) {
+        auto updateIndex = 0;
+        for(auto& item : dialogData) {
+            item.item_index = updateIndex;
+            updateIndex++;
+        }
+        if(dialogData.empty()) {
             selected = 0;
         } else {
             selected = std::min(selected, static_cast<int>(dialogData.size() - 1));

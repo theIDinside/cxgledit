@@ -5,6 +5,13 @@ constexpr auto WW = 1920;
 constexpr auto WH = 1080;
 
 int main(int argc, const char **argv) {
+
+    if constexpr(DEBUG_IS_ON) {
+        util::println("Debugging features is turned on");
+    } else {
+        util::println("Debugging features is turned off");
+    }
+
     auto app = App::initialize(WW, WH);
     if (argc > 1) { app->load_file(argv[1]); }
     app->run_loop();

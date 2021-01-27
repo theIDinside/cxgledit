@@ -25,7 +25,6 @@ BufferCursor BufferCursor::clone() const {
     return BufferCursor{.pos = pos, .line = line, .col_pos = col_pos, .buffer_id = buffer_id};
 }
 
-
 /// ----------- NON-PURE VIRTUAL ABSTRACT IMPL METHODS ----------------
 
 void TextData::set_file(fs::path p) {
@@ -45,6 +44,16 @@ void TextData::clear_metadata() {
     meta_data.buf_name.clear();
 }
 
-void TextData::set_name(std::string buffer_name) {
-    name = std::move(buffer_name);
+void TextData::set_name(std::string buffer_name) { name = std::move(buffer_name); }
+
+FileContext TextData::file_context() const {
+    if (auto ext = file_path.filename().extension(); ext == ".cpp" || ext == ".c") {
+        return FileContext{.type = ContexTypes::CPPSource, .path = file_path};
+    } else if (ext == ".hpp" || ext == ".h") {
+        return FileContext{.type = ContexTypes::CPPHeader, .path = file_path};
+    } else if (ext == ".cxe") {
+        return FileContext{.type = ContexTypes::Config, .path = file_path};
+    } else {
+        return FileContext{.type = ContexTypes::Unhandled, .path = file_path};
+    }
 }
