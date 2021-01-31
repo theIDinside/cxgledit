@@ -1,8 +1,10 @@
 [views]
 background_color = "0.021 0.052 0.0742123";
+active_background_color = "0.071 0.102 0.1242123";
 foreground_color = "1 1 1";
 font_pixel_size = "24";
 horizontal_layout_only = "on";
+
 
 [window]
 width = "1920";
