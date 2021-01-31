@@ -140,4 +140,5 @@ private:
     void handle_modal_selection(const std::optional<ui::PopupItem>& selected);
     void handle_command_input(KeyInput input);
     void start_command_input(const std::string &prefix, Commands commandInput);
+    void set_last_as_active_editor_window();
 };

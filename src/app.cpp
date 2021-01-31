@@ -244,10 +244,7 @@ void App::editor_win_selected(ui::EditorWindow *elem) {
     active_window->active = false;
     editor_views.erase(std::find(editor_views.begin(), editor_views.end(), elem));
     editor_views.push_back(elem);
-    active_window = editor_views.back();
-    active_buffer = editor_views.back()->get_text_buffer();
-    active_view = active_window->view;
-    active_window->active = true;
+    set_last_as_active_editor_window();
 }
 
 App::~App() { cleanup(); }
@@ -490,14 +487,9 @@ void App::new_editor_window(SplitStrategy splitStrategy) {
         ew->set_view_colors(config.views.bg_color, config.views.fg_color);
         ew->view->set_projection(mvp);
         ew->status_bar->ui_view->set_projection(mvp);
-
         editor_views.push_back(ew);
-        auto &e = editor_views.back();
-        active_buffer = e->get_text_buffer();
-        active_view = e->view;
-        active_window = editor_views.back();
         active_editor_win->update_layout(l->left->dimInfo);
-        active_window->active = true;
+        set_last_as_active_editor_window();
     } else {
         auto ew = EditorWindow::create({}, mvp, layout_id, DimInfo{0, win_height, win_width, win_height});
         ew->set_caret_style(config.cursor);
@@ -505,12 +497,8 @@ void App::new_editor_window(SplitStrategy splitStrategy) {
         ew->view->set_projection(mvp);
         ew->status_bar->ui_view->set_projection(mvp);
         editor_views.push_back(ew);
-        auto &e = editor_views.back();
-        active_buffer = e->get_text_buffer();
-        active_view = e->view;
-        ew->active = true;
+        set_last_as_active_editor_window();
     }
-    active_window = editor_views.back();
     util::println("Editor window created");
     layout_id++;
 }
@@ -644,47 +632,7 @@ void App::find_next_in_active(const std::string &search) {
 }
 
 void App::close_active() {
-    /*
-    auto active_buf = active_window->get_text_buffer();
-    if (!active_buf->empty()) {
-        auto id = active_buf->id;
-        DataManager::get_instance().request_close(id);
-        auto layoutToDestroy = find_by_id(root_layout, active_window->ui_layout_id);
-        if (layoutToDestroy == layoutToDestroy->parent->left) {
-            if (layoutToDestroy->parent == root_layout) {
-                auto new_root = layoutToDestroy->parent->right;
-                set_new_root(root_layout, new_root);
-            } else {
-                promote_node(layoutToDestroy->parent->right);
-            }
-        } else {
-            if (layoutToDestroy->parent == root_layout) {
-                auto new_root = layoutToDestroy->parent->left;
-                set_new_root(root_layout, new_root);
-            } else {
-                promote_node(layoutToDestroy->parent->left);
-            }
-        }
-
-        if (editor_views.back() == active_window) {
-            assert(active_window->view->td_id == id);
-            editor_views.pop_back();
-            delete active_window;
-            active_window = editor_views.back();
-            active_window->active = true;
-        } else {
-            PANIC("Somehow non-active window was deleted");
-        }
-
-        active_view = active_window->view;
-        active_buffer = active_view->get_text_buffer();
-        update_all_editor_windows();
-        draw_all(true);
-    } else {
-        this->graceful_exit();
-    }
-*/
-    auto active_buf = active_view->get_text_buffer();
+     auto active_buf = active_view->get_text_buffer();
     if (!active_buf->empty()) {
         auto id = active_buf->id;
         DataManager::get_instance().request_close(id);
@@ -710,14 +658,10 @@ void App::close_active() {
             assert(active_window->view->td_id == id);
             editor_views.pop_back();
             delete active_window;
-            active_window = editor_views.back();
-            active_window->active = true;
+            set_last_as_active_editor_window();
         } else {
             PANIC("Somehow non-active window was deleted");
         }
-
-        active_view = active_window->view;
-        active_buffer = active_view->get_text_buffer();
         update_all_editor_windows();
         draw_all(true);
     } else {
@@ -1060,10 +1004,7 @@ void App::handle_normal_input(KeyInput input, int action) {
                 auto current_window = active_window;
                 current_window->active = false;
                 rotate_container(editor_views, 1 * rotation_direction);
-                active_window = editor_views.back();
-                active_window->active = true;
-                active_buffer = editor_views.back()->get_text_buffer();
-                active_view = active_window->view;
+                set_last_as_active_editor_window();
             } break;
             case GLFW_KEY_G:// GOTO
                 toggle_command_input("goto", Commands::GotoLine);
@@ -1150,6 +1091,13 @@ void App::handle_popup_input(KeyInput input, int action) {
 }
 
 void App::handle_macro_record_input(KeyInput input, int action) { util::println("Macro Record Mode Input handler"); }
+
+void App::set_last_as_active_editor_window() {
+    active_window = editor_views.back();
+    active_window->active = true;
+    active_buffer = editor_views.back()->get_text_buffer();
+    active_view = active_window->view;
+}
 
 void Register::push_view(std::string_view data) {
     if (not copies.empty()) [[likely]] {
