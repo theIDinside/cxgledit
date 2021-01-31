@@ -101,6 +101,7 @@ struct Configuration {
     struct Views {
         RGBColor bg_color{0.05f, 0.052f, 0.0742123f};
         RGBColor fg_color{1.0f, 1.0f, 1.0f};
+        RGBColor active_bg{0.05f + 0.05f, 0.052f + 0.05f, 0.0742123f + 0.05f};
         int font_pixel_size = 24;
         bool horizontal_layout_only = true;
     } views;

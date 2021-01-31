@@ -48,5 +48,7 @@ struct EditorWindow {
     const std::vector<Bookmark>& get_bookmarks() const;
     void set_bookmark();
     void remove_bookmark(int index);
+    void set_configuration(const Configuration& configuration);
+    void set_projections(Matrix matrix);
 };
 }// namespace ui

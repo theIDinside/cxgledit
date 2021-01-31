@@ -140,5 +140,13 @@ void EditorWindow::set_bookmark() {
 void EditorWindow::remove_bookmark(int index) {
     get_text_buffer()->meta_data.bookmarks.erase(get_text_buffer()->meta_data.bookmarks.begin() + index);
 }
+void EditorWindow::set_configuration(const Configuration& config) {
+    set_caret_style(config.cursor);
+    set_view_colors(config.views.bg_color, config.views.fg_color);
+}
+void EditorWindow::set_projections(Matrix mvp) {
+    view->set_projection(mvp);
+    status_bar->ui_view->set_projection(mvp);
+}
 
 }// namespace ui

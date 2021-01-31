@@ -59,6 +59,7 @@ struct View {
     std::unique_ptr<VAO> vao{nullptr};// the graphical representation
     Vec3f fg_color{1.0f, 1.0f, 1.0f};
     Vec3f bg_color{0.05f, 0.052f, 0.0742123f};
+    Vec3f when_active_bg_color{0.05f, 0.052f, 0.0742123f};
     Matrix mvp;
     /// Anonymous for now, will pull out this later on
     struct {

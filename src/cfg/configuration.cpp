@@ -144,16 +144,18 @@ Configuration Configuration::from_parsed_map(const ConfigFileData &configFileDat
     }
 
     if (configFileData.has_table("views")) {
-        auto strBackgroundColor =
-                configFileData.get_str_value("views", "background_color").value_or("0.05 0.052 0.0742123");
+        auto strBackgroundColor = configFileData.get_str_value("views", "background_color").value_or("0.05 0.052 0.0742123");
+        auto strActiveBackgroundColor = configFileData.get_str_value("views", "background_color").value_or("0.071 0.102 0.1242123");
         auto strForegroundColor = configFileData.get_str_value("views", "foreground_color").value_or("1 1 1");
         auto strFontPixelSize = configFileData.get_str_value("views", "font_pixel_size").value_or("24");
         auto strHorizontalLayoutOnly = configFileData.get_str_value("views", "horizontal_layout_only").value_or("on");
 
+        cfg.views.active_bg = parse_rgb_color(strActiveBackgroundColor);
         cfg.views.bg_color = parse_rgb_color(strBackgroundColor);
         cfg.views.fg_color = parse_rgb_color(strForegroundColor);
         cfg.views.font_pixel_size = std::stoi(strFontPixelSize);
         cfg.views.horizontal_layout_only = (strHorizontalLayoutOnly == "on");
+
     }
     if (configFileData.has_table("cursor")) {
         auto caret_color = configFileData.get_str_value("cursor", "color").value_or("0.3 0 0.5 0.5");

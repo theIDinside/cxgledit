@@ -43,7 +43,8 @@ static auto key_callbacks(GLFWwindow *window, int key, int scancode, int action,
     auto app = get_app_handle(window);
     const auto input = KeyInput{key, mods};
 
-    if (pressed(action) || repeated(action)) {// we _only_ want commands, or combos, to work when pressed, not when released or repeated
+    if (pressed(action) ||
+        repeated(action)) {// we _only_ want commands, or combos, to work when pressed, not when released or repeated
         app->handle_key_input(input, action);
     }
 };
@@ -483,19 +484,15 @@ void App::new_editor_window(SplitStrategy splitStrategy) {
         push_node(l, layout_id, ui::core::LayoutType::Horizontal);
         auto active_editor_win = active_window;
         auto ew = EditorWindow::create({}, mvp, layout_id, l->right->dimInfo);
-        ew->set_caret_style(config.cursor);
-        ew->set_view_colors(config.views.bg_color, config.views.fg_color);
-        ew->view->set_projection(mvp);
-        ew->status_bar->ui_view->set_projection(mvp);
+        ew->set_configuration(config);
+        ew->set_projections(mvp);
         editor_views.push_back(ew);
         active_editor_win->update_layout(l->left->dimInfo);
         set_last_as_active_editor_window();
     } else {
         auto ew = EditorWindow::create({}, mvp, layout_id, DimInfo{0, win_height, win_width, win_height});
-        ew->set_caret_style(config.cursor);
-        ew->set_view_colors(config.views.bg_color, config.views.fg_color);
-        ew->view->set_projection(mvp);
-        ew->status_bar->ui_view->set_projection(mvp);
+        ew->set_configuration(config);
+        ew->set_projections(mvp);
         editor_views.push_back(ew);
         set_last_as_active_editor_window();
     }
@@ -586,7 +583,7 @@ void App::toggle_modal_popup(ui::ModalContentsType contents) {
             } break;
             case ui::Bookmarks: {
                 auto bookmarks = active_window->get_bookmarks();
-                if(bookmarks.empty()) return;
+                if (bookmarks.empty()) return;
                 std::vector<ui::PopupItem> context_specific_items;
                 auto index = 0;
                 std::ranges::transform(bookmarks, std::back_inserter(context_specific_items), [&index](auto b) {
@@ -632,7 +629,7 @@ void App::find_next_in_active(const std::string &search) {
 }
 
 void App::close_active() {
-     auto active_buf = active_view->get_text_buffer();
+    auto active_buf = active_view->get_text_buffer();
     if (!active_buf->empty()) {
         auto id = active_buf->id;
         DataManager::get_instance().request_close(id);
@@ -678,11 +675,11 @@ void App::reload_configuration(fs::path cfg_path) {
     if (!fl.font_with_size_loaded(def_font, config.views.font_pixel_size)) {
         util::println("no font with that size loaded. Creating new font texture atlas");
         const auto font_group = fl.get_font_group(def_font);
-        FontConfig font_cfg{.name = def_font,
-                            .path = font_group.value()->asset_path.string(),
-                            .pixel_size = config.views.font_pixel_size,
-                            .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}};
-        fl.load_font(font_cfg, true);
+        fl.load_font({.name = def_font,
+                      .path = font_group.value()->asset_path.string(),
+                      .pixel_size = config.views.font_pixel_size,
+                      .char_range = CharacterRange{.from = 0, .to = SWEDISH_LAST_ALPHA_CHAR_UNICODE}},
+                     true);
 
     } else {
         fl.set_as_default(def_font, config.views.font_pixel_size);
@@ -975,7 +972,7 @@ void App::handle_normal_input(KeyInput input, int action) {
                 }
             } break;
             case GLFW_KEY_B: {
-                if(modifier & GLFW_MOD_SHIFT) {
+                if (modifier & GLFW_MOD_SHIFT) {
                     toggle_modal_popup(ui::ModalContentsType::Bookmarks);
                 } else {
                     active_window->set_bookmark();
@@ -1045,20 +1042,17 @@ void App::handle_normal_input(KeyInput input, int action) {
     }
 }
 
-void App::handle_actions_input(KeyInput input, int action) {
-    util::println("Actions Mode Input handler");
-}
+void App::handle_actions_input(KeyInput input, int action) { util::println("Actions Mode Input handler"); }
 
 void App::handle_command_input(KeyInput input, int action) {
     auto &[key, mod] = input;
     util::println("Command Input Mode Input handler");
 
-    switch(key) {
+    switch (key) {
         case GLFW_KEY_ESCAPE:
             disable_command_input();
             break;
     }
-
 }
 
 void App::handle_popup_input(KeyInput input, int action) {
@@ -1069,7 +1063,8 @@ void App::handle_popup_input(KeyInput input, int action) {
         case GLFW_KEY_UP: {
             modal_popup->cycle_choice(static_cast<ui::Scroll>(key));
         } break;
-        case GLFW_KEY_ESCAPE: [[fallthrough]];
+        case GLFW_KEY_ESCAPE:
+            [[fallthrough]];
         case GLFW_KEY_M: {
             toggle_modal_popup();
         } break;
@@ -1093,6 +1088,7 @@ void App::handle_popup_input(KeyInput input, int action) {
 void App::handle_macro_record_input(KeyInput input, int action) { util::println("Macro Record Mode Input handler"); }
 
 void App::set_last_as_active_editor_window() {
+    active_window->active = false;
     active_window = editor_views.back();
     active_window->active = true;
     active_buffer = editor_views.back()->get_text_buffer();
