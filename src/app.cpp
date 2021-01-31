@@ -687,7 +687,7 @@ void App::reload_configuration(fs::path cfg_path) {
     util::println("New config:\n{}", serialize(config));
 
     for (auto ew : editor_views) {
-        ew->set_view_colors(config.views.bg_color, config.views.fg_color);
+        ew->set_view_colors(config.views.bg_color, config.views.fg_color, RGBColor());
         ew->set_font(FontLibrary::get_default_font());
         ew->set_caret_style(config.cursor);
     }

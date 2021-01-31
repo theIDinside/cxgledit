@@ -40,7 +40,7 @@ struct EditorWindow {
     bool active = false;
     void handle_click(int x, int y);
 
-    void set_view_colors(RGBColor bg, RGBColor fg);
+    void set_view_colors(RGBColor bg, RGBColor fg, RGBColor whenActiveColor);
     void set_font(SimpleFont *pFont);
 
     void set_caret_style(Configuration::Cursor style);

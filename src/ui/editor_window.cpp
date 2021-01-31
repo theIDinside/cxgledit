@@ -97,14 +97,15 @@ void EditorWindow::handle_click(int x, int yPOS) {
               "inside this region");
     }
 }
-void EditorWindow::set_view_colors(RGBColor bg, RGBColor fg) {
+
+void EditorWindow::set_view_colors(RGBColor bg, RGBColor fg, RGBColor whenActiveColor) {
     view->fg_color = fg;
     view->bg_color = bg;
 }
+
 void EditorWindow::set_font(SimpleFont *pFont) {
     view->font = pFont;
     view->cursor->setup_dimensions(view->cursor->width, pFont->max_glyph_height + 4);
-
 }
 
 void EditorWindow::set_caret_style(Configuration::Cursor style) {
@@ -124,26 +125,20 @@ void EditorWindow::set_caret_style(Configuration::Cursor style) {
             style.cursor_style);
 }
 
-FileContext EditorWindow::file_context() {
-    return get_text_buffer()->file_context();
-}
+FileContext EditorWindow::file_context() { return get_text_buffer()->file_context(); }
 
-const std::vector<Bookmark>& EditorWindow::get_bookmarks() const {
-    return get_text_buffer()->meta_data.bookmarks;
-}
+const std::vector<Bookmark> &EditorWindow::get_bookmarks() const { return get_text_buffer()->meta_data.bookmarks; }
 
-void EditorWindow::set_bookmark() {
-
-    get_text_buffer()->set_bookmark();
-}
+void EditorWindow::set_bookmark() { get_text_buffer()->set_bookmark(); }
 
 void EditorWindow::remove_bookmark(int index) {
     get_text_buffer()->meta_data.bookmarks.erase(get_text_buffer()->meta_data.bookmarks.begin() + index);
 }
-void EditorWindow::set_configuration(const Configuration& config) {
+void EditorWindow::set_configuration(const Configuration &config) {
     set_caret_style(config.cursor);
-    set_view_colors(config.views.bg_color, config.views.fg_color);
+    set_view_colors(config.views.bg_color, config.views.fg_color, config.views.active_bg);
 }
+
 void EditorWindow::set_projections(Matrix mvp) {
     view->set_projection(mvp);
     status_bar->ui_view->set_projection(mvp);
