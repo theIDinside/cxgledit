@@ -76,6 +76,10 @@ struct View {
     ViewType type = ViewType::Text;
 
     std::pair<std::string_view, std::string_view> debug_print_boundary_lines();
+
+private:
+    void gl_clear_view_space(bool isActive) const;
+    void enable_and_set_gl_scissor() const;
 };
 
 class CommandView {

@@ -81,6 +81,7 @@ std::string serialize(const Configuration &cfg) {
     std::stringstream ss{};
     ss << "[views]\n";
     ss << "background_color = " << cfg.views.bg_color << ";\n";
+    ss << "active_background_color = " << cfg.views.bg_color << ";\n";
     ss << "foreground_color = " << cfg.views.fg_color << ";\n";
     ss << "font_pixel_size = "
        << "\"" << cfg.views.font_pixel_size << "\";\n";
@@ -135,20 +136,20 @@ RGBAColor parse_rgba_color(const std::string &str_item) {
 Configuration Configuration::from_parsed_map(const ConfigFileData &configFileData) {
     Configuration cfg;// defaulted values
     if (configFileData.has_table("window")) {
-        auto strWidth = configFileData.get_str_value("window", "width").value_or("1920");
-        auto strHeight = configFileData.get_str_value("window", "height").value_or("1024");
-        auto strMon = configFileData.get_str_value("window", "monitors").value_or("1");
+        const auto strWidth = configFileData.get_str_value("window", "width").value_or("1920");
+        const auto strHeight = configFileData.get_str_value("window", "height").value_or("1024");
+        const auto strMon = configFileData.get_str_value("window", "monitors").value_or("1");
         cfg.window.width = std::stoi(strWidth);
         cfg.window.height = std::stoi(strHeight);
         cfg.window.monitors = std::stoi(strMon);
     }
 
     if (configFileData.has_table("views")) {
-        auto strBackgroundColor = configFileData.get_str_value("views", "background_color").value_or("0.05 0.052 0.0742123");
-        auto strActiveBackgroundColor = configFileData.get_str_value("views", "background_color").value_or("0.071 0.102 0.1242123");
-        auto strForegroundColor = configFileData.get_str_value("views", "foreground_color").value_or("1 1 1");
-        auto strFontPixelSize = configFileData.get_str_value("views", "font_pixel_size").value_or("24");
-        auto strHorizontalLayoutOnly = configFileData.get_str_value("views", "horizontal_layout_only").value_or("on");
+        const auto strBackgroundColor = configFileData.get_str_value("views", "background_color").value_or("0.05 0.052 0.0742123");
+        const auto strActiveBackgroundColor = configFileData.get_str_value("views", "active_background_color").value_or("0.071 0.102 0.1242123");
+        const auto strForegroundColor = configFileData.get_str_value("views", "foreground_color").value_or("1 1 1");
+        const auto strFontPixelSize = configFileData.get_str_value("views", "font_pixel_size").value_or("24");
+        const auto strHorizontalLayoutOnly = configFileData.get_str_value("views", "horizontal_layout_only").value_or("on");
 
         cfg.views.active_bg = parse_rgb_color(strActiveBackgroundColor);
         cfg.views.bg_color = parse_rgb_color(strBackgroundColor);
@@ -158,9 +159,9 @@ Configuration Configuration::from_parsed_map(const ConfigFileData &configFileDat
 
     }
     if (configFileData.has_table("cursor")) {
-        auto caret_color = configFileData.get_str_value("cursor", "color").value_or("0.3 0 0.5 0.5");
-        auto caret_style_str = configFileData.get_str_value("cursor", "caret_style").value_or("line");
-        auto caret_line_width_str = configFileData.get_str_value("cursor", "caret_line_width").value_or("6");
+        const auto caret_color = configFileData.get_str_value("cursor", "color").value_or("0.3 0 0.5 0.5");
+        const auto caret_style_str = configFileData.get_str_value("cursor", "caret_style").value_or("line");
+        const auto caret_line_width_str = configFileData.get_str_value("cursor", "caret_line_width").value_or("6");
 
         if (caret_style_str == "block") {
             cfg.cursor.cursor_style = CaretStyleBlock{};
@@ -236,6 +237,7 @@ std::optional<std::string> ConfigFileData::get_str_value(const std::string &tabl
             return {};
         }
     } else {
+        util::println("did not find value for key {}", key);
         return {};
     }
 }

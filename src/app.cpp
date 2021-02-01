@@ -321,7 +321,7 @@ void App::update_views_dimensions(float wRatio, float hRatio) {
     for (auto e : editor_views) {
         auto ew_layout = find_by_id(root_layout, e->ui_layout_id);
         e->update_layout(ew_layout->dimInfo);
-        e->set_projection(mvp);
+        e->set_projections(mvp);
     }
 
     command_view->w = win_width;
@@ -513,7 +513,7 @@ void App::update_all_editor_windows() {
             util::println("Updating EW DimInfo for {}: {} \t -> \t {}", e->ui_layout_id, dim.debug_str(),
                           ew_layout->dimInfo.debug_str());
             e->update_layout(ew_layout->dimInfo);
-            e->set_projection(mvp);
+            e->set_projections(mvp);
         }
     }
 }
@@ -668,6 +668,7 @@ void App::close_active() {
 
 // TODO: make application aware of .cxe files, so that when editing an .cxe file, user can press some key, to automatically load the settings in it
 void App::reload_configuration(fs::path cfg_path) {
+    util::println("Reloading config from {}", cfg_path.string());
     auto cfgData = ConfigFileData::load_cfg_data(cfg_path);
     config = Configuration::from_parsed_map(cfgData);
     auto &fl = FontLibrary::get_instance();
@@ -684,12 +685,11 @@ void App::reload_configuration(fs::path cfg_path) {
     } else {
         fl.set_as_default(def_font, config.views.font_pixel_size);
     }
-    util::println("New config:\n{}", serialize(config));
+    util::println("New config:\n{}\n", serialize(config));
 
     for (auto ew : editor_views) {
-        ew->set_view_colors(config.views.bg_color, config.views.fg_color, RGBColor());
+        ew->set_configuration(config);
         ew->set_font(FontLibrary::get_default_font());
-        ew->set_caret_style(config.cursor);
     }
     this->modal_popup->view->set_font(FontLibrary::get_default_font());
     draw_all(true);
@@ -1088,11 +1088,12 @@ void App::handle_popup_input(KeyInput input, int action) {
 void App::handle_macro_record_input(KeyInput input, int action) { util::println("Macro Record Mode Input handler"); }
 
 void App::set_last_as_active_editor_window() {
-    active_window->active = false;
+    auto prev_item = active_window;
     active_window = editor_views.back();
     active_window->active = true;
     active_buffer = editor_views.back()->get_text_buffer();
     active_view = active_window->view;
+    if(prev_item != nullptr) prev_item->active = false;
 }
 
 void Register::push_view(std::string_view data) {

@@ -3,10 +3,7 @@
 //
 
 #include "editor_window.hpp"
-#include <core/buffer/bookmark.hpp>
 #include <core/buffer/data_manager.hpp>
-#include <ui/managers/font_library.hpp>
-#include <ui/managers/shader_library.hpp>
 #include <ui/status_bar.hpp>
 #include <ui/view.hpp>
 
@@ -37,8 +34,7 @@ EditorWindow *EditorWindow::create(std::optional<TextData *> textData, Matrix pr
         ew->view = View::create(buf, "unnamed buffer", width, text_editor_height, x, height - sb_height);
     }
 
-    ew->view->set_projection(projection);
-    ew->status_bar->ui_view->set_projection(projection);
+    ew->set_projections(projection);
     ew->status_bar->set_buffer_cursor(&ew->view->get_text_buffer()->cursor);
     return ew;
 }
@@ -60,11 +56,12 @@ void EditorWindow::draw(bool force_redraw) {
 TextData *EditorWindow::get_text_buffer() const { return view->get_text_buffer(); }
 
 void EditorWindow::update_layout(core::DimInfo dim_info) {
-    auto &[x, y, width, height] = dim_info;
-    auto sb_height = FontLibrary::get_default_font()->get_row_advance() + 2;
+
+    const auto &[x, y, width, height] = dim_info;
+    const auto sb_height = FontLibrary::get_default_font()->get_row_advance() + 2;
     // we have to make room for status bar & command view spanning across entire bottom, both of which are equal in height
-    auto text_editor_height = height - (sb_height * 2);
-    auto text_editor_y_pos = height - sb_height;
+    const auto text_editor_height = height - (sb_height * 2);
+    const auto text_editor_y_pos = height - sb_height;
     view->anchor_at(x, text_editor_y_pos);
     view->set_dimensions(width, text_editor_height);
     status_bar->ui_view->set_dimensions(width, sb_height);
@@ -72,27 +69,22 @@ void EditorWindow::update_layout(core::DimInfo dim_info) {
     this->dimInfo = dim_info;
 }
 
-void EditorWindow::set_projection(Matrix projection) const {
-    this->view->set_projection(projection);
-    this->status_bar->ui_view->set_projection(projection);
-}
-
-void EditorWindow::handle_click(int x, int yPOS) {
-    if (dimInfo.is_inside(x, yPOS)) {
+void EditorWindow::handle_click(int xPos, int yPos) {
+    if (dimInfo.is_inside(xPos, yPos)) {
         auto &meta_data = view->get_text_buffer()->meta_data;
 
-        auto row_clicked = std::floor(std::max(0, yPOS - status_bar->ui_view->height) /
+        const auto row_clicked = std::floor(std::max(0, yPos - status_bar->ui_view->height) /
                                       float(view->get_font()->get_row_advance())) +
                            view->get_cursor()->views_top_line;
         if (meta_data.line_begins.size() > row_clicked) {
-            auto bufIdx = meta_data.line_begins[int(row_clicked)];
+            const auto bufIdx = meta_data.line_begins[int(row_clicked)];
             view->get_text_buffer()->step_cursor_to(bufIdx);
         } else {
-            auto bufIdx = meta_data.line_begins.back();
+            const auto bufIdx = meta_data.line_begins.back();
             view->get_text_buffer()->step_cursor_to(bufIdx);
         }
     } else {
-        util::println("({}, {}) was clicked. Window dimInfo: {}", x, yPOS, dimInfo.debug_str());
+        util::println("({}, {}) was clicked. Window dimInfo: {}", xPos, yPos, dimInfo.debug_str());
         PANIC("WHOA! We should NOT end up here. This function is only called when we have verified that x & y _is_ "
               "inside this region");
     }
@@ -101,6 +93,7 @@ void EditorWindow::handle_click(int x, int yPOS) {
 void EditorWindow::set_view_colors(RGBColor bg, RGBColor fg, RGBColor whenActiveColor) {
     view->fg_color = fg;
     view->bg_color = bg;
+    view->when_active_bg_color = whenActiveColor;
 }
 
 void EditorWindow::set_font(SimpleFont *pFont) {
@@ -125,11 +118,14 @@ void EditorWindow::set_caret_style(Configuration::Cursor style) {
             style.cursor_style);
 }
 
-FileContext EditorWindow::file_context() { return get_text_buffer()->file_context(); }
+FileContext EditorWindow::file_context() const { return get_text_buffer()->file_context(); }
 
 const std::vector<Bookmark> &EditorWindow::get_bookmarks() const { return get_text_buffer()->meta_data.bookmarks; }
 
-void EditorWindow::set_bookmark() { get_text_buffer()->set_bookmark(); }
+void EditorWindow::set_bookmark() {
+    auto& buf = this->view->data;
+    buf->set_bookmark();
+}
 
 void EditorWindow::remove_bookmark(int index) {
     get_text_buffer()->meta_data.bookmarks.erase(get_text_buffer()->meta_data.bookmarks.begin() + index);

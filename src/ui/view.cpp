@@ -104,18 +104,8 @@ void View::draw(bool isActive) {
     //  we only rebuild what is necessary, upload that to the GPU and then draw. Possibly, we should not even bother with the off-screen contents,
     //  thus *only* care about the contents that currently can be displayed
     using Pos = ui::core::ScreenPos;
-    glEnable(GL_SCISSOR_TEST);
-    // GL anchors x, y in the bottom left, with our orthographic view, we anchor from top left, thus we have to take y-h, instead of just taking y
-    glScissor(x, y - height, this->width, this->height);
-
-    // TODO(optimization?): lift out display settings into a static structure reachable everywhere, to query info about size, settings, colors etc
-    auto[r,g,b] = bg_color;
-    if (isActive) {
-        glClearColor(r + 0.05, g + 0.05, b + 0.05, 1.0f);
-    } else {
-        glClearColor(r, g, b, 1.0f);
-    }
-    glClear(GL_COLOR_BUFFER_BIT);
+    enable_and_set_gl_scissor();
+    gl_clear_view_space(isActive);
     vao->bind_all();
     shader->use();
     font->t->bind();
@@ -154,15 +144,9 @@ void View::draw(bool isActive) {
 }
 
 void View::forced_draw(bool isActive) {
-    glEnable(GL_SCISSOR_TEST);
-    glScissor(x, y - height, this->width, this->height);
-    auto[r,g,b] = bg_color;
-    if (isActive) {
-        glClearColor(r + 0.05, g + 0.05, b + 0.05, 1.0f);
-    } else {
-        glClearColor(r, g, b, 1.0f);
-    }
-    glClear(GL_COLOR_BUFFER_BIT);
+    enable_and_set_gl_scissor();
+    gl_clear_view_space(isActive);
+
     vao->bind_all();
     shader->use();
     font->t->bind();
@@ -344,6 +328,21 @@ void View::scroll_to(int line) {
     } else {
         cursor->views_top_line = maxScrollableTopLine;
     }
+}
+
+void View::gl_clear_view_space(bool isActive) const {
+    const auto&[r,g,b] = bg_color;
+    if (isActive) {
+        const auto& [r_, g_, b_] = when_active_bg_color;
+        glClearColor(r_, g_, b_, 1.0f);
+    } else {
+        glClearColor(r, g, b, 1.0f);
+    }
+    glClear(GL_COLOR_BUFFER_BIT);
+}
+void View::enable_and_set_gl_scissor() const {
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(x, y - height, this->width, this->height);
 }
 
 void CommandView::draw() {

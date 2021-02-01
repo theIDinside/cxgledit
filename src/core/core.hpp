@@ -13,6 +13,8 @@ constexpr auto SWEDISH_LAST_ALPHA_CHAR_UNICODE = 0x00f6u;
 #define AS(value, type) static_cast<type>(value)
 #define int_ceil(value) static_cast<int>(std::ceil(value))
 
+#define LET(name) const auto name
+
 #ifdef DEBUG
 constexpr auto DEBUG_IS_ON = true;
 #else
