@@ -100,8 +100,8 @@ public:
 
     void toggle_modal_popup(ui::ModalContentsType = ui::ModalContentsType::ActionList);
     void find_next_in_active(const std::string& search);
-
     void reload_configuration(fs::path cfg_path = "./assets/cxconfig.cxe");
+    void handle_mouse_scroll(float xOffset, float yOffset);
 
     void handle_text_input(int codepoint);
     void handle_key_input(KeyInput input, int action);

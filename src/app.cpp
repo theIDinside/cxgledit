@@ -14,7 +14,7 @@
 #include <utils/fileutil.hpp>
 
 /// Utility macro for getting registered App pointer with GLFW
-#define get_app_handle(window) (App *) glfwGetWindowUserPointer(window)
+#define get_app_handle(window) ((App *) glfwGetWindowUserPointer(window))
 
 /// for loading our keybindings library, this way we can set keybindings, compile them while running the program
 /// and just hot-reload them
@@ -237,6 +237,9 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
         } else {
             PANIC("MOUSE CLICKING FEATURES NOT YET DONE GOOD.");
         }
+    });
+    glfwSetScrollCallback(window, [](auto window, auto xOffset, auto yOffset) {
+        get_app_handle(window)->handle_mouse_scroll(xOffset, yOffset);
     });
     return instance;
 }
@@ -1093,7 +1096,7 @@ void App::set_last_as_active_editor_window() {
     active_window->active = true;
     active_buffer = editor_views.back()->get_text_buffer();
     active_view = active_window->view;
-    if(prev_item != nullptr) prev_item->active = false;
+    if (prev_item != nullptr) prev_item->active = false;
 }
 
 void Register::push_view(std::string_view data) {
@@ -1123,4 +1126,21 @@ std::optional<std::string_view> Register::get(std::size_t index) {
 std::optional<std::string_view> Register::get_last() {
     if (copies.empty()) return {};
     return get(copies.size() - 1);
+}
+constexpr auto mouseScrollLeapSize = 3;
+void App::handle_mouse_scroll(float xOffset, float yOffset) {
+    const auto movementTotal = std::abs(mouseScrollLeapSize * AS(yOffset, int));
+    if(yOffset < 0) {
+        active_buffer->move_cursor(Movement::Line(movementTotal, CursorDirection::Forward));
+        if (active_buffer->mark_set) { active_buffer->clear_marks(); }
+        if (not is_within(active_buffer->cursor.line, active_view)) {
+            active_view->scroll_to(active_view->cursor->views_top_line + movementTotal);
+        }
+    } else { // scroll up. I think
+        active_buffer->move_cursor(Movement::Line(movementTotal, CursorDirection::Back));
+        if (active_buffer->mark_set) { active_buffer->clear_marks(); }
+        if (not is_within(active_buffer->cursor.line, active_view)) {
+            active_view->scroll_to(active_view->cursor->views_top_line - movementTotal);
+        }
+    }
 }

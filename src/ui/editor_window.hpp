@@ -8,11 +8,11 @@
 // Local
 #include "modal.hpp"
 #include <app.hpp>
+#include <cfg/configuration.hpp>
 #include <cfg/types/cursor_options.hpp>
 #include <core/math/vector.hpp>
 #include <ui/core/layout.hpp>
 #include <ui/render/font.hpp>
-#include <cfg/configuration.hpp>
 
 class Bookmark;
 class TextData;
