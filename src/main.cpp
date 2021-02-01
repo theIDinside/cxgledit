@@ -47,6 +47,8 @@ int main(int argc, const char **argv) {
  * TODO(feature, minor): make application file-type aware. This can have multiple uses, one is described in app.cpp when it comes to reloading
  *      settings from a .cxe file, while editing a .cxe file
  * TODO(feature, minor): undo/redo operations.
+ * TODO(feature, minor): history / mark ring, similiar to Emacs (and CLion. Save a history of cursor positions, for easy navigation. This should be application wide
+ *  and not on a per-buffer basis, making jumping between last edited files more smooth
  * Add some debug code for OpenGL and read up about OpenGL
  *
     GLint s;
