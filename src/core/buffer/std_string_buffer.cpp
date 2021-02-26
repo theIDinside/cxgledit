@@ -24,11 +24,6 @@ void StdStringBuffer::move_cursor(Movement m) {
     state_is_pristine = false;
 }
 void StdStringBuffer::char_move_forward(std::size_t count) {
-    /*
-    auto last_col = cursor.col_pos;
-    auto last_line = cursor.line;
-    auto last_pos = cursor.pos;
-*/
     if (cursor.pos + count >= size()) {
         auto b = store.begin();
         std::advance(b, cursor.pos);
@@ -40,7 +35,7 @@ void StdStringBuffer::char_move_forward(std::size_t count) {
                 cursor.col_pos++;
             }
         }
-        cursor.pos = size();
+        cursor.pos = AS(size(), int);
     } else {
         auto b = store.begin();
         std::advance(b, cursor.pos);
@@ -55,16 +50,10 @@ void StdStringBuffer::char_move_forward(std::size_t count) {
             cursor.pos++;
         }
     }
-    // util::println("Move from [i:{}, ln: {}, col: {}] to [i:{}, ln: {}, col: {}]", last_pos, last_line, last_col, cursor.pos, cursor.line, cursor.col_pos);
 }
 
 void StdStringBuffer::char_move_backward(std::size_t count) {
-    /*
-    auto last_col = cursor.col_pos;
-    auto last_line = cursor.line;
-    auto last_pos = cursor.pos;
-*/
-    if (static_cast<int>(cursor.pos) - static_cast<int>(count) <= 0) {
+    if (cursor.pos - AS(count, int) <= 0) {
         cursor.reset();
     } else {
         auto next_pos = cursor.pos - count;
@@ -137,7 +126,7 @@ int StdStringBuffer::find_line_begin(int i) {
  */
 int StdStringBuffer::find_line_start(Boundary boundary, int i) {
     i -= 1;
-    if(boundary == Boundary::Outside) {
+    if (boundary == Boundary::Outside) {
         if (i <= 0) return 0;
         if (store[i] == '\n') {
             return i;
@@ -208,17 +197,15 @@ void StdStringBuffer::insert_str(const std::string_view &data) {
     if (store.capacity() <= store.size() + data.size()) { store.reserve(store.capacity() * 2); }
     store.insert(cursor.pos, data);
     auto inc = data.size();
-    cursor.pos += inc;
+    cursor.pos += AS(inc, int);
     if (auto nlines = count_elements(data, '\n'); nlines) {
         auto &ref = nlines.value();
-        auto data_index = ref.back().found_at_idx;
+        auto data_index = AS(ref.back().found_at_idx, int);
         auto nlines_count = ref.size();
-        cursor.line += nlines_count;
-        if (cursor.pos > data_index) {
-            cursor.col_pos = std::abs(static_cast<int>(cursor.pos) - static_cast<int>(data_index));
-        }
+        cursor.line += AS(nlines_count, int);
+        if (cursor.pos > data_index) { cursor.col_pos = std::abs(cursor.pos - data_index); }
     } else {
-        cursor.col_pos += inc;
+        cursor.col_pos += AS(inc, int);
     }
     // FIXME: do this more optimally. Since we don't what the data contains, we just rebuild entire meta data for now
     if (has_meta_data) rebuild_metadata();
@@ -300,8 +287,9 @@ void StdStringBuffer::remove(const Movement &m) {
     data_is_pristine = false;
 }
 
-void StdStringBuffer::remove_ch_forward(size_t i) {
+void StdStringBuffer::remove_ch_forward(size_t i_) {
     auto line_deleted = false;
+    const int i = AS(i_, int);
     if (cursor.pos + i < store.size()) {
         auto e = cursor.pos + i;
         for (auto index = cursor.pos; index < e && not line_deleted; index++) {
@@ -320,8 +308,8 @@ void StdStringBuffer::remove_ch_forward(size_t i) {
         rebuild_metadata();
     } else {
         if (has_meta_data) {
-            std::for_each(meta_data.line_begins.begin() + cursor.line, meta_data.line_begins.end(),
-                          [i](auto &e) { e -= i; });
+            const auto op = [i](auto &e) { e -= i; };
+            std::for_each(meta_data.line_begins.begin() + cursor.line, meta_data.line_begins.end(), op);
         }
     }
 }
@@ -405,8 +393,8 @@ void StdStringBuffer::step_cursor_to(size_t pos) {
                         break;
                     }
                 }
-                if (i == last_item) lineToGoTo = meta_data.line_begins.size() - 1;
-                cursor.line = lineToGoTo;
+                if (i == last_item) lineToGoTo = AS(meta_data.line_begins.size() - 1, int);
+                cursor.line = AS(lineToGoTo, int);
                 cursor.pos = AS(pos, int);
             }
         } else {
@@ -489,7 +477,7 @@ int StdStringBuffer::find_next_delimiter(int i) {
             }
             return i;
         } else {
-            return sz;
+            return AS(sz, int);
         }
     }
 }
@@ -506,7 +494,7 @@ int StdStringBuffer::find_prev_delimiter(int i) {
     }
 }
 void StdStringBuffer::step_to_line_end(Boundary boundary) {
-    int sz = size();
+    auto sz = AS(size(), int);
     bool found = false;
     auto newpos = cursor.pos;
     for (auto i = cursor.pos; i < sz && !found; i++) {
@@ -629,11 +617,9 @@ void StdStringBuffer::set_bookmark() {
     //  while find_line_end finds the next '\n' and subtracts 1 from that, since when we want a line,
     //  we want the actual logical representation of that data (the actual characters, not the computer data, i.e. newlines,
     //  tabs, etc)
-    if(line_begin > line_end) {
-        return;
-    }
-
-    std::string_view v{store.c_str() + line_begin, static_cast<std::size_t>(line_end - line_begin)};
+    if (line_begin > line_end) { return; }
+    assert(line_end > line_begin);
+    std::string_view v{store.c_str() + line_begin, AS(line_end - line_begin, std::size_t)};
     auto it = std::ranges::find_if(v, [](auto e) { return !std::isspace(e); });
 
     v.remove_prefix(std::distance(v.begin(), it));

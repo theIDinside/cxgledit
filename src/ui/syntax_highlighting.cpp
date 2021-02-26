@@ -204,7 +204,7 @@ std::optional<Token> macro(std::string_view &text, std::size_t pos) {
         }
         return false;
     });
-    auto distance = std::distance(text.begin() + pos, scan_ahead);
+
     if (text.substr(pos, kw_inc_length) == keyword_include) {
         std::string s{text.substr(pos, kw_inc_length)};
         lex_ctx = Context::Macro;
@@ -227,7 +227,7 @@ std::vector<Token> tokenize(std::string_view text) {
     //  this could get noticibly slower, by milliseconds, still, I should measure this
     result.reserve(sz / 3);// if we guess that a token average length is 3 characters, we get this reserved number
     if (sz < 2) return result;
-    for (auto i = 0u; i < sz - 2; i++) {
+    for (std::size_t i = 0; i < sz - 2; i++) {
         if (std::isspace(text[i])) continue;
         if (text[i] == '/') {
             if (text[i + 1] == '/') {
@@ -335,7 +335,7 @@ std::vector<ColorFormatInfo> color_format_tokenize(std::string_view text) {
     //  this could get noticibly slower, by milliseconds, still, I should measure this
     result.reserve(sz / 3);// if we guess that a token average length is 3 characters, we get this reserved number
     if (sz < 2) return result;
-    for (auto i = 0u; i < sz - 2; i++) {
+    for (std::size_t i = 0; i < sz - 2; i++) {
         if (std::isspace(text[i])) continue;
         if (text[i] == '/') {
             if (text[i + 1] == '/') {

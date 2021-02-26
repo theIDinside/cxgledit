@@ -13,7 +13,7 @@
 class TextData;
 
 namespace ui {
-class View;
+struct View;
 
 enum ModalContentsType {
     ActionList,

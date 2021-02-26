@@ -25,4 +25,4 @@ std::unique_ptr<Texture> Texture::make_from_data(const unsigned char *data, int 
     return t;
 }
 
-void Texture::bind(const int textureUnit) const { glBindTexture(GL_TEXTURE_2D, id); }
+void Texture::bind() const { glBindTexture(GL_TEXTURE_2D, id); }

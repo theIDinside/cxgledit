@@ -2,9 +2,9 @@
 // Created by cx on 2020-11-18.
 //
 #include "shader.hpp"
+#include <core/core.hpp>
 #include <fmt/core.h>
 #include <glad/glad.h>
-#include <core/core.hpp>
 
 Shader::Shader(const char *vertexPath, const char *fragmentPath, const char *geometryPath) noexcept {
     // 1. retrieve the vertex/fragment source code from filePath
@@ -40,19 +40,22 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath, const char *geo
             gShaderFile.close();
             geometryCode = gShaderStream.str();
         }
-    } catch (std::ifstream::failure &e) { fmt::print("ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ\n"); }
+    } catch (std::ifstream::failure &e) {
+        fmt::print("ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ\n. Exception message: {}", e.what());
+        fflush(stdout);
+    }
     const char *vShaderCode = vertexCode.c_str();
     const char *fShaderCode = fragmentCode.c_str();
     // 2. compile shaders
     unsigned int vertex, fragment;
     // vertex shader
     vertex = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex, 1, &vShaderCode, NULL);
+    glShaderSource(vertex, 1, &vShaderCode, nullptr);
     glCompileShader(vertex);
     checkCompileErrors(vertex, "VERTEX");
     // fragment Shader
     fragment = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment, 1, &fShaderCode, NULL);
+    glShaderSource(fragment, 1, &fShaderCode, nullptr);
     glCompileShader(fragment);
     checkCompileErrors(fragment, "FRAGMENT");
     // if geometry shader is given, compile geometry shader
@@ -60,7 +63,7 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath, const char *geo
     if (geometryPath != nullptr) {
         const char *gShaderCode = geometryCode.c_str();
         geometry = glCreateShader(GL_GEOMETRY_SHADER);
-        glShaderSource(geometry, 1, &gShaderCode, NULL);
+        glShaderSource(geometry, 1, &gShaderCode, nullptr);
         glCompileShader(geometry);
         checkCompileErrors(geometry, "GEOMETRY");
     }
@@ -105,17 +108,17 @@ void Shader::setVec4(const std::string &name, const Vec4f &value) const {
 void Shader::setVec4(const std::string &n, float x, float y, float z, float w) {
     glUniform4f(glGetUniformLocation(ID, n.c_str()), x, y, z, w);
 }
-void Shader::setMat4(const std::string &name, const Matrix& mat) const {
+void Shader::setMat4(const std::string &name, const Matrix &mat) const {
     glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
 
-void Shader::checkCompileErrors(unsigned int shader, std::string type) {
+void Shader::checkCompileErrors(unsigned int shader, const std::string& type) {
     GLint success;
     GLchar infoLog[1024];
     if (type != "PROGRAM") {
         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
         if (!success) {
-            glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+            glGetShaderInfoLog(shader, 1024, nullptr, infoLog);
             fmt::print("ERROR::SHADER_COMPILATION_ERROR of type: {}\n{}\n{}\n", type, infoLog,
                        "-- --------------------------------------------------- -- ");
             std::abort();
@@ -123,7 +126,7 @@ void Shader::checkCompileErrors(unsigned int shader, std::string type) {
     } else {
         glGetProgramiv(shader, GL_LINK_STATUS, &success);
         if (!success) {
-            glGetProgramInfoLog(shader, 1024, NULL, infoLog);
+            glGetProgramInfoLog(shader, 1024, nullptr, infoLog);
             fmt::print("ERROR::PROGRAM_LINKING_ERROR of type: {}\n{}\n{}\n", type, infoLog,
                        "-- --------------------------------------------------- -- ");
             std::abort();
@@ -165,19 +168,22 @@ Shader Shader::load_shader(const char *vertexPath, const char *fragmentPath, con
             gShaderFile.close();
             geometryCode = gShaderStream.str();
         }
-    } catch (std::ifstream::failure &e) { fmt::print("ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ\n"); }
+    } catch (std::ifstream::failure &e) {
+        fmt::print("ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ\n. Exception message: {}", e.what());
+        fflush(stdout);
+    }
     const char *vShaderCode = vertexCode.c_str();
     const char *fShaderCode = fragmentCode.c_str();
     // 2. compile shaders
     unsigned int vertex, fragment;
     // vertex shader
     vertex = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex, 1, &vShaderCode, NULL);
+    glShaderSource(vertex, 1, &vShaderCode, nullptr);
     glCompileShader(vertex);
     checkCompileErrors(vertex, "VERTEX");
     // fragment Shader
     fragment = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment, 1, &fShaderCode, NULL);
+    glShaderSource(fragment, 1, &fShaderCode, nullptr);
     glCompileShader(fragment);
     checkCompileErrors(fragment, "FRAGMENT");
     // if geometry shader is given, compile geometry shader
@@ -185,7 +191,7 @@ Shader Shader::load_shader(const char *vertexPath, const char *fragmentPath, con
     if (geometryPath != nullptr) {
         const char *gShaderCode = geometryCode.c_str();
         geometry = glCreateShader(GL_GEOMETRY_SHADER);
-        glShaderSource(geometry, 1, &gShaderCode, NULL);
+        glShaderSource(geometry, 1, &gShaderCode, nullptr);
         glCompileShader(geometry);
         checkCompileErrors(geometry, "GEOMETRY");
     }
@@ -205,7 +211,7 @@ Shader Shader::load_shader(const char *vertexPath, const char *fragmentPath, con
     return Shader(shaderID);
 }
 Shader::Shader(unsigned int id) noexcept : ID(id) {}
-Shader Shader::load_shader(fs::path vertexPath, fs::path fragmentPath, fs::path geometryPath) {
+Shader Shader::load_shader(const fs::path& vertexPath, const fs::path& fragmentPath, const fs::path& geometryPath) {
     std::string vertexCode;
     std::string fragmentCode;
     std::string geometryCode;
@@ -238,19 +244,22 @@ Shader Shader::load_shader(fs::path vertexPath, fs::path fragmentPath, fs::path 
             gShaderFile.close();
             geometryCode = gShaderStream.str();
         }
-    } catch (std::ifstream::failure &e) { fmt::print("ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ\n"); }
+    } catch (std::ifstream::failure &e) {
+        fmt::print("ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ\n. Exception message: {}", e.what());
+        fflush(stdout);
+    }
     const char *vShaderCode = vertexCode.c_str();
     const char *fShaderCode = fragmentCode.c_str();
     // 2. compile shaders
     unsigned int vertex, fragment;
     // vertex shader
     vertex = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex, 1, &vShaderCode, NULL);
+    glShaderSource(vertex, 1, &vShaderCode, nullptr);
     glCompileShader(vertex);
     checkCompileErrors(vertex, "VERTEX");
     // fragment Shader
     fragment = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment, 1, &fShaderCode, NULL);
+    glShaderSource(fragment, 1, &fShaderCode, nullptr);
     glCompileShader(fragment);
     checkCompileErrors(fragment, "FRAGMENT");
     // if geometry shader is given, compile geometry shader
@@ -258,7 +267,7 @@ Shader Shader::load_shader(fs::path vertexPath, fs::path fragmentPath, fs::path 
     if (!geometryPath.empty()) {
         const char *gShaderCode = geometryCode.c_str();
         geometry = glCreateShader(GL_GEOMETRY_SHADER);
-        glShaderSource(geometry, 1, &gShaderCode, NULL);
+        glShaderSource(geometry, 1, &gShaderCode, nullptr);
         glCompileShader(geometry);
         checkCompileErrors(geometry, "GEOMETRY");
     }
@@ -277,19 +286,12 @@ Shader Shader::load_shader(fs::path vertexPath, fs::path fragmentPath, fs::path 
     fflush(stdout);
     return Shader(shaderID);
 }
-void Shader::setup() {
-    projection = glGetUniformLocation(ID, "projection");
-}
+
+void Shader::setup() { projection = glGetUniformLocation(ID, "projection"); }
+void Shader::setup_fillcolor_ids() { fillcolor = glGetUniformLocation(ID, "fillcolor"); }
 
 // void Shader::set_projection(const glm::mat4 &mat) { glUniformMatrix4fv(projection, 1, GL_FALSE, &mat[0][0]); }
 
-void Shader::set_projection(const Matrix &mat) {
-    glUniformMatrix4fv(projection, 1, GL_FALSE, &mat[0][0]);
-}
+void Shader::set_projection(const Matrix &mat) const { glUniformMatrix4fv(projection, 1, GL_FALSE, &mat[0][0]); }
+void Shader::set_fillcolor(Vec4f color) const { glUniform4fv(fillcolor, 1, &color[0]); }
 
-void Shader::setup_fillcolor_ids() {
-    fillcolor = glGetUniformLocation(ID, "fillcolor");
-}
-void Shader::set_fillcolor(Vec4f color) {
-    glUniform4fv(fillcolor, 1, &color[0]);
-}

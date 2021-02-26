@@ -1,32 +1,48 @@
 cmake_minimum_required(VERSION 3.16)
-project(cxgledit)
+project(cxgledit LANGUAGES CXX C)
+
 set(EXPORT_COMPILE_COMMANDS ON)
 include(FetchContent)
-set(CMAKE_CXX_STANDARD 20)
 message("Project source dir ${PROJECT_SOURCE_DIR}")
 set(SRC_DIR ./src)
 
 set(DEP_DIR ${PROJECT_SOURCE_DIR}/deps)
-message("Hello fucker")
 
 set(RUN_FROM_FOLDER ${PROJECT_SOURCE_DIR}/bin/run)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/bin/debug)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${PROJECT_SOURCE_DIR}/bin/relwithdebinfo)
 
+# flags taken from; https://github.com/lefticus/cppbestpractices/blob/master/02-Use_the_Tools_Available.md
+set(CLANG_FLAGS -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic -Wold-style-cast -Wcast-align -Wunused -Woverloaded-virtual -Wconversion -Wsign-conversion -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wlogical-op
+        -Wnull-dereference -Wuseless-cast -Wdouble-promotion -Wformat=2 -Wlifetime)
+
+Set(FETCHCONTENT_QUIET FALSE)
+
 FetchContent_Declare(
         fmt
         GIT_REPOSITORY https://github.com/fmtlib/fmt.git
         GIT_TAG master
-        SOURCE_DIR ${PROJECT_SOURCE_DIR}/deps/fmt
+        GIT_PROGRESS TRUE
 )
 
 FetchContent_Declare(
         glfw
         GIT_REPOSITORY https://github.com/glfw/glfw.git
         GIT_TAG master
-        SOURCE_DIR ${PROJECT_SOURCE_DIR}/deps/glfw
+        GIT_PROGRESS TRUE
 )
+
+FetchContent_Declare(
+        cxutils
+        GIT_REPOSITORY https://github.com/theIDinside/cxutils.git
+        GIT_TAG master
+        GIT_PROGRESS TRUE
+)
+
+FetchContent_GetProperties(fmt)
+FetchContent_GetProperties(glfw)
+FetchContent_GetProperties(cxutils)
 
 if (NOT fmt_POPULATED)
     FetchContent_Populate(fmt)
@@ -38,9 +54,10 @@ if (NOT glfw_POPULATED)
     add_subdirectory(${glfw_SOURCE_DIR} ${glfw_BINARY_DIR})
 endif ()
 
-FetchContent_MakeAvailable(fmt glfw)
-
-
+if (NOT cxutils_POPULATED)
+    FetchContent_Populate(cxutils)
+    add_subdirectory(${cxutils_SOURCE_DIR} ${cxutils_BINARY_DIR})
+endif ()
 
 set(UI_RENDER_SOURCES
         src/ui/managers/font_library.cpp src/ui/managers/font_library.hpp
@@ -92,12 +109,13 @@ set(SOURCES
 add_executable(cxgledit ${SOURCES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${GLFW_DIR}/include")
+
 set(GLFW_BUILD_EXAMPLES OFF CACHE INTERNAL "Build the GLFW example programs")
 set(GLFW_BUILD_TESTS OFF CACHE INTERNAL "Build the GLFW test programs")
 set(GLFW_BUILD_DOCS OFF CACHE INTERNAL "Build the GLFW documentation")
 set(GLFW_INSTALL OFF CACHE INTERNAL "Generate installation target")
 set(GLFW_DIR ${DEP_DIR}/glfw)
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
+
 # This doesn't need to be done, now that we use FetchContent to grab the library off of github. The wonders of 2020
 # if we do this; it will conflict with the settings, as two targets with the name "glfw" will be set. So don't do it.
 # it's just kept here for a mental reminder for me.
@@ -118,12 +136,36 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE "GLFW_INCLUDE_NONE")
 target_include_directories(${PROJECT_NAME} PRIVATE ${DEP_DIR}/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${FT_DIR}/include)
 message("OpenGL libraries are set to: ${OPENGL_LIBRARIES}. CMAKE_DL_LIBS set to: ${CMAKE_DL_LIBS}")
-
-target_link_libraries(cxgledit fmt ${OPENGL_LIBRARIES} glfw ${GLFW_LIBRARIES} glad ${CMAKE_DL_LIBS} freetype)
-
 add_library(keybound SHARED deps/include/bindingslib/keybindings.cpp)
+
+function(SET_CXX_20 REQUIRED_ARG)
+    set_target_properties(${REQUIRED_ARG} PROPERTIES
+            CXX_STANDARD 20
+            CXX_STANDARD_REQUIRED TRUE
+            CXX_EXTENSIONS FALSE)
+endfunction()
+
+SET_CXX_20(cxgledit)
+SET_CXX_20(keybound)
+
+target_link_libraries(cxgledit fmt ${OPENGL_LIBRARIES} glfw ${GLFW_LIBRARIES} glad ${CMAKE_DL_LIBS} freetype cxutils)
 add_dependencies(cxgledit keybound)
+
 target_compile_definitions(keybound PRIVATE "GLFW_INCLUDE_NONE")
+
+set(GCC_FLAGS ${CLANG_FLAGS})
+set(MSVC_FLAGS /W4 /w14242 /w14254 /w14263 /w14265 /w14287 /we4289 /w14296 /w14311 /w14545 /w14546 /w14547 /w14549 /w14555 /w14619 /w14640 /w14826 /w14905 /w14906 /w14928)
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    message("You are using CLANG. Setting CLANG flags: ${CLANG_FLAGS}")
+    target_compile_options(${PROJECT_NAME} PUBLIC ${CLANG_FLAGS})
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    message("You are using GCC. Setting GCC flags: ${GCC_FLAGS}")
+    target_compile_options(${PROJECT_NAME} PUBLIC ${GCC_FLAGS})
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    message("You are using MSVC. Setting MSVC flags: ${MSVC_FLAGS}")
+    target_compile_options(${PROJECT_NAME} PUBLIC ${MSVC_FLAGS})
+endif()
 
 # TODO(count character occurence, using avx): set add_definitions(-DINTRINSICS_ENABLED) when feature is implemented
 if (CMAKE_BUILD_TYPE STREQUAL Release)
@@ -140,7 +182,7 @@ if (CMAKE_BUILD_TYPE STREQUAL Release)
 
 elseif(CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
     message("Setting up variables for RelWithDebInfo")
-    set(CMAKE_C_FLAGS "/DNDEBUG /Ot2 /Z7 /Gy ${CMAKE_C_FLAGS}")
+    set(CMAKE_C_FLAGS "/Ot2 /Z7 /Gy ${CMAKE_C_FLAGS}")
     message(Cmake flags for RelWithDebInfo: ${CMAKE_C_FLAGS})
     message("Build type is ${CMAKE_BUILD_TYPE}. Copying assets to ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO}/assets")
     message("Debug has instrumentation features enabled.")

@@ -28,10 +28,10 @@
 typedef Action(__cdecl *KeyBindingFn)(CXMode, KeyInput);
 
 namespace ui {
-class View;
-class EditorWindow;
-class StatusBar;
-class CommandView;
+struct View;
+struct EditorWindow;
+struct StatusBar;
+struct CommandView;
 }// namespace ui
 
 namespace fs = std::filesystem;

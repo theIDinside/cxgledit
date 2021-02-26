@@ -27,21 +27,23 @@ constexpr auto DEBUG_IS_ON = false;
         asserts::index_assertion(__FUNCSIG__, __FILE__, __LINE__, index, container);                                   \
     }
 
+
+
 namespace asserts {
 template<typename Container>
 concept ContainerAssertable = requires(Container c) {
-    c.empty();
-    c.size();
+    c.capacity();
 };
 
 template<ContainerAssertable C>
 constexpr bool index_assertion(const char *fn_name, const char *file, int line_number, int index, C c) {
-    if (not(index < AS(c.size(), int) || (index == 0 && c.empty()))) {
-        util::println("Assertion failed ({}:{}): Type: 'Index assertion': {} not < {}", index, c.size());
+    if (not(index < AS(c.capacity(), int))) {
+        util::println("Assertion failed in {} ({}:{}): Type: 'Index assertion': {} not < {}", fn_name, file, line_number, index, c.capacity());
         std::abort();
     }
     return true;
 }
+
 }// namespace asserts
 
 template<typename T>

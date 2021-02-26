@@ -12,9 +12,8 @@ using byte = unsigned char;
 struct Texture {
     static std::unique_ptr<Texture> setup_texture_info();
     static std::unique_ptr<Texture> make_from_data(const byte *data, int width, int height, int bytesPerPixel);
-    std::optional<Texture> load_from_file(const char *path);
 
-    void bind(int textureUnit = 0) const;
+    void bind() const;
 
     const GLuint id;
     int width{0};

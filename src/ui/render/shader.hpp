@@ -43,20 +43,20 @@ public:
     void setVec4(const std::string &name, float x, float y, float z, float w);
     // ------------------------------------------------------------------------
     void setMat4(const std::string &name, const Matrix& mat) const;
-    void set_projection(const Matrix& mat);
-    void set_fillcolor(Vec4f color);
+    void set_projection(const Matrix& mat) const;
+    void set_fillcolor(Vec4f color) const;
 
 
     void setup();
     void setup_fillcolor_ids();
 
     static Shader load_shader(const char *vertexPath, const char *fragmentPath, const char *geometryPath = nullptr);
-    static Shader load_shader(fs::path vertexPath, fs::path fragmentPath, fs::path geometryPath = "");
+    static Shader load_shader(const fs::path& vertexPath, const fs::path& fragmentPath, const fs::path& geometryPath = "");
 
 private:
     // utility function for checking shader compilation/linking errors.
     // ------------------------------------------------------------------------
-    static void checkCompileErrors(unsigned int shader, std::string type);
+    static void checkCompileErrors(unsigned int shader, const std::string& type);
     int projection;
     int fillcolor;
 };

@@ -19,9 +19,9 @@
 
 namespace ui {
 namespace core {
-    class ScreenPos;
+    struct ScreenPos;
 }
-class View;
+struct View;
 }// namespace ui
 
 struct SyntaxColor {

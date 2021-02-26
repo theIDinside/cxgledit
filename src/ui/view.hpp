@@ -82,8 +82,7 @@ private:
     void enable_and_set_gl_scissor() const;
 };
 
-class CommandView {
-public:
+struct CommandView {
     int x, y;
     int w, h;
     std::string name;

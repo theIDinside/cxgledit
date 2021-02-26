@@ -10,7 +10,7 @@ class TextData;
 class BufferCursor;
 
 namespace ui {
-class View;
+struct View;
 
 struct StatusBar {
     ~StatusBar();

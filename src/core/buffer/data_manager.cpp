@@ -39,6 +39,9 @@ TextData *DataManager::create_managed_buffer(BufferType type) {
                 data.push_back(std::move(bufHandle));
                 return data.back().get();
             }
+            default:
+                util::println("Erroneous buffer type passed to create_managed_buffer");
+                std::abort();
         }
     } else {
         auto last = reuse_list.begin() + reuse_list.size() - 1;
@@ -72,6 +75,8 @@ TextData* DataManager::create_free_buffer(BufferType type) {
             bufHandle->info = (type == BufferType::CommandInput) ? BufferTypeInfo::CommandInput : BufferTypeInfo::StatusBar;
             return bufHandle;
         }
+        default:
+            std::abort();
     }
 }
 

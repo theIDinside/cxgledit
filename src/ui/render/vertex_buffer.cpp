@@ -20,7 +20,7 @@ TextVertexBufferObject::TextVertexBufferObject(GLuint id, GLenum bufferType, Loc
 
 void TextVertexBufferObject::bind() { glBindBuffer(this->type, this->id); }
 
-int TextVertexBufferObject::upload_to_gpu(bool clear_on_upload) {
+usize TextVertexBufferObject::upload_to_gpu(bool clear_on_upload) {
     auto vertices = data.size();
     if(vertices == 0) {
         reserve_gpu_memory(1024);
@@ -79,8 +79,8 @@ std::unique_ptr<VAO> VAO::make(GLenum VBOType, usize reservedVertexSpace) {
 void VAO::flush_and_draw() {
     bind_all();
     auto count = vbo->upload_to_gpu(true);
-    this->last_items_rendered = count;
-    glDrawArrays(GL_TRIANGLES, 0, count);
+    last_items_rendered = static_cast<int>(count);
+    glDrawArrays(GL_TRIANGLES, 0, last_items_rendered);
 }
 void VAO::reserve_gpu_size(std::size_t text_character_count) {
     bind_all();
@@ -127,7 +127,7 @@ int CursorVertexBufferObject::upload_to_gpu(bool clear_on_upload) {
     auto vertices = data.size();
     glBufferSubData(GL_ARRAY_BUFFER, 0, this->data.size() * sizeof(CursorVertex), data.data());
     if (clear_on_upload) { data.clear(); }
-    return vertices;
+    return static_cast<int>(vertices);
 }
 void CursorVertexBufferObject::reserve_gpu_memory(std::size_t quadsCount) {
     glBufferData(GL_ARRAY_BUFFER, gpu_mem_required_for_quads<CursorVertex>(quadsCount), nullptr,

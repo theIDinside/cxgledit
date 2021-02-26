@@ -6,9 +6,9 @@
 #include <core/buffer/std_string_buffer.hpp>
 // Managers
 #include <core/buffer/data_manager.hpp>
-#include <ui/managers/shader_library.hpp>
-#include <ui/managers/font_library.hpp>
 #include <core/commands/command_interpreter.hpp>
+#include <ui/managers/font_library.hpp>
+#include <ui/managers/shader_library.hpp>
 // Sys headers
 #include <utility>
 #include <vector>
@@ -18,7 +18,7 @@
 
 /// ----------------- VIEW FACTORY FUNCTIONS -----------------
 
-constexpr auto  LINES_DISPLAYABLE_DIFF = 2;
+constexpr auto LINES_DISPLAYABLE_DIFF = 2;
 
 namespace ui {
 
@@ -85,9 +85,9 @@ void View::set_dimensions(int w, int h) {
     util::println("lines displayable updated to: {}", lines_displayable);
 }
 
-void View::anchor_at(int x, int y) {
-    this->x = x;
-    this->y = y;
+void View::anchor_at(int new_x, int new_y) {
+    x = new_x;
+    y = new_y;
 }
 SimpleFont *View::get_font() { return font; }
 TextData *View::get_text_buffer() const { return data; }
@@ -131,7 +131,8 @@ void View::draw(bool isActive) {
         const auto xpos = AS(x + View::TEXT_LENGTH_FROM_EDGE, int);
         const auto ypos = AS(y - font->get_row_advance(), int);
         const Pos p{xpos, ypos};
-        if(auto fCtxInfo = get_text_buffer()->file_context(); fCtxInfo.type == ContexTypes::CPPHeader || fCtxInfo.type == ContexTypes::CPPSource) {
+        if (auto fCtxInfo = get_text_buffer()->file_context();
+            fCtxInfo.type == ContexTypes::CPPHeader || fCtxInfo.type == ContexTypes::CPPSource) {
             font->create_vertex_data_for_syntax(this, p);
         } else {
             font->create_vertex_data_no_highlighting(this, p);
@@ -163,7 +164,7 @@ void View::forced_draw(bool isActive) {
     }
 
     font->create_vertex_data_in(vao.get(), this, AS(this->x + View::TEXT_LENGTH_FROM_EDGE, int),
-                                       this->y - font->get_row_advance());
+                                this->y - font->get_row_advance());
     vao->flush_and_draw();
     this->cursor->forced_draw();
     glDisable(GL_SCISSOR_TEST);
@@ -177,7 +178,6 @@ void View::draw_statusbar() {
     font->t->bind();
     // shader->set_projection(projection);
     shader->set_projection(mvp);
-
 
     auto textToRender = this->data->to_string_view();
     font->emplace_colorized_text_gpu_data(vao.get(), textToRender, AS(this->x + View::TEXT_LENGTH_FROM_EDGE, int),
@@ -208,7 +208,7 @@ void View::draw_command_view(const std::string &prefix, std::optional<std::vecto
             } else {
                 fully_formatted.push_back(range);
             }
-            index += range.begin + range.length;
+            index += AS(range.begin + range.length, unsigned int);
         }
         if (index != text_len) {
             fully_formatted.push_back(
@@ -254,17 +254,17 @@ void View::set_font(SimpleFont *new_font) {
     forced_draw(true);
 }
 View::~View() {
-    util::println("Destroying View {} and it's affiliated resources. TextBuffer id: {} - Name: {}", name, get_text_buffer()->id, get_text_buffer()->fileName());
+    util::println("Destroying View {} and it's affiliated resources. TextBuffer id: {} - Name: {}", name,
+                  get_text_buffer()->id, get_text_buffer()->fileName());
     if (not DataManager::get_instance().is_managed(data->id)) {
         DataManager::get_instance().print_all_managed();
         delete data;
     }
 }
 
-void View::draw_modal_view(int selected, std::vector<TextDrawable>& drawables) {
+void View::draw_modal_view(int selected, std::vector<TextDrawable> &drawables) {
     glEnable(GL_SCISSOR_TEST);
     glScissor(x, y - height, this->width, this->height);
-    auto[r,g,b] = bg_color;
 
     glClear(GL_COLOR_BUFFER_BIT);
     vao->bind_all();
@@ -283,16 +283,15 @@ void View::draw_modal_view(int selected, std::vector<TextDrawable>& drawables) {
     }
     font->add_colorized_text_gpu_data(vao.get(), drawables);
     vao->flush_and_draw();
-    if(not drawables.empty())
-        cursor->set_line_rect(drawables[selected].xpos, drawables[selected].xpos + width, drawables[selected].ypos - 4, font->row_height - 2);
+    if (not drawables.empty())
+        cursor->set_line_rect(AS(drawables[selected].xpos, GLfloat), AS(drawables[selected].xpos + width, GLfloat),
+                              AS(drawables[selected].ypos - 4, GLfloat), font->row_height - 2);
 
     cursor->forced_draw();
     glDisable(GL_SCISSOR_TEST);
 }
 
-void View::set_projection(Matrix projection) {
-    this->mvp = projection;
-}
+void View::set_projection(Matrix projection) { this->mvp = projection; }
 
 std::pair<std::string_view, std::string_view> View::debug_print_boundary_lines() {
     auto top_line = cursor->views_top_line;
@@ -302,15 +301,15 @@ std::pair<std::string_view, std::string_view> View::debug_print_boundary_lines()
     auto total = buf->to_string_view();
 
     auto top_line_idx = buf->meta_data.line_begins[top_line];
-    auto top_len = buf->meta_data.line_begins[top_line+1] - buf->meta_data.line_begins[top_line];
+    auto top_len = buf->meta_data.line_begins[top_line + 1] - buf->meta_data.line_begins[top_line];
 
-    if(end_line < buf->meta_data.line_begins.size()) {
+    if (end_line < buf->meta_data.line_begins.size()) {
         auto bot_line_idx = buf->meta_data.line_begins[end_line];
-        auto bot_len = buf->meta_data.line_begins[end_line+1] - buf->meta_data.line_begins[end_line];
+        auto bot_len = buf->meta_data.line_begins[end_line + 1] - buf->meta_data.line_begins[end_line];
         std::string_view top{total.data() + top_line_idx, static_cast<size_t>(top_len)};
         std::string_view bot{total.data() + bot_line_idx, static_cast<size_t>(bot_len)};
         return {top, bot};
-    } else if(buf->meta_data.line_begins.size() > 1) {
+    } else if (buf->meta_data.line_begins.size() > 1) {
         auto bot_line_idx = buf->meta_data.line_begins.back();
         auto bot_len = *buf->meta_data.line_begins.rbegin() - *(buf->meta_data.line_begins.rbegin() + 1);
         std::string_view top{total.data() + top_line_idx, static_cast<size_t>(top_len)};
@@ -321,9 +320,9 @@ std::pair<std::string_view, std::string_view> View::debug_print_boundary_lines()
     }
 }
 void View::scroll_to(int line) {
-    int linesInBuffer = get_text_buffer()->meta_data.line_begins.size();
+    int linesInBuffer = AS(get_text_buffer()->meta_data.line_begins.size(), int);
     int maxScrollableTopLine = std::max(0, linesInBuffer - lines_displayable + (lines_displayable / 2));
-    if(line < maxScrollableTopLine) {
+    if (line < maxScrollableTopLine) {
         cursor->views_top_line = std::max(line, 0);
     } else {
         cursor->views_top_line = maxScrollableTopLine;
@@ -331,9 +330,9 @@ void View::scroll_to(int line) {
 }
 
 void View::gl_clear_view_space(bool isActive) const {
-    const auto&[r,g,b] = bg_color;
+    const auto &[r, g, b] = bg_color;
     if (isActive) {
-        const auto& [r_, g_, b_] = when_active_bg_color;
+        const auto &[r_, g_, b_] = when_active_bg_color;
         glClearColor(r_, g_, b_, 1.0f);
     } else {
         glClearColor(r, g, b, 1.0f);

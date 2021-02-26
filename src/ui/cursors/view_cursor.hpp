@@ -9,7 +9,7 @@
 #include <core/math/matrix.hpp>
 
 namespace ui {
-    class View;
+    struct View;
 
     struct ViewCursor {
 
@@ -21,7 +21,7 @@ namespace ui {
         static std::unique_ptr<ViewCursor> create_from(View* owning_view);
 
         void update_cursor_data(GLfloat x, GLfloat y);
-        void draw(bool isActive = false);
+        void draw();
         void forced_draw();
 
         void set_line_rect(GLfloat x1, GLfloat x2, GLfloat y1);
@@ -40,7 +40,7 @@ namespace ui {
         int height{};
         int pos_x;
         int pos_y;
-        RGBAColor caret_color = {1.0, 0.0, 0.2, .4};
+        RGBAColor caret_color = {1.0f, 0.0f, 0.2f, .4f};
         std::unique_ptr<CursorVAO> cursor_data;
         std::unique_ptr<CursorVAO> line_shade_data;
     };

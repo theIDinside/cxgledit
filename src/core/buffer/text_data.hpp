@@ -15,7 +15,7 @@
 #include <utils/strops.hpp>
 
 namespace ui {
-    class View;
+    struct View;
 }
 
 class TextData;

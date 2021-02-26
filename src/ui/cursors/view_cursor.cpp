@@ -62,7 +62,7 @@ std::unique_ptr<ViewCursor> ViewCursor::create_from(View *view) {
     return vc;
 }
 
-void ViewCursor::draw(bool isActive) {
+void ViewCursor::draw() {
     shader->use();
     shader->set_projection(mvp);
 

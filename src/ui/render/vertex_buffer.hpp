@@ -66,7 +66,7 @@ struct TextVertexBufferObject {
     TextVertexBufferObject(const TextVertexBufferObject&) = delete;
     static std::unique_ptr<TextVertexBufferObject> create(GLuint vboId, GLenum bufferType, usize reservedSize = 0);
     void bind();
-    int upload_to_gpu(bool clear_on_upload = true);
+    usize upload_to_gpu(bool clear_on_upload = true);
     void reserve_gpu_memory(std::size_t text_character_count);
 
     void destroy();

@@ -20,8 +20,8 @@ using RGBColor = Vec3f;
 
 namespace ui {
 // Forward declarations
-class View;
-class StatusBar;
+struct View;
+struct StatusBar;
 
 struct EditorWindow {
     View *view = nullptr;

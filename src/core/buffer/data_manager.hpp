@@ -32,7 +32,7 @@ public:
 
     int get_new_id();
     CommandResult request_close(int i);
-    int reuseable_buffers() const;
+    [[nodiscard]] int reuseable_buffers() const;
     bool is_managed(int buffer_id);
     void print_all_managed();
 

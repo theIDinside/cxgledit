@@ -11,7 +11,7 @@ namespace fs = std::filesystem;
 
 struct SelectionResult {
     std::string prefix;
-    std::optional<std::string> suggestion;
+    std::optional<std::string> suggestion_path;
 };
 
 class FileManager {

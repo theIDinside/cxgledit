@@ -311,7 +311,7 @@ void App::load_file(const fs::path &file) {
  * @param force_redraw
  */
 void App::draw_all(bool force_redraw) {
-    for (auto &ew : editor_views) ew->draw(force_redraw);
+    for (auto &ew : editor_views) ew->draw();
     this->command_view->draw();
     if (modal_shown) modal_popup->draw();
     glViewport(0, 0, this->win_width, this->win_height);

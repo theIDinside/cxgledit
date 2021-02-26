@@ -32,15 +32,14 @@ Layout *find_by_id(Layout *root, int id) {
 
 void push_node(Layout *n, int assignedId, LayoutType t) {
     if (not ParentID(n->id)) {
-        auto &[x, y, w, h] = n->dimInfo;
-        if (t == LayoutType::Vertical) {
 
+        if (t == LayoutType::Vertical) {
+            util::println("Vertical layout not yet implemented");
+            std::abort();
         } else if (t == LayoutType::Horizontal) {
             auto occupyingID = n->id;
             n->id *= -1;
-
             auto [left, right] = DimInfo::split(n->dimInfo, LayoutType::Horizontal);
-
             auto l = new Layout{};
             n->left = l;
             l->id = occupyingID;
@@ -193,27 +192,22 @@ void promote_node(Layout *&node) {
     auto grandparent = node->parent->parent;
 
     if (grandparent == nullptr) {
-        auto wRatio = pDims.w / node->dimInfo.w;
-        auto hRatio = pDims.h / node->dimInfo.h;
+        const auto wRatio = pDims.w / float(node->dimInfo.w);
+        const auto hRatio = pDims.h / float(node->dimInfo.h);
         node->dimInfo.x = pDims.x;
         node->dimInfo.y = pDims.y;
 
         util::println("Upgrading dim to root. From [{}] -> [{}]", dim.debug_str(), pDims.debug_str());
-        auto newWidth = wRatio * node->dimInfo.w;
-        auto newHeight = hRatio * node->dimInfo.h;
         update_layout_tree(node, wRatio, hRatio);
         node->parent = node;
-        // std::swap(node->parent, node);
         delete node;
     } else {
         if (ParentID(node->id)) {
-            auto wRatio = node->parent->dimInfo.w / node->dimInfo.w;
-            auto hRatio = node->parent->dimInfo.h / node->dimInfo.h;
+            const auto wRatio = node->parent->dimInfo.w / float(node->dimInfo.w);
+            const auto hRatio = node->parent->dimInfo.h / float(node->dimInfo.h);
             node->dimInfo = pDims;
             node->left->dimInfo.x = node->dimInfo.x;
             node->left->dimInfo.y = node->dimInfo.y;
-            auto newWidth = wRatio * node->dimInfo.w;
-            auto newHeight = hRatio * node->dimInfo.h;
             update_layout_tree(node, wRatio, hRatio);
             if (parent == grandparent->left) {
                 grandparent->left = node;
@@ -261,12 +255,12 @@ void set_new_root(Layout *&old_root, Layout *new_root) {
     const auto l = old_root->left;
     const auto r = old_root->right;
     if (old_root->left && old_root->right) {
-        auto new_total_w = old_root->dimInfo.w;
-        auto total_width = l->dimInfo.w + r->dimInfo.w;
-        auto wRatio = new_total_w / total_width;
+        const auto new_total_w = old_root->dimInfo.w;
+        const auto total_width = l->dimInfo.w + r->dimInfo.w;
+        const auto wRatio = new_total_w / float(total_width);
         if (old_root->type == LayoutType::Horizontal) {
-            update_layout_tree(old_root->left, wRatio, 1.0);
-            update_layout_tree(old_root->right, wRatio, 1.0);
+            update_layout_tree(old_root->left, wRatio, 1.0f);
+            update_layout_tree(old_root->right, wRatio, 1.0f);
         } else {
             PANIC("NOT YET SUPPORTED");
         }
@@ -317,7 +311,10 @@ SplitDimInfo<DimInfo> DimInfo::split(const DimInfo &di, LayoutType layoutType) {
             DimInfo LEFT{.x = x_aPos * 1, .y = y, .w = w / 2, .h = h};
             auto result = SplitDimInfo<DimInfo>{LEFT, right};
             return result;
-        };
+        }
+        default:
+            util::println("Erroneous layout requested");
+            std::abort();
     }
 }
 
