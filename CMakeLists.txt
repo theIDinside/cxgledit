@@ -3,11 +3,12 @@ project(cxgledit LANGUAGES CXX C)
 
 set(EXPORT_COMPILE_COMMANDS ON)
 include(FetchContent)
+include(./cmake/CustomFunctions.cmake)
+
 message("Project source dir ${PROJECT_SOURCE_DIR}")
 set(SRC_DIR ./src)
 
 set(DEP_DIR ${PROJECT_SOURCE_DIR}/deps)
-
 set(RUN_FROM_FOLDER ${PROJECT_SOURCE_DIR}/bin/run)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/bin/debug)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release)
@@ -16,6 +17,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${PROJECT_SOURCE_DIR}/bin/relw
 # flags taken from; https://github.com/lefticus/cppbestpractices/blob/master/02-Use_the_Tools_Available.md
 set(CLANG_FLAGS -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic -Wold-style-cast -Wcast-align -Wunused -Woverloaded-virtual -Wconversion -Wsign-conversion -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wlogical-op
         -Wnull-dereference -Wuseless-cast -Wdouble-promotion -Wformat=2 -Wlifetime)
+
+set(GCC_FLAGS ${CLANG_FLAGS})
+set(MSVC_FLAGS /W4 /w14242 /w14254 /w14263 /w14265 /w14287 /we4289 /w14296 /w14311 /w14545 /w14546 /w14547 /w14549 /w14555 /w14619 /w14640 /w14826 /w14905 /w14906 /w14928)
 
 Set(FETCHCONTENT_QUIET FALSE)
 
@@ -59,56 +63,50 @@ if (NOT cxutils_POPULATED)
     add_subdirectory(${cxutils_SOURCE_DIR} ${cxutils_BINARY_DIR})
 endif ()
 
-set(UI_RENDER_SOURCES
-        src/ui/managers/font_library.cpp src/ui/managers/font_library.hpp
-        src/ui/managers/shader_library.cpp src/ui/managers/shader_library.hpp
-        src/ui/render/font.cpp src/ui/render/font.hpp
-        src/ui/render/shader.cpp src/ui/render/shader.hpp
-        src/ui/render/texture.cpp src/ui/render/texture.hpp
-        src/ui/render/vertex_buffer.cpp src/ui/render/vertex_buffer.hpp
-
-        src/ui/view.cpp src/ui/view.hpp
-        src/ui/cursors/view_cursor.cpp src/ui/cursors/view_cursor.hpp
-
-        src/ui/managers/view_manager.cpp src/ui/managers/view_manager.hpp
-        src/ui/core/layout.cpp src/ui/core/layout.hpp
-        src/ui/editor_window.cpp src/ui/editor_window.hpp
-        src/ui/status_bar.cpp src/ui/status_bar.hpp
-        src/ui/syntax_highlighting.cpp src/ui/syntax_highlighting.hpp
-        src/ui/core/opengl.cpp src/ui/core/opengl.hpp
-        src/ui/modal.cpp src/ui/modal.hpp
-        src/ui/panel.cpp src/ui/panel.hpp
-        src/ui/view_enums.hpp)
-
-set(UTIL_SOURCES
-        src/utils/utils.cpp src/utils/utils.hpp
-        src/utils/fileutil.cpp src/utils/fileutil.hpp
-        src/utils/strops.hpp)
-
-set(CORE_SOURCE
+set(SOURCES
+        src/main.cpp
+        src/app.cpp
+        # CORE sources
         src/core/core.hpp
         src/core/strops.cpp src/core/strops.hpp
         src/core/buffer/text_data.cpp src/core/buffer/text_data.hpp
         src/core/buffer/data_manager.cpp src/core/buffer/data_manager.hpp
         src/cfg/configuration.cpp src/cfg/configuration.hpp
         src/core/math/vector.cpp src/core/math/vector.hpp
-        src/core/math/matrix.cpp src/core/math/matrix.hpp src/core/buffer/file_context.cpp src/core/buffer/file_context.hpp src/core/buffer/std_string_buffer.cpp src/core/buffer/std_string_buffer.hpp)
+        src/core/math/matrix.cpp src/core/math/matrix.hpp
+        src/core/buffer/file_context.cpp src/core/buffer/file_context.hpp
+        src/core/buffer/std_string_buffer.cpp src/core/buffer/std_string_buffer.hpp
+        src/core/buffer/bookmark.cpp src/core/buffer/bookmark.hpp
+        src/core/buffer/text_rep.cpp src/core/buffer/text_rep.hpp
+        # UI Render Sources
+        src/ui/core/opengl.cpp src/ui/core/opengl.hpp
+        src/ui/core/layout.cpp src/ui/core/layout.hpp
+        src/ui/view.cpp src/ui/view.hpp
+        src/ui/status_bar.cpp src/ui/status_bar.hpp
+        src/ui/editor_window.cpp src/ui/editor_window.hpp
+        src/ui/modal.cpp src/ui/modal.hpp
+        src/ui/panel.cpp src/ui/panel.hpp
+        src/ui/cursors/view_cursor.cpp src/ui/cursors/view_cursor.hpp
 
-set(COMMANDS_SOURCE
+        src/ui/managers/font_library.cpp src/ui/managers/font_library.hpp
+        src/ui/managers/shader_library.cpp src/ui/managers/shader_library.hpp
+        src/ui/managers/view_manager.cpp src/ui/managers/view_manager.hpp
+        src/ui/render/font.cpp src/ui/render/font.hpp
+        src/ui/render/shader.cpp src/ui/render/shader.hpp
+        src/ui/render/texture.cpp src/ui/render/texture.hpp
+        src/ui/render/vertex_buffer.cpp src/ui/render/vertex_buffer.hpp
+
+        src/ui/syntax_highlighting.cpp src/ui/syntax_highlighting.hpp
+        src/ui/view_enums.hpp
+        # UTIL sources
+        src/utils/utils.cpp src/utils/utils.hpp
+        src/utils/fileutil.cpp src/utils/fileutil.hpp
+        src/utils/strops.hpp
+        # COMMAND sources
         src/core/commands/command_interpreter.cpp src/core/commands/command_interpreter.hpp
-        src/core/commands/file_manager.cpp src/core/commands/file_manager.hpp)
-
-set(SOURCES
-        src/main.cpp
-        src/app.cpp
-        ${CORE_SOURCE}
-        ${UI_RENDER_SOURCES}
-        ${UTIL_SOURCES}
-        ${COMMANDS_SOURCE} src/cfg/types/cursor_options.hpp src/core/buffer/bookmark.cpp src/core/buffer/bookmark.hpp src/core/buffer/text_rep.cpp src/core/buffer/text_rep.hpp)
-
-add_executable(cxgledit ${SOURCES})
-
-target_include_directories(${PROJECT_NAME} PRIVATE "${GLFW_DIR}/include")
+        src/core/commands/file_manager.cpp src/core/commands/file_manager.hpp
+        # CONFIG sources
+        src/cfg/types/cursor_options.hpp )
 
 set(GLFW_BUILD_EXAMPLES OFF CACHE INTERNAL "Build the GLFW example programs")
 set(GLFW_BUILD_TESTS OFF CACHE INTERNAL "Build the GLFW test programs")
@@ -116,45 +114,32 @@ set(GLFW_BUILD_DOCS OFF CACHE INTERNAL "Build the GLFW documentation")
 set(GLFW_INSTALL OFF CACHE INTERNAL "Generate installation target")
 set(GLFW_DIR ${DEP_DIR}/glfw)
 
-# This doesn't need to be done, now that we use FetchContent to grab the library off of github. The wonders of 2020
-# if we do this; it will conflict with the settings, as two targets with the name "glfw" will be set. So don't do it.
-# it's just kept here for a mental reminder for me.
-# add_subdirectory(${GLFW_DIR})
-
 add_library(glad ./src/glad.c)
-
-
-
 
 target_include_directories(glad PRIVATE "${DEP_DIR}/include")
 set(FT_DIR ${DEP_DIR}/freetype-2.10.4)
 add_subdirectory(${FT_DIR})
 
-# Setting up properties & configurations for project
+# Our custom add_library & add_executable calls, to shorten down this file a little tiny bit and make it more skimmable
+# defined in ./cmake/CustomFunctions.cmake
+SetupLibrary(NAME keybound
+        SOURCES deps/include/bindingslib/keybindings.cpp)
+
+SetupExecutable(NAME ${PROJECT_NAME}
+        SOURCES ${SOURCES}
+        DEPENDENCIES fmt ${OPENGL_LIBRARIES} glfw ${GLFW_LIBRARIES} glad ${CMAKE_DL_LIBS} freetype cxutils)
+# target_link_libraries(cxgledit fmt ${OPENGL_LIBRARIES} glfw ${GLFW_LIBRARIES} glad ${CMAKE_DL_LIBS} freetype cxutils)
+
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE "GLFW_INCLUDE_NONE")
 target_include_directories(${PROJECT_NAME} PRIVATE ${DEP_DIR}/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${FT_DIR}/include)
-message("OpenGL libraries are set to: ${OPENGL_LIBRARIES}. CMAKE_DL_LIBS set to: ${CMAKE_DL_LIBS}")
-add_library(keybound SHARED deps/include/bindingslib/keybindings.cpp)
+target_include_directories(${PROJECT_NAME} PRIVATE "${GLFW_DIR}/include")
 
-function(SET_CXX_20 REQUIRED_ARG)
-    set_target_properties(${REQUIRED_ARG} PROPERTIES
-            CXX_STANDARD 20
-            CXX_STANDARD_REQUIRED TRUE
-            CXX_EXTENSIONS FALSE)
-endfunction()
-
-SET_CXX_20(cxgledit)
-SET_CXX_20(keybound)
-
-target_link_libraries(cxgledit fmt ${OPENGL_LIBRARIES} glfw ${GLFW_LIBRARIES} glad ${CMAKE_DL_LIBS} freetype cxutils)
 add_dependencies(cxgledit keybound)
-
 target_compile_definitions(keybound PRIVATE "GLFW_INCLUDE_NONE")
 
-set(GCC_FLAGS ${CLANG_FLAGS})
-set(MSVC_FLAGS /W4 /w14242 /w14254 /w14263 /w14265 /w14287 /we4289 /w14296 /w14311 /w14545 /w14546 /w14547 /w14549 /w14555 /w14619 /w14640 /w14826 /w14905 /w14906 /w14928)
+
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     message("You are using CLANG. Setting CLANG flags: ${CLANG_FLAGS}")
