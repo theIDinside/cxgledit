@@ -148,14 +148,16 @@ void View::forced_draw(bool isActive) {
     enable_and_set_gl_scissor();
     gl_clear_view_space(isActive);
 
+    // TODO: Something which _all_ views, no matter type, will perform. Lift out into base class?
     vao->bind_all();
     shader->use();
-    font->t->bind();
-    // shader->set_projection(projection);
     shader->set_projection(mvp);
 
-    // cursor->set_projection(projection);
+    // Specific to views which render editable text
+    font->t->bind();
+    // Specific to views which render editable text
     cursor->set_projection(mvp);
+
 
     auto text_size = data->size();
     if (text_size * 6 > this->vertexCapacity) {
