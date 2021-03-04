@@ -128,17 +128,14 @@ SetupLibrary(NAME keybound
 SetupExecutable(NAME ${PROJECT_NAME}
         SOURCES ${SOURCES}
         DEPENDENCIES fmt ${OPENGL_LIBRARIES} glfw ${GLFW_LIBRARIES} glad ${CMAKE_DL_LIBS} freetype cxutils)
-# target_link_libraries(cxgledit fmt ${OPENGL_LIBRARIES} glfw ${GLFW_LIBRARIES} glad ${CMAKE_DL_LIBS} freetype cxutils)
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}")
-target_compile_definitions(${PROJECT_NAME} PRIVATE "GLFW_INCLUDE_NONE")
+target_compile_definitions(${PROJECT_NAME} PUBLIC "GLFW_INCLUDE_NONE")
 target_include_directories(${PROJECT_NAME} PRIVATE ${DEP_DIR}/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${FT_DIR}/include)
 target_include_directories(${PROJECT_NAME} PRIVATE "${GLFW_DIR}/include")
 
 add_dependencies(cxgledit keybound)
-target_compile_definitions(keybound PRIVATE "GLFW_INCLUDE_NONE")
-
 
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")

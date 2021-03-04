@@ -14,9 +14,7 @@ using u64 = uint64_t;
 
 #ifdef INTRINSICS_ENABLED
 #include <immintrin.h>
-
 u64 newline_count_64bit(const char *data, std::size_t len);
-
 #else
 
 std::vector<int> make_lines_indices(const char *data, std::size_t len);
