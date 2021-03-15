@@ -12,7 +12,7 @@ function(SetupLibrary)
             PARSED_ARGS # prefix of output variables
             "" # list of names of the boolean arguments (only defined ones will be true)
             "NAME" # list of names of mono-valued arguments
-            "SOURCES" # list of names of multi-valued arguments (output variables are lists)
+            "SOURCES;INCLUDE_DIRS" # list of names of multi-valued arguments (output variables are lists)
             ${ARGN} # arguments of the function to parse, here we take the all original ones
     )
     # note: if it remains unparsed arguments, here, they can be found in variable PARSED_ARGS_UNPARSED_ARGUMENTS
@@ -21,6 +21,11 @@ function(SetupLibrary)
     endif(NOT PARSED_ARGS_NAME)
     message("Provided sources are:")
     add_library(${PARSED_ARGS_NAME} SHARED ${PARSED_ARGS_SOURCES})
+    if(PARSED_ARGS_INCLUDE_DIRS)
+        foreach(dir in ${PARSED_ARGS_INCLUDE_DIRS})
+            target_include_directories(${PARSED_ARGS_NAME} PRIVATE ${dir})
+        endforeach()
+    endif()
     SET_CXX_20(${PARSED_ARGS_NAME})
 endfunction(SetupLibrary)
 
@@ -30,7 +35,7 @@ function(SetupExecutable)
             PARSED_ARGS # prefix of output variables
             "" # list of names of the boolean arguments (only defined ones will be true)
             "NAME" # list of names of mono-valued arguments
-            "SOURCES;DEPENDENCIES" # list of names of multi-valued arguments (output variables are lists)
+            "SOURCES;DEPENDENCIES;INCLUDE_DIRS" # list of names of multi-valued arguments (output variables are lists)
             ${ARGN} # arguments of the function to parse, here we take the all original ones
     )
     # note: if it remains unparsed arguments, here, they can be found in variable PARSED_ARGS_UNPARSED_ARGUMENTS
@@ -40,8 +45,12 @@ function(SetupExecutable)
     if(NOT PARSED_ARGS_SOURCES)
         message(FATAL_ERROR "You must provide sources for an executable")
     endif(NOT PARSED_ARGS_SOURCES)
-
     add_executable(${PARSED_ARGS_NAME} ${PARSED_ARGS_SOURCES})
+    if(PARSED_ARGS_INCLUDE_DIRS)
+        foreach(dir in ${PARSED_ARGS_INCLUDE_DIRS})
+            target_include_directories(${PARSED_ARGS_NAME} PRIVATE ${dir})
+        endforeach()
+    endif()
     target_link_libraries(${PARSED_ARGS_NAME} ${PARSED_ARGS_DEPENDENCIES})
     SET_CXX_20(${PARSED_ARGS_NAME})
 endfunction(SetupExecutable)

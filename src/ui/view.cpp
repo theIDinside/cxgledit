@@ -109,11 +109,8 @@ void View::draw(bool isActive) {
     vao->bind_all();
     shader->use();
     font->t->bind();
-    // shader->set_projection(projection);
-    // shader->set_projection(projection);
-    shader->set_projection(mvp);
 
-    // cursor->set_projection(projection);
+    shader->set_projection(mvp);
     cursor->set_projection(mvp);
 
     auto text_size = data->size();
@@ -131,8 +128,8 @@ void View::draw(bool isActive) {
         const auto xpos = AS(x + View::TEXT_LENGTH_FROM_EDGE, int);
         const auto ypos = AS(y - font->get_row_advance(), int);
         const Pos p{xpos, ypos};
-        if (auto fCtxInfo = get_text_buffer()->file_context();
-            fCtxInfo.type == ContexTypes::CPPHeader || fCtxInfo.type == ContexTypes::CPPSource) {
+        if (auto fileContextInfo = get_text_buffer()->file_context();
+            fileContextInfo.type == ContexTypes::CPPHeader || fileContextInfo.type == ContexTypes::CPPSource) {
             font->create_vertex_data_for_syntax(this, p);
         } else {
             font->create_vertex_data_no_highlighting(this, p);

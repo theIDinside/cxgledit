@@ -103,9 +103,7 @@ struct TextDrawable {
 using OptionalColData = std::optional<std::vector<ColorizeTextRange>>;
 class SimpleFont {
 public:
-    static SyntaxColor colors[8];
     // Static member vars
-    static const int CHARACTERS_TEXTURE_SIZE;//!< Size of texture atlas (in pixels) that stores characters
     // Static member functions
     [[maybe_unused]] static std::unique_ptr<SimpleFont>
     setup_font(const std::string &path, int pixel_size,

@@ -21,17 +21,6 @@
 
 using u64 = std::size_t;
 
-SyntaxColor red{.r = 1.0f};
-SyntaxColor green{.g = 1.0f};
-SyntaxColor blue{.b = 1.0f};
-SyntaxColor sc1{.r = 1.0f, .g = 0.5f, .b = 0.0f};
-SyntaxColor sc2{.r = 1.0f, .g = 0.5f, .b = 0.3f};
-SyntaxColor sc3{.r = 0.3f, .g = 0.8f, .b = 0.8f};
-SyntaxColor sc4{.r = 0.2f, .g = 0.9f, .b = 0.1f};
-SyntaxColor sc5{.r = 0.7f, .g = 1.0f, .b = 1.0f};
-
-SyntaxColor SimpleFont::colors[8]{red, green, blue, sc1, sc2, sc3, sc4, sc5};
-
 std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int pixel_size, CharacterRange charRange) {
     FT_Library ft;
     FT_Face face;
@@ -679,6 +668,11 @@ void SimpleFont::create_vertex_data_for_syntax(ui::View* view, const ui::core::S
     // FN_MICRO_BENCH();
     auto buf = view->get_text_buffer();
     auto character_start = buf->meta_data.line_begins[view->cursor->views_top_line];
+
+
+    // Calculate the character range, that currently is displayable on the screen.
+    // We use the amount of lines the view can display, it's current "top line" and where that points to
+    // in the buffer. we get this info from out of buf->meta_data, which consists of indices where line beginnings are.
     auto char_end = 0;
     if(view->cursor->views_top_line + view->lines_displayable >= buf->meta_data.line_begins.size() - 1) {
         char_end = buf->size();
@@ -686,6 +680,7 @@ void SimpleFont::create_vertex_data_for_syntax(ui::View* view, const ui::core::S
         auto end_line = view->cursor->views_top_line + view->lines_displayable;
         char_end = buf->meta_data.line_begins[end_line+1];
     }
+
     auto total_characters = char_end - character_start;
     auto reserve = total_characters * 2;
 
@@ -751,6 +746,7 @@ void SimpleFont::create_vertex_data_for_syntax(ui::View* view, const ui::core::S
                 if (pos >= end && item_it != formatted_tokens.end()) item_it++;
             }
             auto &glyph = this->glyph_cache[*c];
+            // If c == newline, we do some setup, and skip this loop iteration, since we don't draw those
             if (*c == '\n') {
                 if (data_index_pos == 0) {
                     if (bufPtr->mark_set) {

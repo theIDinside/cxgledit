@@ -127,13 +127,14 @@ SetupLibrary(NAME keybound
 
 SetupExecutable(NAME ${PROJECT_NAME}
         SOURCES ${SOURCES}
+        INCLUDE_DIRS "${SRC_DIR}" "${DEP_DIR}/include" "${FT_DIR}/include" "${GLFW_DIR}/include"
         DEPENDENCIES fmt ${OPENGL_LIBRARIES} glfw ${GLFW_LIBRARIES} glad ${CMAKE_DL_LIBS} freetype cxutils)
 
-target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}")
+# target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}")
 target_compile_definitions(${PROJECT_NAME} PUBLIC "GLFW_INCLUDE_NONE")
-target_include_directories(${PROJECT_NAME} PRIVATE ${DEP_DIR}/include)
-target_include_directories(${PROJECT_NAME} PRIVATE ${FT_DIR}/include)
-target_include_directories(${PROJECT_NAME} PRIVATE "${GLFW_DIR}/include")
+# target_include_directories(${PROJECT_NAME} PRIVATE ${DEP_DIR}/include)
+# target_include_directories(${PROJECT_NAME} PRIVATE ${FT_DIR}/include)
+# target_include_directories(${PROJECT_NAME} PRIVATE "${GLFW_DIR}/include")
 
 add_dependencies(cxgledit keybound)
 

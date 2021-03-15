@@ -6,6 +6,8 @@
 #include <fmt/core.h>
 #include <glad/glad.h>
 
+
+
 Shader::Shader(const char *vertexPath, const char *fragmentPath, const char *geometryPath) noexcept {
     // 1. retrieve the vertex/fragment source code from filePath
     std::string vertexCode;
