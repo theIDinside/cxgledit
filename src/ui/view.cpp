@@ -38,7 +38,7 @@ std::unique_ptr<View> View::create_managed(TextData *data, const std::string &na
     v->y = y;
     v->font = FontLibrary::get_default_font();
     v->shader = ShaderLibrary::get_text_shader();
-    v->lines_displayable = int_ceil(float(h) / float(v->font->get_row_advance())) - LINES_DISPLAYABLE_DIFF;
+    v->lines_displayable = int_ceil(float(h) / float(v->font->get_pixel_row_advance())) - LINES_DISPLAYABLE_DIFF;
     v->vao = std::move(vao);
     v->data = data;
     v->vertexCapacity = reserveMemory / sizeof(TextVertex);
@@ -81,7 +81,7 @@ CommandView *CommandView::create_not_managed(const std::string &name, int width,
 void View::set_dimensions(int w, int h) {
     this->width = w;
     this->height = h;
-    lines_displayable = int_ceil(float(h) / float(font->get_row_advance())) - LINES_DISPLAYABLE_DIFF;
+    lines_displayable = int_ceil(float(h) / float(font->get_pixel_row_advance())) - LINES_DISPLAYABLE_DIFF;
     util::println("lines displayable updated to: {}", lines_displayable);
 }
 
@@ -126,7 +126,7 @@ void View::draw(bool isActive) {
     } else {
         // The top left corner of the view, in screen position
         const auto xpos = AS(x + View::TEXT_LENGTH_FROM_EDGE, int);
-        const auto ypos = AS(y - font->get_row_advance(), int);
+        const auto ypos = AS(y - font->get_pixel_row_advance(), int);
         const Pos p{xpos, ypos};
         if (auto fileContextInfo = get_text_buffer()->file_context();
             fileContextInfo.type == ContexTypes::CPPHeader || fileContextInfo.type == ContexTypes::CPPSource) {
@@ -156,14 +156,14 @@ void View::forced_draw(bool isActive) {
     cursor->set_projection(mvp);
 
 
-    auto text_size = data->size();
+    const auto text_size = data->size();
     if (text_size * 6 > this->vertexCapacity) {
         this->vao->reserve_gpu_size(text_size * 2 + 2);
         this->vertexCapacity = (text_size * 6 * 2 + 2);
     }
 
     font->create_vertex_data_in(vao.get(), this, AS(this->x + View::TEXT_LENGTH_FROM_EDGE, int),
-                                this->y - font->get_row_advance());
+                                this->y - font->get_pixel_row_advance());
     vao->flush_and_draw();
     this->cursor->forced_draw();
     glDisable(GL_SCISSOR_TEST);
@@ -180,7 +180,7 @@ void View::draw_statusbar() {
 
     auto textToRender = this->data->to_string_view();
     font->emplace_colorized_text_gpu_data(vao.get(), textToRender, AS(this->x + View::TEXT_LENGTH_FROM_EDGE, int),
-                                          this->y - font->get_row_advance(), {});
+                                          this->y - font->get_pixel_row_advance(), {});
     vao->flush_and_draw();
 }
 void View::draw_command_view(const std::string &prefix, std::optional<std::vector<ColorizeTextRange>> colorInfo) {
@@ -195,7 +195,7 @@ void View::draw_command_view(const std::string &prefix, std::optional<std::vecto
     auto defaultColor = Vec3f{1.0f, 1.0f, 1.0f};
     textToRender.append(cmd_rep);
     if (colorInfo) {
-        auto text_len = textToRender.size();
+        const auto text_len = textToRender.size();
         auto &vec = colorInfo.value();
         std::vector<ColorizeTextRange> fully_formatted{};
         auto index = 0u;
@@ -215,11 +215,11 @@ void View::draw_command_view(const std::string &prefix, std::optional<std::vecto
         }
 
         font->emplace_colorized_text_gpu_data(vao.get(), textToRender, AS(this->x + View::TEXT_LENGTH_FROM_EDGE, int),
-                                              this->y - font->get_row_advance(), fully_formatted);
+                                              this->y - font->get_pixel_row_advance(), fully_formatted);
         vao->flush_and_draw();
     } else {
         font->emplace_colorized_text_gpu_data(vao.get(), textToRender, AS(this->x + View::TEXT_LENGTH_FROM_EDGE, int),
-                                              this->y - font->get_row_advance(), std::move(colorInfo));
+                                              this->y - font->get_pixel_row_advance(), std::move(colorInfo));
         vao->flush_and_draw();
     }
 }
@@ -237,7 +237,7 @@ View *View::create(TextData *data, const std::string &name, int w, int h, int x,
     v->x = x;
     v->y = y;
     v->font = FontLibrary::get_default_font();
-    v->lines_displayable = int_ceil(float(h) / float(v->font->get_row_advance())) - LINES_DISPLAYABLE_DIFF;
+    v->lines_displayable = int_ceil(float(h) / float(v->font->get_pixel_row_advance())) - LINES_DISPLAYABLE_DIFF;
     v->shader = ShaderLibrary::get_text_shader();
     v->vao = std::move(vao);
     v->data = data;
@@ -249,7 +249,7 @@ View *View::create(TextData *data, const std::string &name, int w, int h, int x,
 void View::set_font(SimpleFont *new_font) {
     font = new_font;
     cursor->setup_dimensions(cursor->width, font->max_glyph_height + 4);
-    lines_displayable = int_ceil(float(height) / float(font->get_row_advance())) - LINES_DISPLAYABLE_DIFF;
+    lines_displayable = int_ceil(float(height) / float(font->get_pixel_row_advance())) - LINES_DISPLAYABLE_DIFF;
     forced_draw(true);
 }
 View::~View() {
@@ -269,13 +269,9 @@ void View::draw_modal_view(int selected, std::vector<TextDrawable> &drawables) {
     vao->bind_all();
     shader->use();
     font->t->bind();
-    // shader->set_projection(projection);
     shader->set_projection(mvp);
-
-    // cursor->set_projection(projection);
     cursor->set_projection(mvp);
-
-    auto text_size = data->size();
+    const auto text_size = data->size();
     if (text_size * 6 > this->vertexCapacity) {
         this->vao->reserve_gpu_size(text_size * 2 + 2);
         this->vertexCapacity = (text_size * 6 * 2 + 2);
@@ -293,24 +289,24 @@ void View::draw_modal_view(int selected, std::vector<TextDrawable> &drawables) {
 void View::set_projection(Matrix projection) { this->mvp = projection; }
 
 std::pair<std::string_view, std::string_view> View::debug_print_boundary_lines() {
-    auto top_line = cursor->views_top_line;
-    auto end_line = top_line + lines_displayable;
+    const auto top_line = cursor->views_top_line;
+    const auto end_line = top_line + lines_displayable;
 
     auto buf = get_text_buffer();
     auto total = buf->to_string_view();
 
-    auto top_line_idx = buf->meta_data.line_begins[top_line];
-    auto top_len = buf->meta_data.line_begins[top_line + 1] - buf->meta_data.line_begins[top_line];
+    const auto top_line_idx = buf->meta_data.line_begins[top_line];
+    const auto top_len = buf->meta_data.line_begins[top_line + 1] - buf->meta_data.line_begins[top_line];
 
     if (end_line < buf->meta_data.line_begins.size()) {
-        auto bot_line_idx = buf->meta_data.line_begins[end_line];
-        auto bot_len = buf->meta_data.line_begins[end_line + 1] - buf->meta_data.line_begins[end_line];
+        const auto bot_line_idx = buf->meta_data.line_begins[end_line];
+        const auto bot_len = buf->meta_data.line_begins[end_line + 1] - buf->meta_data.line_begins[end_line];
         std::string_view top{total.data() + top_line_idx, static_cast<size_t>(top_len)};
         std::string_view bot{total.data() + bot_line_idx, static_cast<size_t>(bot_len)};
         return {top, bot};
     } else if (buf->meta_data.line_begins.size() > 1) {
-        auto bot_line_idx = buf->meta_data.line_begins.back();
-        auto bot_len = *buf->meta_data.line_begins.rbegin() - *(buf->meta_data.line_begins.rbegin() + 1);
+        const auto bot_line_idx = buf->meta_data.line_begins.back();
+        const auto bot_len = *buf->meta_data.line_begins.rbegin() - *(buf->meta_data.line_begins.rbegin() + 1);
         std::string_view top{total.data() + top_line_idx, static_cast<size_t>(top_len)};
         std::string_view bot{total.data() + bot_line_idx, static_cast<size_t>(bot_len)};
         return {top, bot};
@@ -407,7 +403,7 @@ void CommandView::draw_error_message() {
     ColorizeTextRange msg_color{.begin = infoPrefix.size(),
                                 .length = last_message.size(),
                                 .color = Vec3f{0.9f, 0.9f, 0.9f}};
-    auto color_cfg = to_option_vec(msg_color);
+    const auto color_cfg = to_option_vec(msg_color);
     command_view->draw_command_view("error: ", color_cfg);
 }
 

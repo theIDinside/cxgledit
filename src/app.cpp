@@ -88,11 +88,13 @@ void framebuffer_callback(GLFWwindow *window, int width, int height) {
         app->set_dimensions(width, height);
         app->update_views_dimensions(wratio, hratio);
         glViewport(0, 0, width, height);
+        app->draw_all(true);
     }
 }
 
 auto size_changed_callback(GLFWwindow *window, int width, int height) { framebuffer_callback(window, width, height); }
 
+#ifdef _WIN32
 constexpr auto temp_dll = "keybound_live.dll";
 constexpr auto origin_dll = "keybound.dll";
 
@@ -127,6 +129,9 @@ bool load_keybinding_library(HMODULE &libHandle, KeyBindingFn &fnHandle, Fn init
     }
     return false;
 }
+
+#endif
+
 using namespace std::string_literals;
 App *App::initialize(int app_width, int app_height, const std::string &title) {
     util::printmsg("Initializing application");
@@ -134,11 +139,13 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
     auto cfgData = ConfigFileData::load_cfg_data();
     instance->config = Configuration::from_parsed_map(cfgData);
 
+#ifdef _WIN32
     load_keybinding_library(instance->kb_library, instance->bound_action, [](auto fn) {
         util::println("Keybindings library initialized\n Attempting to call library");
         auto test = fn(CXMode::Normal, KeyInput{0, 0});
         if (test == Action::DefaultAction) { util::println("Library ok!"); }
     });
+#endif
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -154,7 +161,7 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
     glfwSetWindowSizeCallback(window, size_changed_callback);
     glfwSetWindowRefreshCallback(window, [](auto window) {
         auto app = get_app_handle(window);
-        app->draw_all(true);
+        app->draw_all();
     });
     if (not gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) { PANIC("Failed to initialize GLAD\n"); }
 
@@ -199,7 +206,7 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
 
     initialize_static_resources();
 
-    auto text_row_advance = FontLibrary::get_default_font()->get_row_advance() + 2;
+    auto text_row_advance = FontLibrary::get_default_font()->get_pixel_row_advance() + 2;
     auto cv = CommandView::create("command", app_width, text_row_advance * 1, 0, text_row_advance * 1);
     cv->command_view->set_projection(instance->mvp);
     instance->modal_popup = ui::ModalPopup::create(instance->mvp);
@@ -310,8 +317,10 @@ void App::load_file(const fs::path &file) {
  * and upload new adjusted vertex data to the GPU, displaying the views & window correctly.
  * @param force_redraw
  */
-void App::draw_all(bool force_redraw) {
-    for (auto &ew : editor_views) ew->draw();
+void App::draw_all(bool forceRedraw) {
+    for (auto &ew : editor_views) {
+        ew->draw(forceRedraw);
+    }
     this->command_view->draw();
     if (modal_shown) modal_popup->draw();
     glViewport(0, 0, this->win_width, this->win_height);
@@ -329,7 +338,6 @@ void App::update_views_dimensions(float wRatio, float hRatio) {
 
     command_view->w = win_width;
     command_view->command_view->set_dimensions(win_width, command_view->h);
-    // command_view->command_view->set_projection(glm::ortho(0.0f, float(win_width), 0.0f, float(win_height)));
     command_view->command_view->set_projection(my_screen_projection_2D(win_width, win_height, this->scroll));
 }
 
@@ -612,8 +620,12 @@ void App::toggle_modal_popup(ui::ModalContentsType contents) {
 }
 
 void App::reload_keybindings() {
+#ifdef _WIN32
     load_keybinding_library(kb_library, bound_action, [](auto fn) { util::println("Keybinding library reloaded"); });
     command_view->draw_message("keybindings reloaded");
+#else
+    util::println("Function not supported under linux yet")
+#endif
 }
 
 void App::find_next_in_active(const std::string &search) {
@@ -670,7 +682,7 @@ void App::close_active() {
 }
 
 // TODO: make application aware of .cxe files, so that when editing an .cxe file, user can press some key, to automatically load the settings in it
-void App::reload_configuration(fs::path cfg_path) {
+void App::reload_configuration(const fs::path& cfg_path) {
     util::println("Reloading config from {}", cfg_path.string());
     auto cfgData = ConfigFileData::load_cfg_data(cfg_path);
     config = Configuration::from_parsed_map(cfgData);
@@ -695,7 +707,7 @@ void App::reload_configuration(fs::path cfg_path) {
         ew->set_font(FontLibrary::get_default_font());
     }
     this->modal_popup->view->set_font(FontLibrary::get_default_font());
-    draw_all(true);
+    draw_all();
 }
 
 void App::handle_modal_selection(const std::optional<ui::PopupItem> &possible_selected) {

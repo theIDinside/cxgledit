@@ -84,5 +84,7 @@ private:
     int find_line_end(int i);
     int find_next_delimiter(int i);
     int find_prev_delimiter(int i);
+    int find_prev_non_delimiter(int from);
+    int find_next_non_delimiter(int from);
     int find_line_start(Boundary boundary, int i);
 };

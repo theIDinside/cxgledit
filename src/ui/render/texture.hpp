@@ -9,9 +9,9 @@
 
 using byte = unsigned char;
 
-struct Texture {
-    static std::unique_ptr<Texture> setup_texture_info();
-    static std::unique_ptr<Texture> make_from_data(const byte *data, int width, int height, int bytesPerPixel);
+struct GlyphTexture {
+    static std::unique_ptr<GlyphTexture> setup_texture_info();
+    static std::unique_ptr<GlyphTexture> make_from_data(const byte *data, int width, int height, int bytesPerPixel);
 
     void bind() const;
 

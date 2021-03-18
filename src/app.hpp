@@ -3,7 +3,11 @@
 //
 
 #pragma once
+
+#ifdef _WIN32
 #include <windows.h>
+#endif
+
 #include <stack>
 #include <string>
 
@@ -67,7 +71,7 @@ public:
     void run_loop();
     void set_dimensions(int w, int h);
     void load_file(const fs::path &file);
-    void draw_all(bool force_redraw = false);
+    void draw_all(bool forceRedraw = false);
     void update_views_dimensions(float wRatio, float hRatio);
     void toggle_command_input(const std::string &prefix, Commands commandInput);
     void disable_command_input();
@@ -100,7 +104,7 @@ public:
 
     void toggle_modal_popup(ui::ModalContentsType = ui::ModalContentsType::ActionList);
     void find_next_in_active(const std::string& search);
-    void reload_configuration(fs::path cfg_path = "./assets/cxconfig.cxe");
+    void reload_configuration(const fs::path& cfg_path = "./assets/cxconfig.cxe");
     void handle_mouse_scroll(float xOffset, float yOffset);
 
     void handle_text_input(int codepoint);
@@ -128,8 +132,9 @@ private:
 
     Register copy_register{};
     ui::core::Layout *root_layout{nullptr};
+#ifdef _WIN32
     HMODULE kb_library = nullptr;
-
+#endif
     Configuration config;
 
     bool no_close_condition();

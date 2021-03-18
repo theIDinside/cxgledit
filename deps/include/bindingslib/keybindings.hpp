@@ -156,7 +156,11 @@ enum GLFWKeys {
 #define MOUSE_BUTTON_RIGHT MOUSE_BUTTON_2
 #define MOUSE_BUTTON_MIDDLE MOUSE_BUTTON_3
 
-#define LIB __declspec(dllexport)
+#ifdef _WIN32
+#define LIB(Type) __declspec(dllexport) Type __cdecl
+#else
+#define LIB(Type) Type
+#endif
 enum class CXMode { Normal, Actions, CommandInput, Popup, Search, MacroRecord };
 
 enum class Action {
@@ -180,5 +184,5 @@ struct KeyInput {
 };
 
 extern "C" {
-LIB Action __cdecl translate(CXMode mode, KeyInput input);
+    LIB(Action) translate(CXMode mode, KeyInput input);
 }

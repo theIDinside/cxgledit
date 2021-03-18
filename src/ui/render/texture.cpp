@@ -4,15 +4,15 @@
 
 #include "texture.hpp"
 
-std::unique_ptr<Texture> Texture::setup_texture_info() {
+std::unique_ptr<GlyphTexture> GlyphTexture::setup_texture_info() {
     GLuint id;
     glGenTextures(1, &id);
-    auto tex = std::make_unique<Texture>(Texture{.id = id, .id_generated = true, .finalized = false});
+    auto tex = std::make_unique<GlyphTexture>(GlyphTexture{.id = id, .id_generated = true, .finalized = false});
     return tex;
 }
 
-std::unique_ptr<Texture> Texture::make_from_data(const unsigned char *data, int width, int height, int bytesPerPixel) {
-    auto t = Texture::setup_texture_info();
+std::unique_ptr<GlyphTexture> GlyphTexture::make_from_data(const unsigned char *data, int width, int height, int bytesPerPixel) {
+    auto t = GlyphTexture::setup_texture_info();
     t->bind();
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);// disable byte-alignment restriction
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
@@ -25,4 +25,4 @@ std::unique_ptr<Texture> Texture::make_from_data(const unsigned char *data, int 
     return t;
 }
 
-void Texture::bind() const { glBindTexture(GL_TEXTURE_2D, id); }
+void GlyphTexture::bind() const { glBindTexture(GL_TEXTURE_2D, id); }

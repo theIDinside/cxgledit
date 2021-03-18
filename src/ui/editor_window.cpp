@@ -19,7 +19,7 @@ namespace ui {
 EditorWindow *EditorWindow::create(std::optional<TextData *> textData, Matrix projection, int layout_id,
                                    core::DimInfo dimInfo) {
     auto &[x, y, width, height] = dimInfo;
-    auto sb_height = FontLibrary::get_default_font()->get_row_advance() + 2;
+    auto sb_height = FontLibrary::get_default_font()->get_pixel_row_advance() + 2;
     // we have to make room for status bar & command view spanning across entire bottom, both of which are equal in height
     auto text_editor_height = height - (sb_height * 2);
     auto ew = new EditorWindow{};
@@ -58,12 +58,12 @@ TextData *EditorWindow::get_text_buffer() const { return view->get_text_buffer()
 void EditorWindow::update_layout(core::DimInfo dim_info) {
 
     const auto &[x, y, width, height] = dim_info;
-    const auto sb_height = FontLibrary::get_default_font()->get_row_advance() + 2;
+    const auto sb_height = FontLibrary::get_default_font()->get_pixel_row_advance() + 2;
     // we have to make room for status bar & command view spanning across entire bottom, both of which are equal in height
     const auto text_editor_height = height - (sb_height * 2);
     const auto text_editor_y_pos = height - sb_height;
-    view->anchor_at(x, text_editor_y_pos);
     view->set_dimensions(width, text_editor_height);
+    view->anchor_at(x, text_editor_y_pos);
     status_bar->ui_view->set_dimensions(width, sb_height);
     status_bar->ui_view->anchor_at(x, height);
     this->dimInfo = dim_info;
@@ -74,7 +74,7 @@ void EditorWindow::handle_click(int xPos, int yPos) {
         auto &meta_data = view->get_text_buffer()->meta_data;
 
         const auto row_clicked = std::floor(std::max(0, yPos - status_bar->ui_view->height) /
-                                      float(view->get_font()->get_row_advance())) +
+                                      float(view->get_font()->get_pixel_row_advance())) +
                            view->get_cursor()->views_top_line;
         if (meta_data.line_begins.size() > row_clicked) {
             const auto bufIdx = meta_data.line_begins[int(row_clicked)];

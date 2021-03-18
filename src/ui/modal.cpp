@@ -38,7 +38,7 @@ void ui::ModalPopup::draw() {
     std::vector<TextDrawable> drawables{};
     auto lineNo = 0;
     for (const auto &i : dialogData) {
-        drawables.push_back(TextDrawable{x, first - (lineNo * view->get_font()->get_row_advance()), i.displayable, {}});
+        drawables.push_back(TextDrawable{x, first - (lineNo * view->get_font()->get_pixel_row_advance()), i.displayable, {}});
         lineNo++;
     }
     view->cursor->width = w;
@@ -75,7 +75,7 @@ void ui::ModalPopup::register_actions(std::vector<PopupItem> item) {
                     auto result = f->calculate_text_width(e.displayable);
                     return result;
                 });
-    const auto dialogHeight = dialogData.size() * (view->get_font()->get_row_advance());
+    const auto dialogHeight = dialogData.size() * (view->get_font()->get_pixel_row_advance());
     const auto dialogWidth = std::ranges::max(tRng);
     dimInfo.w = (int) dialogWidth;
     dimInfo.h = (int) dialogHeight;

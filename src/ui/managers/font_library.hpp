@@ -13,7 +13,7 @@
 using FontRef = std::unique_ptr<SimpleFont>;
 
 template <typename FontTypeSmartPtr> concept IsFontRef = requires(FontTypeSmartPtr a) {
-    a->get_row_advance();
+    a->get_pixel_row_advance();
 };
 
 struct FontConfig {

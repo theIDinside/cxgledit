@@ -13,7 +13,7 @@ namespace ui {
 constexpr auto line_shade_color = Vec4f{0.5,0.5,0.5,0.25};
 
 std::unique_ptr<ViewCursor> ViewCursor::create_from(std::unique_ptr<View> &owning_view) {
-    auto buf_curs = owning_view->get_text_buffer()->get_cursor();
+    const auto buf_curs = owning_view->get_text_buffer()->get_cursor();
 
     auto cursor_vao = CursorVAO::make(GL_ARRAY_BUFFER, 6 * 4096);
     auto line_shade_vao = CursorVAO::make(GL_ARRAY_BUFFER, 6 * 1024);
@@ -93,12 +93,12 @@ void ViewCursor::forced_draw() {
 void ViewCursor::update_cursor_data(GLfloat x, GLfloat y) {
     pos_x = AS(x, int);
     pos_y = AS(y, int);
-    auto w = width;
-    auto h = height;
+    const auto w = static_cast<float>(width);
+    const auto h = static_cast<float>(height);
     auto &c_data = cursor_data->vbo->data;
     auto &l_data = line_shade_data->vbo->data;
 
-    auto view_width = view->width;
+    const auto view_width = static_cast<float>(view->width);
 
     cursor_data->vbo->pristine = false;
     line_shade_data->vbo->pristine = false;
@@ -123,10 +123,10 @@ void ViewCursor::update_cursor_data(GLfloat x, GLfloat y) {
 }
 
 void ViewCursor::set_line_rect(GLfloat x1, GLfloat x2, GLfloat y1) {
-    auto w = x2 - x1;
-    auto h = height;
-    auto x = x1;
-    auto y = y1;
+    const auto w = x2 - x1;
+    const auto h = static_cast<float>(height);
+    const auto x = x1;
+    const auto y = y1;
     auto &data = this->cursor_data->vbo->data;
     this->cursor_data->vbo->pristine = false;
     data.clear();
@@ -144,10 +144,10 @@ void ViewCursor::setup_dimensions(int Width, int Height) {
 }
 
 void ViewCursor::set_line_rect(GLfloat x1, GLfloat x2, GLfloat y1, int rectHeight) {
-    auto w = x2 - x1;
-    auto h = rectHeight;
-    auto x = x1;
-    auto y = y1;
+    const auto w = x2 - x1;
+    const auto h = static_cast<float>(rectHeight);
+    const auto x = x1;
+    const auto y = y1;
     auto &data = cursor_data->vbo->data;
     cursor_data->vbo->pristine = false;
     data.clear();

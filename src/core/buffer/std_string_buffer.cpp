@@ -340,6 +340,9 @@ void StdStringBuffer::remove_word_backward(size_t count) {
         remove_ch_backward(1);
         return;
     }
+
+    /// Find out, if the "word" we are currently editing, is an actualy "word", or a text object of some other kind
+    /// like for instance, a range of whitespace, making up a "tab" etc.
     if (find_prev_delimiter(cursor.pos) == cursor.pos - 1) {
         remove_ch_backward(1);
         return;
@@ -493,6 +496,20 @@ int StdStringBuffer::find_prev_delimiter(int i) {
         return 0;
     }
 }
+
+int StdStringBuffer::find_prev_non_delimiter(int from) {
+    if(from - 1 > 0) {
+        from--;
+        while(from - 1 > 0) {
+            if(!is_delimiter(store[from])) break;
+            from--;
+        }
+        return from;
+    } else {
+        return 0;
+    }
+}
+
 void StdStringBuffer::step_to_line_end(Boundary boundary) {
     auto sz = AS(size(), int);
     bool found = false;

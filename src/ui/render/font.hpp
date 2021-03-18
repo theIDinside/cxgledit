@@ -4,15 +4,15 @@
 
 #pragma once
 #include <array>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
-#include <map>
 
-#include <core/buffer/text_data.hpp>
-#include <core/math/vector.hpp>
 #include "texture.hpp"
 #include "vertex_buffer.hpp"
+#include <core/buffer/text_data.hpp>
+#include <core/math/vector.hpp>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -87,6 +87,9 @@ struct glyph_info {
     Vec2i size, bearing;
 };
 
+static inline float glyph_width(const glyph_info& g);
+static inline float glyph_height(const glyph_info& g);
+
 static int row_advance = 0;
 
 struct ColorizeTextRange {
@@ -94,6 +97,9 @@ struct ColorizeTextRange {
     Vec3f color;
 };
 
+/// TextDrawables is the GFX representation of a text that can be drawn in some form or the other.
+/// As the TextDrawable object does not own the text data, it only holds a string_view to it, thus need to be made sure
+/// that it does not dangle.
 struct TextDrawable {
     int xpos = -1, ypos = -1;
     std::string_view text;
@@ -108,10 +114,9 @@ public:
     [[maybe_unused]] static std::unique_ptr<SimpleFont>
     setup_font(const std::string &path, int pixel_size,
                CharacterRange charRange = CharacterRange{.from = 32, .to = 255});
-    SimpleFont(int pixelSize, std::unique_ptr<Texture> &&texture, std::vector<glyph_info> &&glyphs);
+    SimpleFont(int pixelSize, std::unique_ptr<GlyphTexture> &&texture, std::vector<glyph_info> &&glyphs);
 
     void create_vertex_data_in(VAO *vao, ui::View *view, int xpos, int ypos);
-    void create_culled_vertex_data_for(ui::View *view, int xpos, int ypos);
 
     void emplace_colorized_text_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos,
                                          OptionalColData colorData);
@@ -119,8 +124,12 @@ public:
 
     int calculate_text_width(std::string_view str);
 
-    std::unique_ptr<Texture> t{nullptr};
-    [[nodiscard]] int get_row_advance() const;
+    std::unique_ptr<GlyphTexture> t{nullptr};
+    /// Returns the advance of pixels in the Y-axis (between lines). So if line 1 is on pixel position y_1
+    /// line 2 is on pixel position y_1 + get_pixel_row_advance()
+    [[nodiscard]] int get_pixel_row_advance() const;
+
+    [[nodiscard]] int get_next_line_y_position_of(int y_pos) const;
     std::vector<glyph_info> glyph_cache;
     int row_height;
     int max_glyph_width;
@@ -132,6 +141,7 @@ public:
 
     void create_vertex_data_for_only_visible(ui::View *pView, ui::core::ScreenPos startingTopLeftPos);
     int get_pixel_size() const;
+
 private:
     // glyph_info* data = info;
     int pixel_size{};

@@ -42,6 +42,8 @@ struct View {
     void draw_command_view(const std::string &prefix, std::optional<std::vector<ColorizeTextRange>> colorInfo);
     void draw_statusbar();
     void draw_modal_view(int selected, std::vector<TextDrawable>& drawables);
+    void draw_borders();
+
     void scroll_to(int line);
 
     void set_projection(Matrix projection);
