@@ -95,6 +95,7 @@ set(SOURCES
         src/ui/render/shader.cpp src/ui/render/shader.hpp
         src/ui/render/texture.cpp src/ui/render/texture.hpp
         src/ui/render/vertex_buffer.cpp src/ui/render/vertex_buffer.hpp
+        src/ui/render/vertex_container.cpp src/ui/render/vertex_container.hpp
 
         src/ui/syntax_highlighting.cpp src/ui/syntax_highlighting.hpp
         src/ui/view_enums.hpp
@@ -125,10 +126,12 @@ add_subdirectory(${FT_DIR})
 SetupLibrary(NAME keybound
         SOURCES deps/include/bindingslib/keybindings.cpp)
 
+set_target_properties(keybound PROPERTIES CXX_STANDARD 20)
+
 SetupExecutable(NAME ${PROJECT_NAME}
         SOURCES ${SOURCES}
         INCLUDE_DIRS "${SRC_DIR}" "${DEP_DIR}/include" "${FT_DIR}/include" "${GLFW_DIR}/include"
-        DEPENDENCIES fmt ${OPENGL_LIBRARIES} glfw ${GLFW_LIBRARIES} glad ${CMAKE_DL_LIBS} freetype cxutils)
+        DEPENDENCIES fmt ${OPENGL_LIBRARIES} glfw ${GLFW_LIBRARIES} glad ${CMAKE_DL_LIBS} freetype cxutils keybound)
 
 # target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}")
 target_compile_definitions(${PROJECT_NAME} PUBLIC "GLFW_INCLUDE_NONE")

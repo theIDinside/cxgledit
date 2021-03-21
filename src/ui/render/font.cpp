@@ -21,6 +21,12 @@
 
 using u64 = std::size_t;
 
+/// Clean interface wrapped over the C-library. this illustrates intent much better for a moron like me.
+template <typename T>
+constexpr auto alloc_objects_of(std::size_t objects_count) {
+    return (T*)std::calloc(objects_count, sizeof(T));
+}
+
 std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int pixel_size, CharacterRange charRange) {
     FT_Library ft;
     FT_Face face;
@@ -31,14 +37,13 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
 
     // quick and dirty max texture size estimate
 
-    int max_dim = (1 + (face->size->metrics.height >> 6)) * ceilf(sqrtf(NUM_GLYPHS));
+    const int max_dim = (1 + (face->size->metrics.height >> 6)) * ceilf(sqrtf(NUM_GLYPHS));
     int tex_width = 1;
     while (tex_width < max_dim) tex_width <<= 1;
-    int tex_height = tex_width;
+    const int tex_height = tex_width;
 
     // render glyphs to atlas
-
-    auto *pixels = (unsigned char *) calloc(tex_width * tex_height, 1);
+    auto pixels = alloc_objects_of<unsigned char>(tex_width * tex_height);
     int pen_x = 0, pen_y = 0;
     auto max_glyph_height = 0u;
     auto max_glyph_width = 0u;
@@ -81,7 +86,7 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
         };
 
         max_bearing_size_diff = std::max(std::abs(glyphInfo.size.y - glyphInfo.bearing.y), max_bearing_size_diff);
-        glyph_cache.push_back(glyphInfo);
+        glyph_cache.emplace_back(glyphInfo);
         pen_x += bmp->width + 1;
     }
     auto max_adv_y = max_glyph_height + 5;
@@ -89,7 +94,7 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
     auto texture = GlyphTexture::make_from_data(pixels, tex_width, tex_height, 1);
     FT_Done_FreeType(ft);
 
-    char *png_data = (char *) calloc(tex_width * tex_height * 4, 1);
+    auto png_data = alloc_objects_of<char>(tex_width * tex_height * 4);
     for (int i = 0; i < (tex_width * tex_height); ++i) {
         png_data[i * 4 + 0] |= pixels[i];
         png_data[i * 4 + 1] |= pixels[i];
@@ -121,7 +126,7 @@ SimpleFont::SimpleFont(int pixelSize, std::unique_ptr<GlyphTexture> &&texture, s
 
 int SimpleFont::get_pixel_row_advance() const { return row_height; }
 
-void SimpleFont::create_vertex_data_in(VAO *vao, ui::View *view, int xPos, int yPos) {
+void SimpleFont::create_vertex_data_in(TextVertexArrayObject *vao, ui::View *view, int xPos, int yPos) {
 
     auto text = view->get_text_buffer()->to_string_view();
     auto view_cursor = view->get_cursor();
@@ -138,8 +143,8 @@ void SimpleFont::create_vertex_data_in(VAO *vao, ui::View *view, int xPos, int y
     vao->vbo->data.clear();
     vao->vbo->data.reserve(gpu_mem_required_for_quads<TextVertex>(text.size()));
     auto &store = vao->vbo->data;
-    auto start_x = xPos;
-    auto start_y = yPos;
+    const auto start_x = xPos;
+    const auto start_y = yPos;
     auto x = start_x;
     auto y = start_y;
 
@@ -241,8 +246,8 @@ void SimpleFont::create_vertex_data_in(VAO *vao, ui::View *view, int xPos, int y
             const auto y0 = float(glyph.y0) / float(t->height);
             const auto y1 = float(glyph.y1) / float(t->height);
 
-            auto w = glyph_width(glyph);
-            auto h = glyph_height(glyph);
+            const auto w = glyph_width(glyph);
+            const auto h = glyph_height(glyph);
             store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
             store.emplace_back(xpos, ypos, x0, y1, r, g, b);
             store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
@@ -277,7 +282,7 @@ void SimpleFont::create_vertex_data_in(VAO *vao, ui::View *view, int xPos, int y
     }
 }
 
-void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos,
+void SimpleFont::emplace_colorized_text_gpu_data(TextVertexArrayObject *vao, std::string_view text, int xPos, int yPos,
                                                  std::optional<std::vector<ColorizeTextRange>> colorData) {
 
     // FN_MICRO_BENCH();
@@ -285,8 +290,8 @@ void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, std::string_view text
     vao->vbo->data.clear();
     vao->vbo->data.reserve(gpu_mem_required_for_quads<TextVertex>(text.size()));
     auto &store = vao->vbo->data;
-    auto start_x = xPos;
-    auto start_y = yPos;
+    const auto start_x = xPos;
+    const auto start_y = yPos;
     auto x = start_x;
     auto y = start_y;
     auto defaultColor = Vec3f{0.84f, 0.725f, 0.66f};
@@ -356,7 +361,7 @@ void SimpleFont::emplace_colorized_text_gpu_data(VAO *vao, std::string_view text
     }
 }
 
-void SimpleFont::add_colorized_text_gpu_data(VAO *vao, std::vector<TextDrawable> textDrawables) {
+void SimpleFont::add_colorized_text_gpu_data(TextVertexArrayObject *vao, std::vector<TextDrawable> textDrawables) {
 
     auto count_chars_in_drawables = std::accumulate(textDrawables.begin(), textDrawables.end(), 0, [](auto acc, auto el) {
         return acc + el.text.size();
@@ -427,7 +432,7 @@ void SimpleFont::create_vertex_data_no_highlighting(ui::View *view, ui::core::Sc
     view->vao->vbo->data.clear();
     view->vao->vbo->data.reserve(gpu_mem_required_for_quads<TextVertex>(reserve));
     auto &store = view->vao->vbo->data;
-    auto[start_x, start_y] = startingTopLeftPos;
+    const auto[start_x, start_y] = startingTopLeftPos;
     auto x = start_x;
     auto y = start_y;
 
@@ -542,7 +547,7 @@ void SimpleFont::create_vertex_data_for_syntax(ui::View* view, const ui::core::S
     view->vao->vbo->data.clear();
     view->vao->vbo->data.reserve(gpu_mem_required_for_quads<TextVertex>(reserve));
     auto &store = view->vao->vbo->data;
-    auto[start_x, start_y] = startingTopLeftPos;
+    const auto[start_x, start_y] = startingTopLeftPos;
     auto x = start_x;
     auto y = start_y;
 
@@ -680,7 +685,7 @@ void SimpleFont::create_vertex_data_for_only_visible(ui::View *view, ui::core::S
         view->vao->vbo->data.reserve(gpu_mem_required_for_quads<TextVertex>(characters_total));
 
         auto &store = view->vao->vbo->data;
-        auto[start_x, start_y] = startingTopLeftPos;
+        const auto[start_x, start_y] = startingTopLeftPos;
         auto x = start_x;
         auto y = start_y;
 

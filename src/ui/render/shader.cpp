@@ -189,19 +189,21 @@ Shader Shader::load_shader(const char *vertexPath, const char *fragmentPath, con
     glCompileShader(fragment);
     checkCompileErrors(fragment, "FRAGMENT");
     // if geometry shader is given, compile geometry shader
-    unsigned int geometry;
+    auto shaderID = glCreateProgram();
+    // shader Program
+
+    glAttachShader(shaderID, vertex);
+    glAttachShader(shaderID, fragment);
+    unsigned int geometry = 0;
     if (geometryPath != nullptr) {
         const char *gShaderCode = geometryCode.c_str();
         geometry = glCreateShader(GL_GEOMETRY_SHADER);
         glShaderSource(geometry, 1, &gShaderCode, nullptr);
         glCompileShader(geometry);
         checkCompileErrors(geometry, "GEOMETRY");
+        glAttachShader(shaderID, geometry);
     }
-    // shader Program
-    auto shaderID = glCreateProgram();
-    glAttachShader(shaderID, vertex);
-    glAttachShader(shaderID, fragment);
-    if (geometryPath != nullptr) glAttachShader(shaderID, geometry);
+
     glLinkProgram(shaderID);
     checkCompileErrors(shaderID, "PROGRAM");
     // delete the shaders as they're linked into our program now and no longer

@@ -26,6 +26,28 @@ auto convert_to_gl_anchor(int item_top_y, int item_height) -> int;
 
 namespace ui {
 
+enum class VerticalLayout {
+    Top,
+    Center,
+    Bottom
+};
+
+enum class HorizontalLayout {
+    Left, Center, Right
+};
+
+struct PanelLayout {
+    VerticalLayout v_layout{VerticalLayout::Top};
+    HorizontalLayout h_layout{HorizontalLayout::Left};
+};
+
+class Panel {
+public:
+    int width, height;
+    PanelLayout layout;
+private:
+};
+
 struct View {
     ~View();
     static constexpr auto TEXT_LENGTH_FROM_EDGE = 4u;
@@ -58,7 +80,7 @@ struct View {
     std::string name{};
     int width{}, height{}, x{}, y{};
     int lines_displayable = -1;
-    std::unique_ptr<VAO> vao{nullptr};// the graphical representation
+    std::unique_ptr<TextVertexArrayObject> vao{nullptr};// the graphical representation
     Vec3f fg_color{1.0f, 1.0f, 1.0f};
     Vec3f bg_color{0.05f, 0.052f, 0.0742123f};
     Vec3f when_active_bg_color{0.05f, 0.052f, 0.0742123f};

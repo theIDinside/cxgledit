@@ -116,11 +116,11 @@ public:
                CharacterRange charRange = CharacterRange{.from = 32, .to = 255});
     SimpleFont(int pixelSize, std::unique_ptr<GlyphTexture> &&texture, std::vector<glyph_info> &&glyphs);
 
-    void create_vertex_data_in(VAO *vao, ui::View *view, int xpos, int ypos);
+    void create_vertex_data_in(TextVertexArrayObject *vao, ui::View *view, int xpos, int ypos);
 
-    void emplace_colorized_text_gpu_data(VAO *vao, std::string_view text, int xPos, int yPos,
+    void emplace_colorized_text_gpu_data(TextVertexArrayObject *vao, std::string_view text, int xPos, int yPos,
                                          OptionalColData colorData);
-    void add_colorized_text_gpu_data(VAO *vao, std::vector<TextDrawable> textDrawables);
+    void add_colorized_text_gpu_data(TextVertexArrayObject *vao, std::vector<TextDrawable> textDrawables);
 
     int calculate_text_width(std::string_view str);
 

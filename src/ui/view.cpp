@@ -27,7 +27,7 @@ std::unique_ptr<View> View::create_managed(TextData *data, const std::string &na
     auto reserveMemory =
             gpu_mem_required_for_quads<TextVertex>(1024);// reserve GPU memory for at least 1024 characters.
     if (!data->empty()) { reserveMemory = gpu_mem_required_for_quads<TextVertex>(data->size()); }
-    auto vao = VAO::make(GL_ARRAY_BUFFER, reserveMemory);
+    auto vao = TextVertexArrayObject::make(GL_ARRAY_BUFFER, reserveMemory);
     auto v = std::make_unique<View>();
     v->td_id = data->id;
     v->td_id = data->id;
@@ -228,7 +228,7 @@ View *View::create(TextData *data, const std::string &name, int w, int h, int x,
     auto reserveMemory_Quads =
             gpu_mem_required_for_quads<TextVertex>(1024);// reserve GPU memory for at least 1024 characters.
     if (!data->empty()) { reserveMemory_Quads = gpu_mem_required_for_quads<TextVertex>(data->size() * 2); }
-    auto vao = VAO::make(GL_ARRAY_BUFFER, reserveMemory_Quads);
+    auto vao = TextVertexArrayObject::make(GL_ARRAY_BUFFER, reserveMemory_Quads);
     auto v = new View{};
     v->td_id = data->id;
     v->type = type;

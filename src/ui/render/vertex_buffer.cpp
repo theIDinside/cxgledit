@@ -50,11 +50,11 @@ void TextVertexBufferObject::destroy() {
     util::println("Deleted VBO {}", ID);
 }
 
-void VAO::bind_all() {
+void TextVertexArrayObject::bind_all() {
     glBindVertexArray(vao_id);
     vbo->bind();
 }
-std::unique_ptr<VAO> VAO::make(GLenum VBOType, usize reservedVertexSpace) {
+std::unique_ptr<TextVertexArrayObject> TextVertexArrayObject::make(GLenum VBOType, usize reservedVertexSpace) {
     auto vaoID = 0u;
     auto vboID = 0u;
     glGenVertexArrays(1, &vaoID);
@@ -73,24 +73,24 @@ std::unique_ptr<VAO> VAO::make(GLenum VBOType, usize reservedVertexSpace) {
 
     auto vbo = TextVertexBufferObject::create(vboID, VBOType, reservedVertexSpace);
 
-    auto vao = std::make_unique<VAO>(vaoID, std::move(vbo));
+    auto vao = std::make_unique<TextVertexArrayObject>(vaoID, std::move(vbo));
     return vao;
 }
-void VAO::flush_and_draw() {
+void TextVertexArrayObject::flush_and_draw() {
     bind_all();
     auto count = vbo->upload_to_gpu(true);
     last_items_rendered = static_cast<int>(count);
     glDrawArrays(GL_TRIANGLES, 0, last_items_rendered);
 }
-void VAO::reserve_gpu_size(std::size_t text_character_count) {
+void TextVertexArrayObject::reserve_gpu_size(std::size_t text_character_count) {
     bind_all();
     vbo->reserve_gpu_memory(text_character_count);
 }
-void VAO::draw() {
+void TextVertexArrayObject::draw() {
     bind_all();
     glDrawArrays(GL_TRIANGLES, 0, last_items_rendered);
 }
-void VAO::push_quad(std::array<TextVertex, 4> quad) {
+void TextVertexArrayObject::push_quad(std::array<TextVertex, 4> quad) {
     vbo->data.push_back(quad[0]);
     vbo->data.push_back(quad[1]);
     vbo->data.push_back(quad[2]);
@@ -99,40 +99,40 @@ void VAO::push_quad(std::array<TextVertex, 4> quad) {
     vbo->data.push_back(quad[3]);
 }
 
-VAO::~VAO() {
+TextVertexArrayObject::~TextVertexArrayObject() {
 
 }
 
-VAO::VAO(GLuint VAO_ID, std::unique_ptr<TextVertexBufferObject>&& VBO) : vao_id(VAO_ID), vbo(std::move(VBO)) {
+TextVertexArrayObject::TextVertexArrayObject(GLuint VAO_ID, std::unique_ptr<TextVertexBufferObject>&& VBO) : vao_id(VAO_ID), vbo(std::move(VBO)) {
 
 }
 
 /// ------------------------------------ CURSOR ------------------------------------
 
 CursorVertexBufferObject::CursorVertexBufferObject(GLuint id, GLenum bufferType,
-                                                   LocalStore<CursorVertex> &&reservedMemory)
+                                                   LocalStore<Vertex> &&reservedMemory)
     : id(id), type(bufferType), data(std::move(reservedMemory)) {}
 
 std::unique_ptr<CursorVertexBufferObject> CursorVertexBufferObject::create(GLuint vboId, GLenum bufferType,
                                                                            usize reservedSize) {
-    LocalStore<CursorVertex> data;
+    LocalStore<Vertex> data;
     data.reserve(reservedSize > 0 ? reservedSize : 1024);
     auto vbo = std::make_unique<CursorVertexBufferObject>(vboId, bufferType, std::move(data));
-    vbo->reservedGPUMemory = reservedSize * sizeof(CursorVertex);
+    vbo->reservedGPUMemory = reservedSize * sizeof(Vertex);
     vbo->created = true;
     return vbo;
 }
 void CursorVertexBufferObject::bind() { glBindBuffer(this->type, this->id); }
 int CursorVertexBufferObject::upload_to_gpu(bool clear_on_upload) {
     auto vertices = data.size();
-    glBufferSubData(GL_ARRAY_BUFFER, 0, this->data.size() * sizeof(CursorVertex), data.data());
+    glBufferSubData(GL_ARRAY_BUFFER, 0, this->data.size() * sizeof(Vertex), data.data());
     if (clear_on_upload) { data.clear(); }
     return static_cast<int>(vertices);
 }
 void CursorVertexBufferObject::reserve_gpu_memory(std::size_t quadsCount) {
-    glBufferData(GL_ARRAY_BUFFER, gpu_mem_required_for_quads<CursorVertex>(quadsCount), nullptr,
+    glBufferData(GL_ARRAY_BUFFER, gpu_mem_required_for_quads<Vertex>(quadsCount), nullptr,
                  GL_DYNAMIC_DRAW);
-    reservedGPUMemory = gpu_mem_required_for_quads<CursorVertex>(quadsCount);// text_character_count * sizeof(TextVertex) * 6;
+    reservedGPUMemory = gpu_mem_required_for_quads<Vertex>(quadsCount);// text_character_count * sizeof(TextVertex) * 6;
 }
 std::unique_ptr<CursorVAO> CursorVAO::make(GLenum VBOType, usize reservedVertexSpace) {
     auto vaoID = 0u;
@@ -143,7 +143,7 @@ std::unique_ptr<CursorVAO> CursorVAO::make(GLenum VBOType, usize reservedVertexS
     glBindBuffer(GL_ARRAY_BUFFER, vboID);
     glBufferData(GL_ARRAY_BUFFER, reservedVertexSpace, nullptr, GL_DYNAMIC_DRAW);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(CursorVertex), 0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
     glEnableVertexAttribArray(0);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);

@@ -10,7 +10,7 @@
 
 using usize = std::size_t;
 
-struct CursorVertex {
+struct Vertex {
     GLfloat x, y;
 };
 
@@ -27,16 +27,15 @@ constexpr auto gpu_mem_required_for_quads(std::size_t quads) -> std::size_t {
 template <typename T>
 using LocalStore = std::vector<T>;
 
-
 struct CursorVertexBufferObject {
-    CursorVertexBufferObject(GLuint id, GLenum bufferType, LocalStore<CursorVertex> &&reservedMemory);
+    CursorVertexBufferObject(GLuint id, GLenum bufferType, LocalStore<Vertex> &&reservedMemory);
     static std::unique_ptr<CursorVertexBufferObject> create(GLuint vboId, GLenum bufferType, usize reservedSize = 0);
     void bind();
     int upload_to_gpu(bool clear_on_upload = true);
     void reserve_gpu_memory(std::size_t quadsCount);
     GLuint id{0};
     GLenum type;
-    LocalStore<CursorVertex> data;
+    LocalStore<Vertex> data;
     usize reservedGPUMemory{0};
     bool created{false};
     /// flag indicating whether GPU has equal representation of data uploaded. if !pristine, GPU needs an upload to have the same
@@ -56,6 +55,7 @@ struct CursorVAO {
 
 using byte = unsigned char;
 using usize = std::size_t;
+
 
 struct TextVertexBufferObject {
     TextVertexBufferObject(GLuint id, GLenum bufferType, LocalStore<TextVertex> &&reservedMemory);
@@ -80,12 +80,12 @@ struct TextVertexBufferObject {
     bool pristine{false};
 };
 
-struct VAO {
-    ~VAO();
-    VAO(GLuint vao_id, std::unique_ptr<TextVertexBufferObject>&& vbo);
-    VAO(const VAO&) = delete;
-    VAO(VAO&&) = default;
-    static std::unique_ptr<VAO> make(GLenum VBOType, usize reservedVertexSpace = 0);
+struct TextVertexArrayObject {
+    ~TextVertexArrayObject();
+    TextVertexArrayObject(GLuint vao_id, std::unique_ptr<TextVertexBufferObject>&& vbo);
+    TextVertexArrayObject(const TextVertexArrayObject &) = delete;
+    TextVertexArrayObject(TextVertexArrayObject &&) = default;
+    static std::unique_ptr<TextVertexArrayObject> make(GLenum VBOType, usize reservedVertexSpace = 0);
     void bind_all();
     void flush_and_draw();
     void draw();

@@ -19,8 +19,6 @@
 /// for loading our keybindings library, this way we can set keybindings, compile them while running the program
 /// and just hot-reload them
 
-static auto BUFFERS_COUNT = 0;
-
 using ui::CommandView;
 using ui::EditorWindow;
 using ui::View;
@@ -36,7 +34,7 @@ static constexpr auto has_mods = [](auto mod) -> bool { return mod != 0; };
 static auto text_input_callback(GLFWwindow *window, unsigned int codepoint) {
     auto app = get_app_handle(window);
     // This callback already handles "repeat" functionality, via GLFW (i suppose, since it works out of the box)
-    app->handle_text_input(codepoint);
+    app->handle_text_input(static_cast<int>(codepoint));
 };
 
 static auto key_callbacks(GLFWwindow *window, int key, int scancode, int action, int mods) {
@@ -83,8 +81,8 @@ void framebuffer_callback(GLFWwindow *window, int width, int height) {
     // if w & h == 0, means we minimized. Do nothing. Because when we un-minimize, means we restore the prior size
     if (width != 0 && height != 0) {
         auto app = get_app_handle(window);
-        float wratio = float(width) / float(app->win_width);
-        float hratio = float(height) / float(app->win_height);
+        const auto wratio = static_cast<float>(width) / static_cast<float>(app->win_width);
+        const auto hratio = static_cast<float>(height) / static_cast<float>(app->win_height);
         app->set_dimensions(width, height);
         app->update_views_dimensions(wratio, hratio);
         glViewport(0, 0, width, height);
@@ -272,12 +270,12 @@ void App::set_dimensions(int w, int h) {
     util::println("New dimension set to {} x {}", w, h);
 }
 void App::run_loop() {
-    double nowTime = glfwGetTime();
+
     Timer t{"run_loop"};
     auto since_last_update = glfwGetTime();
     while (this->no_close_condition()) {
         // TODO: do stuff.
-        nowTime = glfwGetTime();
+        const auto nowTime = glfwGetTime();
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         draw_all();
@@ -413,7 +411,6 @@ void App::input_command_or_newline() {
         active_view = active_window->view;
         if (mode != CXMode::Search) { mode = CXMode::Normal; }
     } else if (mode == CXMode::Normal) {
-        auto pos = active_buffer->cursor.pos;
         active_buffer->insert('\n');
     }
 }
@@ -490,8 +487,7 @@ static auto layout_id = 1;
 void App::new_editor_window(SplitStrategy splitStrategy) {
     if (splitStrategy == SplitStrategy::VerticalSplit) {
         active_window->active = false;
-        auto active_layout_id = active_window->ui_layout_id;
-        auto l = find_by_id(root_layout, active_layout_id);
+        auto l = find_by_id(root_layout, active_window->ui_layout_id);
         push_node(l, layout_id, ui::core::LayoutType::Horizontal);
         auto active_editor_win = active_window;
         auto ew = EditorWindow::create({}, mvp, layout_id, l->right->dimInfo);
@@ -514,7 +510,7 @@ void App::new_editor_window(SplitStrategy splitStrategy) {
 void App::update_all_editor_windows() {
     update_layout_tree(root_layout, 1.0, 1.0);
     for (auto e : editor_views) {
-        auto dim = e->dimInfo;
+        const auto dim = e->dimInfo;
         auto ew_layout = find_by_id(root_layout, e->ui_layout_id);
         if (ew_layout == nullptr) {
             util::println("Could not find {}", e->ui_layout_id);
@@ -556,7 +552,7 @@ void App::fwrite_active_to_disk(const std::string &path) {
     // this is just wrapped for now, since the if/else branch are identical
     auto write_impl = [&](auto path) {
         auto buf_view = active_window->get_text_buffer()->to_string_view();
-        auto bytes_written = sv_write_file(p, buf_view);
+        const auto bytes_written = sv_write_file(p, buf_view);
         if (bytes_written) {// success
             get_command_view()->draw_message(
                     fmt::format("Wrote {} bytes to file: {}", bytes_written.value(), path.string()));
@@ -565,13 +561,7 @@ void App::fwrite_active_to_disk(const std::string &path) {
             util::println("Could not retrieve file size");
         }
     };
-
-    if (not fs::exists(p)) {
-        write_impl(p);
-    } else {
-        // possibly request a "y/N" from the user, for now we just write to disk
-        write_impl(p);
-    }
+    write_impl(p);
 }
 
 void App::toggle_modal_popup(ui::ModalContentsType contents) {
@@ -588,8 +578,8 @@ void App::toggle_modal_popup(ui::ModalContentsType contents) {
                 std::vector<ui::PopupItem> context_specific_items =
                         ui::PopupItem::make_action_list_from_context(fileContextInfo);
                 modal_popup->register_actions(context_specific_items);
-                auto x = active_window->view->cursor->pos_x;
-                auto y = active_window->view->cursor->pos_y;
+                const auto x = active_window->view->cursor->pos_x;
+                const auto y = active_window->view->cursor->pos_y;
                 modal_popup->anchor_to(x + 10, y);
             } break;
             case ui::Bookmarks: {
@@ -631,7 +621,7 @@ void App::reload_keybindings() {
 void App::find_next_in_active(const std::string &search) {
     mode = CXMode::Search;
     last_searched = search;
-    auto pos = active_window->get_text_buffer()->cursor.pos;
+    const auto pos = active_window->get_text_buffer()->cursor.pos;
     active_window->get_text_buffer()->goto_next(search);
     if (not is_within(active_window->get_text_buffer()->cursor.line, active_window->view)) {
         active_window->view->scroll_to(active_window->get_text_buffer()->cursor.line);
@@ -646,7 +636,7 @@ void App::find_next_in_active(const std::string &search) {
 void App::close_active() {
     auto active_buf = active_view->get_text_buffer();
     if (!active_buf->empty()) {
-        auto id = active_buf->id;
+        const auto id = active_buf->id;
         DataManager::get_instance().request_close(id);
 
         auto layoutToDestroy = find_by_id(root_layout, active_window->ui_layout_id);
@@ -684,7 +674,7 @@ void App::close_active() {
 // TODO: make application aware of .cxe files, so that when editing an .cxe file, user can press some key, to automatically load the settings in it
 void App::reload_configuration(const fs::path& cfg_path) {
     util::println("Reloading config from {}", cfg_path.string());
-    auto cfgData = ConfigFileData::load_cfg_data(cfg_path);
+    const auto cfgData = ConfigFileData::load_cfg_data(cfg_path);
     config = Configuration::from_parsed_map(cfgData);
     auto &fl = FontLibrary::get_instance();
     const auto &def_font = fl.get_default_font_name();
@@ -857,7 +847,7 @@ void App::handle_command_input(KeyInput input) {
 }
 void App::handle_normal_input(KeyInput input, int action) {
     util::println("Normal Mode Input handler <{}, {}, {}>", input.key, input.modifier, action);
-    auto &[key, modifier] = input;
+    const auto &[key, modifier] = input;
     auto buffer_set_mark_at_cursor = [this](auto mod) {
         if (mod & GLFW_MOD_SHIFT) {
             if (not active_buffer->mark_set) { active_buffer->set_mark_at_cursor(); }
@@ -1103,7 +1093,7 @@ void App::handle_popup_input(KeyInput input, int action) {
 void App::handle_macro_record_input(KeyInput input, int action) { util::println("Macro Record Mode Input handler"); }
 
 void App::set_last_as_active_editor_window() {
-    auto prev_item = active_window;
+    const auto prev_item = active_window;
     active_window = editor_views.back();
     active_window->active = true;
     active_buffer = editor_views.back()->get_text_buffer();
@@ -1139,6 +1129,7 @@ std::optional<std::string_view> Register::get_last() {
     if (copies.empty()) return {};
     return get(copies.size() - 1);
 }
+
 constexpr auto mouseScrollLeapSize = 3;
 void App::handle_mouse_scroll(float xOffset, float yOffset) {
     const auto movementTotal = std::abs(mouseScrollLeapSize * AS(yOffset, int));
