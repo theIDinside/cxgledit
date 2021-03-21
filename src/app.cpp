@@ -614,7 +614,7 @@ void App::reload_keybindings() {
     load_keybinding_library(kb_library, bound_action, [](auto fn) { util::println("Keybinding library reloaded"); });
     command_view->draw_message("keybindings reloaded");
 #else
-    util::println("Function not supported under linux yet")
+    util::println("Function not supported under linux yet");
 #endif
 }
 
@@ -1109,13 +1109,14 @@ void Register::push_view(std::string_view data) {
         auto begin = last.begin + last.len;
         auto len = data.size();
         std::memcpy(store.data() + begin, data.data(), data.size());
-        copies.emplace_back(begin, len);
+        copies.emplace_back(DataCopy{begin, len});
     } else [[unlikely]] {
         if (data.size() > store.capacity()) { store.reserve(data.size() * 2); }
         std::memcpy(store.data(), data.data(), data.size());
-        copies.emplace_back(0, data.size());
+        copies.emplace_back(DataCopy{0, data.size()});
     }
 }
+
 std::optional<std::string_view> Register::get(std::size_t index) {
     if (index < copies.size()) {
         auto copy = copies[index];

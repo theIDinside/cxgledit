@@ -6,6 +6,7 @@
 #include "data_manager.hpp"
 #include <core/strops.hpp>
 #include <ui/view.hpp>
+#include <algorithm>
 
 void StdStringBuffer::move_cursor(Movement m) {
     switch (m.construct) {
@@ -624,7 +625,7 @@ size_t StdStringBuffer::capacity() const { return store.capacity(); }
 
 void StdStringBuffer::set_bookmark() {
     auto &bm = meta_data.bookmarks;
-    if (std::ranges::any_of(bm, [l = cursor.line](auto &b) { return b.line_number == l; })) { return; }
+    if (std::any_of(bm.cbegin(), bm.cbegin(), [l = cursor.line](auto &b) { return b.line_number == l; })) { return; }
     auto line_begin = find_line_start(Boundary::Inside, cursor.pos);
     auto line_end = find_line_end(cursor.pos);
 
@@ -642,7 +643,7 @@ void StdStringBuffer::set_bookmark() {
     v.remove_prefix(std::distance(v.begin(), it));
     if (not v.empty()) {
         std::string line_contents{v};
-        bm.emplace_back(cursor.line, std::move(line_contents));
+        bm.emplace_back(Bookmark{cursor.line, std::move(line_contents)});
         // TODO: this really is wasting CPU time. if we keep it sorted, we should find
         std::sort(bm.begin(), bm.end(), [](auto &ba, auto &bb) { return ba.line_number < bb.line_number; });
         util::println("Set bookmark at {}: '{}'", cursor.line, meta_data.bookmarks.back().line_contents);

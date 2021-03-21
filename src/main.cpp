@@ -24,7 +24,7 @@ int main(int argc, const char **argv) {
  * Features to add. The feature description minor/major does not mean to say anything about it's importance, or necessity nor it's urgency
  * but is simply meant to give a hint about what works need to be put behind it and how much other features it might spawn. Minor features are not features which will
  * father other features so to speak.
-
+ * TODO(feature, platform): Handle platform specific differences wrt files. Newlines under Nix = '\n', newlines under Windows: '\r\n'
  * TODO(feature, textedit): When ctrl+backspace, remove until first *non*-whitespace.
  * TODO(feature, textedit): add copy / paste commands
         - done, max copy is however single line at this point in time

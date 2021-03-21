@@ -201,7 +201,7 @@ std::vector<FontConfig> parse_font_configs(const fs::path &cfg) {
             asset_path.remove_prefix(1);
             if(!table.contains("sizes")) {
                 util::println("No sizes set for font, using 1 default (18). Setting example: \n\tsizes = \"[12 13 18]\"");
-                result.emplace_back(font_name, std::string{asset_path}, 18);
+                result.emplace_back(FontConfig{font_name, std::string{asset_path}, 18});
             } else {
                 auto sizes_data = table.at("sizes");
                 sizes_data.remove_prefix(1);
@@ -215,7 +215,7 @@ std::vector<FontConfig> parse_font_configs(const fs::path &cfg) {
                     sizes.push_back(res);
                 }
                 for(auto s : sizes) {
-                    result.emplace_back(font_name, std::string{asset_path}, s);
+                    result.emplace_back(FontConfig{font_name, std::string{asset_path}, s});
                 }
             }
 

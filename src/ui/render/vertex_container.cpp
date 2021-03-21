@@ -5,6 +5,7 @@
 
 #include "vertex_container.hpp"
 #include <memory>
+#include <cstring>
 
 template<typename VertexT>
 VertexContainer<VertexT>::VertexContainer(std::size_t reservedVertices) : ptr_data(new VertexT[reservedVertices]), m_size(0), m_cap(reservedVertices) {

@@ -35,6 +35,7 @@ void FileManager::set_user_input(std::string_view v) {
         if (fs::exists(path) && fs::is_directory(path)) {
             auto begin = fs::directory_iterator(path);
             auto end = fs::end(fs::directory_iterator(path));
+#ifdef _WIN32
             /// NOTE(important): This *have* to be wrapped in a *horrible* if-statement checking for "con"
             /// because Windows is an absolute shit OS, so trying to check for a directory which has the name/prefix "con"
             /// *will* crash the standard library, as simply "con" is an illegal name in Windows. so fs::is_directory("con")
@@ -50,6 +51,13 @@ void FileManager::set_user_input(std::string_view v) {
                     std::ranges::copy(it, std::back_inserter(withSamePrefix));
                 }
             }
+#else
+            for(const auto& path : fs::directory_iterator(path)) {
+                if(keepWithPrefix(path)) {
+                    withSamePrefix.push_back(to_path(path));
+                }
+            }
+#endif
         }
     }
 }

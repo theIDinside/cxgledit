@@ -4,6 +4,9 @@
 
 #include "font_library.hpp"
 #include <core/core.hpp>
+#include <ranges>
+#include <algorithm>
+
 
 FontLibrary &FontLibrary::get_instance() {
     static FontLibrary fl;
@@ -47,6 +50,7 @@ SimpleFont *FontLibrary::get_default_font(std::optional<int> withSize) {
 SimpleFont *FontLibrary::get_font(const std::string &key, int size) {
     auto it = cached_fonts.find(key);
     if (it != std::end(cached_fonts)) {
+
         auto item = std::ranges::find_if(it->second, [&](auto &fa) { return size == fa->get_pixel_size(); });
         if (item == std::end(it->second)) { return it->second.begin()->get(); }
         return item->get();

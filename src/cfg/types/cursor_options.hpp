@@ -4,7 +4,7 @@
 
 #pragma once
 #include <variant>
-
+#include <core/core.hpp>
 struct CaretStyleBlock {};
 struct CaretStyleLine {
     int width;

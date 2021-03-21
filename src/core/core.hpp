@@ -21,28 +21,34 @@ constexpr auto DEBUG_IS_ON = true;
 constexpr auto DEBUG_IS_ON = false;
 #endif
 
+#ifdef _WIN32
+#define FUNCTION_SIGNATURE __FUNCSIG__
+#else
+#define FUNCTION_SIGNATURE __PRETTY_FUNCTION__
+#endif
+
 /// Assertion that checks if index is not outside of containers size, or that it's 0 when container is empty
 #define INDEX_ASSERTION(index, container)                                                                              \
     if constexpr (DEBUG_IS_ON) {                                                                                       \
-        asserts::index_assertion(__FUNCSIG__, __FILE__, __LINE__, index, container);                                   \
+        asserts::index_assertion(FUNCTION_SIGNATURE, __FILE__, __LINE__, index, container);                                   \
     }
-
 
 
 namespace asserts {
-template<typename Container>
-concept ContainerAssertable = requires(Container c) {
-    c.capacity();
-};
+    template<typename Container>
+    concept ContainerAssertable = requires(Container c) {
+        c.capacity();
+    };
 
-template<ContainerAssertable C>
-constexpr bool index_assertion(const char *fn_name, const char *file, int line_number, int index, C c) {
-    if (not(index < AS(c.capacity(), int))) {
-        util::println("Assertion failed in {} ({}:{}): Type: 'Index assertion': {} not < {}", fn_name, file, line_number, index, c.capacity());
-        std::abort();
+    template<ContainerAssertable C>
+    constexpr bool index_assertion(const char *fn_name, const char *file, int line_number, int index, C c) {
+        if (not(index < AS(c.capacity(), int))) {
+            util::println("Assertion failed in {} ({}:{}): Type: 'Index assertion': {} not < {}", fn_name, file,
+                          line_number, index, c.capacity());
+            std::abort();
+        }
+        return true;
     }
-    return true;
-}
 
 }// namespace asserts
 

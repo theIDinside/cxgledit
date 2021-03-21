@@ -5,6 +5,7 @@
 #include "modal.hpp"
 #include <core/buffer/std_string_buffer.hpp>
 #include <ranges>
+#include <algorithm>
 #include <ui/managers/font_library.hpp>
 #include <ui/view.hpp>
 
@@ -71,16 +72,18 @@ void ui::ModalPopup::register_actions(std::vector<PopupItem> item) {
     selected = 0;
 
     const auto f = view->get_font();
-    auto tRng = std::views::all(dialogData) | std::views::transform([&](auto e) {
-                    auto result = f->calculate_text_width(e.displayable);
-                    return result;
-                });
+
+    auto dialogWidth = 0;
+    for(const auto& dd : dialogData) {
+        dialogWidth = std::max(f->calculate_text_width(dd.displayable), dialogWidth);
+    }
+
     const auto dialogHeight = dialogData.size() * (view->get_font()->get_pixel_row_advance());
-    const auto dialogWidth = std::ranges::max(tRng);
-    dimInfo.w = (int) dialogWidth;
-    dimInfo.h = (int) dialogHeight;
-    view->width = (int) dialogWidth;
-    view->height = (int) dialogHeight;
+
+    dimInfo.w       = (int) dialogWidth;
+    dimInfo.h       = (int) dialogHeight;
+    view->width     = (int) dialogWidth;
+    view->height    = (int) dialogHeight;
 }
 
 void ui::ModalPopup::anchor_to(int x, int y) {

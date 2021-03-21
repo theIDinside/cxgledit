@@ -80,7 +80,7 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
                 .y1 = static_cast<int>(pen_y + bmp->rows),
                 .x_off = face->glyph->bitmap_left,
                 .y_off = face->glyph->bitmap_top,
-                .advance = face->glyph->advance.x >> 6,
+                .advance = static_cast<int>(face->glyph->advance.x >> 6),
                 .size = Vec2i{static_cast<int>(face->glyph->bitmap.width), static_cast<int>(face->glyph->bitmap.rows)},
                 .bearing = Vec2i{face->glyph->bitmap_left, face->glyph->bitmap_top},
         };
@@ -248,12 +248,12 @@ void SimpleFont::create_vertex_data_in(TextVertexArrayObject *vao, ui::View *vie
 
             const auto w = glyph_width(glyph);
             const auto h = glyph_height(glyph);
-            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-            store.emplace_back(xpos, ypos, x0, y1, r, g, b);
-            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-            store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
+            store.emplace_back(TextVertex{xpos, ypos + h, x0, y0, r, g, b});
+            store.emplace_back(TextVertex{xpos, ypos, x0, y1, r, g, b});
+            store.emplace_back(TextVertex{xpos + w, ypos, x1, y1, r, g, b});
+            store.emplace_back(TextVertex{xpos, ypos + h, x0, y0, r, g, b});
+            store.emplace_back(TextVertex{xpos + w, ypos, x1, y1, r, g, b});
+            store.emplace_back(TextVertex{xpos + w, ypos + h, x1, y0, r, g, b});
             if (data_index_pos == 0) {
                 if (bufPtr->mark_set) {
                     cx1 = x;
@@ -323,12 +323,12 @@ void SimpleFont::emplace_colorized_text_gpu_data(TextVertexArrayObject *vao, std
                 const auto y1 = float(glyph.y1) / float(t->height);
                 const auto w = glyph_width(glyph);
                 const auto h = glyph_height(glyph);
-                store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-                store.emplace_back(xpos, ypos, x0, y1, r, g, b);
-                store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-                store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-                store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-                store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
+                store.emplace_back(TextVertex{xpos, ypos + h, x0, y0, r, g, b});
+                store.emplace_back(TextVertex{xpos, ypos, x0, y1, r, g, b});
+                store.emplace_back(TextVertex{xpos + w, ypos, x1, y1, r, g, b});
+                store.emplace_back(TextVertex{xpos, ypos + h, x0, y0, r, g, b});
+                store.emplace_back(TextVertex{xpos + w, ypos, x1, y1, r, g, b});
+                store.emplace_back(TextVertex{xpos + w, ypos + h, x1, y0, r, g, b});
                 x += glyph.advance;
             }
         }
@@ -349,12 +349,12 @@ void SimpleFont::emplace_colorized_text_gpu_data(TextVertexArrayObject *vao, std
             const auto y1 = float(glyph.y1) / float(t->height);
             const auto w = glyph_width(glyph);
             const auto h = glyph_height(glyph);
-            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-            store.emplace_back(xpos, ypos, x0, y1, r, g, b);
-            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-            store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
+            store.emplace_back(TextVertex{xpos, ypos + h, x0, y0, r, g, b});
+            store.emplace_back(TextVertex{xpos, ypos, x0, y1, r, g, b});
+            store.emplace_back(TextVertex{xpos + w, ypos, x1, y1, r, g, b});
+            store.emplace_back(TextVertex{xpos, ypos + h, x0, y0, r, g, b});
+            store.emplace_back(TextVertex{xpos + w, ypos, x1, y1, r, g, b});
+            store.emplace_back(TextVertex{xpos + w, ypos + h, x1, y0, r, g, b});
             x += glyph.advance;
             data_index++;
         }
@@ -393,12 +393,12 @@ void SimpleFont::add_colorized_text_gpu_data(TextVertexArrayObject *vao, std::ve
             const auto y1 = float(glyph.y1) / float(t->height);
             const auto w = glyph_width(glyph);
             const auto h = glyph_height(glyph);
-            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-            store.emplace_back(xpos, ypos, x0, y1, r, g, b);
-            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-            store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
+            store.emplace_back(TextVertex{xpos, ypos + h, x0, y0, r, g, b});
+            store.emplace_back(TextVertex{xpos, ypos, x0, y1, r, g, b});
+            store.emplace_back(TextVertex{xpos + w, ypos, x1, y1, r, g, b});
+            store.emplace_back(TextVertex{xpos, ypos + h, x0, y0, r, g, b});
+            store.emplace_back(TextVertex{xpos + w, ypos, x1, y1, r, g, b});
+            store.emplace_back(TextVertex{xpos + w, ypos + h, x1, y0, r, g, b});
             x += glyph.advance;
             data_index++;
         }
@@ -479,12 +479,12 @@ void SimpleFont::create_vertex_data_no_highlighting(ui::View *view, ui::core::Sc
             const auto y1 = float(glyph.y1) / float(t->height);
             const auto w = glyph_width(glyph);
             const auto h = glyph_height(glyph);
-            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-            store.emplace_back(xpos, ypos, x0, y1, r, g, b);
-            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-            store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
+            store.emplace_back(TextVertex{xpos, ypos + h, x0, y0, r, g, b});
+            store.emplace_back(TextVertex{xpos, ypos, x0, y1, r, g, b});
+            store.emplace_back(TextVertex{xpos + w, ypos, x1, y1, r, g, b});
+            store.emplace_back(TextVertex{xpos, ypos + h, x0, y0, r, g, b});
+            store.emplace_back(TextVertex{xpos + w, ypos, x1, y1, r, g, b});
+            store.emplace_back(TextVertex{xpos + w, ypos + h, x1, y0, r, g, b});
             if (data_index_pos == 0) {
                 if (bufPtr->mark_set) {
                     cx1 = x;
@@ -619,12 +619,12 @@ void SimpleFont::create_vertex_data_for_syntax(ui::View* view, const ui::core::S
             const auto y1 = float(glyph.y1) / float(t->height);
             const auto w = glyph_width(glyph);
             const auto h = glyph_height(glyph);
-            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-            store.emplace_back(xpos, ypos, x0, y1, r, g, b);
-            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-            store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-            store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-            store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
+            store.emplace_back(TextVertex{xpos, ypos + h, x0, y0, r, g, b});
+            store.emplace_back(TextVertex{xpos, ypos, x0, y1, r, g, b});
+            store.emplace_back(TextVertex{xpos + w, ypos, x1, y1, r, g, b});
+            store.emplace_back(TextVertex{xpos, ypos + h, x0, y0, r, g, b});
+            store.emplace_back(TextVertex{xpos + w, ypos, x1, y1, r, g, b});
+            store.emplace_back(TextVertex{xpos + w, ypos + h, x1, y0, r, g, b});
             if (data_index_pos == 0) {
                 if (bufPtr->mark_set) {
                     cx1 = x;
@@ -757,12 +757,12 @@ void SimpleFont::create_vertex_data_for_only_visible(ui::View *view, ui::core::S
                 const auto y1 = float(glyph.y1) / float(t->height);
                 const auto w = glyph_width(glyph);
                 const auto h = glyph_height(glyph);
-                store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-                store.emplace_back(xpos, ypos, x0, y1, r, g, b);
-                store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-                store.emplace_back(xpos, ypos + h, x0, y0, r, g, b);
-                store.emplace_back(xpos + w, ypos, x1, y1, r, g, b);
-                store.emplace_back(xpos + w, ypos + h, x1, y0, r, g, b);
+                store.emplace_back(TextVertex{xpos, ypos + h, x0, y0, r, g, b});
+                store.emplace_back(TextVertex{xpos, ypos, x0, y1, r, g, b});
+                store.emplace_back(TextVertex{xpos + w, ypos, x1, y1, r, g, b});
+                store.emplace_back(TextVertex{xpos, ypos + h, x0, y0, r, g, b});
+                store.emplace_back(TextVertex{xpos + w, ypos, x1, y1, r, g, b});
+                store.emplace_back(TextVertex{xpos + w, ypos + h, x1, y0, r, g, b});
                 if (data_index_pos == 0) {
                     if (bufPtr->mark_set) {
                         cx1 = x;

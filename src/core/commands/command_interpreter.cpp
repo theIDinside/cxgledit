@@ -195,7 +195,6 @@ std::string CommandInterpreter::command_auto_completed() {
         case Commands::UserCommand:
             [[fallthrough]];
         case Commands::GotoLine:
-            [[fallthrough]];
             return ctx->get_command_view()->input_buffer->to_std_string();
         case Commands::Fail:
             break;

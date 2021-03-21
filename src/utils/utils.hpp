@@ -4,7 +4,7 @@
 #include <fmt/core.h>
 #include <optional>
 #include <variant>
-
+#include <vector>
 #include <bindingslib/keybindings.hpp>
 
 
@@ -122,6 +122,4 @@ void safe_delete(T *&t) {
 }
 
 
-#ifdef WIN32
 auto file_size(const char* file_path) -> std::optional<int>;
-#endif

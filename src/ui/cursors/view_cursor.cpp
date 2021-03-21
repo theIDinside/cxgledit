@@ -104,21 +104,21 @@ void ViewCursor::update_cursor_data(GLfloat x, GLfloat y) {
     line_shade_data->vbo->pristine = false;
 
     c_data.clear();
-    c_data.emplace_back(x, y + h);
-    c_data.emplace_back(x, y);
-    c_data.emplace_back(x + w, y);
-    c_data.emplace_back(x, y + h);
-    c_data.emplace_back(x + w, y);
-    c_data.emplace_back(x + w, y + h);
+    c_data.emplace_back(Vertex{x, y + h});
+    c_data.emplace_back(Vertex{x, y});
+    c_data.emplace_back(Vertex{x + w, y});
+    c_data.emplace_back(Vertex{x, y + h});
+    c_data.emplace_back(Vertex{x + w, y});
+    c_data.emplace_back(Vertex{x + w, y + h});
 
     auto vx = AS(view->x, float);
     l_data.clear();
-    l_data.emplace_back(vx, y + h);
-    l_data.emplace_back(vx, y);
-    l_data.emplace_back(vx + view_width, y);
-    l_data.emplace_back(vx, y + h);
-    l_data.emplace_back(vx + view_width, y);
-    l_data.emplace_back(vx + view_width, y + h);
+    l_data.emplace_back(Vertex{vx, y + h});
+    l_data.emplace_back(Vertex{vx, y});
+    l_data.emplace_back(Vertex{vx + view_width, y});
+    l_data.emplace_back(Vertex{vx, y + h});
+    l_data.emplace_back(Vertex{vx + view_width, y});
+    l_data.emplace_back(Vertex{vx + view_width, y + h});
 
 }
 
@@ -130,12 +130,12 @@ void ViewCursor::set_line_rect(GLfloat x1, GLfloat x2, GLfloat y1) {
     auto &data = this->cursor_data->vbo->data;
     this->cursor_data->vbo->pristine = false;
     data.clear();
-    data.emplace_back(x, y + h);
-    data.emplace_back(x, y);
-    data.emplace_back(x + w, y);
-    data.emplace_back(x, y + h);
-    data.emplace_back(x + w, y);
-    data.emplace_back(x + w, y + h);
+    data.emplace_back(Vertex{x, y + h});
+    data.emplace_back(Vertex{x, y});
+    data.emplace_back(Vertex{x + w, y});
+    data.emplace_back(Vertex{x, y + h});
+    data.emplace_back(Vertex{x + w, y});
+    data.emplace_back(Vertex{x + w, y + h});
 }
 
 void ViewCursor::setup_dimensions(int Width, int Height) {
@@ -151,12 +151,12 @@ void ViewCursor::set_line_rect(GLfloat x1, GLfloat x2, GLfloat y1, int rectHeigh
     auto &data = cursor_data->vbo->data;
     cursor_data->vbo->pristine = false;
     data.clear();
-    data.emplace_back(x, y + h);
-    data.emplace_back(x, y);
-    data.emplace_back(x + w, y);
-    data.emplace_back(x, y + h);
-    data.emplace_back(x + w, y);
-    data.emplace_back(x + w, y + h);
+    data.emplace_back(Vertex{x, y + h});
+    data.emplace_back(Vertex{x, y});
+    data.emplace_back(Vertex{x + w, y});
+    data.emplace_back(Vertex{x, y + h});
+    data.emplace_back(Vertex{x + w, y});
+    data.emplace_back(Vertex{x + w, y + h});
 }
 void ViewCursor::set_projection(Matrix orthoProjection) {
     this->mvp = orthoProjection;

@@ -59,7 +59,7 @@ std::vector<std::string> read_file_to_lines(const fs::path &filePath) {
 }
 }// namespace util::file
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 
 auto file_size(const char *file_path) -> std::optional<int> {
@@ -72,7 +72,7 @@ auto file_size(const char *file_path) -> std::optional<int> {
 }
 #endif
 
-#ifdef LINUX
+#ifdef __linux__
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>

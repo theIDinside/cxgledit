@@ -19,10 +19,16 @@ constexpr bool vec_index_assertion(const char *fn_name, const char *file, int li
     return true;
 }
 
+#ifdef _WIN32
+#define FUNCTION_SIGNATURE __FUNCSIG__
+#else
+#define FUNCTION_SIGNATURE __PRETTY_FUNCTION__
+#endif
+
 #define VEC_INDEX_ASSERTION(param, vec_size)                                                                           \
     if constexpr (DEBUG_IS_ON) {                                                                                       \
         if (not(static_cast<int>((param)) < static_cast<int>((vec_size)))) {                                           \
-            vec_index_assertion(__FUNCSIG__, __FILE__, __LINE__, param, vec_size);                                     \
+            vec_index_assertion(FUNCTION_SIGNATURE, __FILE__, __LINE__, param, vec_size);                                     \
         }                                                                                                              \
     }
 

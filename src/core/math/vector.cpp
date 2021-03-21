@@ -15,6 +15,7 @@ std::ostream &operator<<(std::ostream &os, const Vec2<float>& v) {
     std::array<char, 15> buf;
     os << "\"";
 
+#ifdef _WIN32
     if(auto[ptr, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), v.x); ec == std::errc()) {
         os << std::string_view{buf.data(), ptr} << " ";
     }
@@ -22,6 +23,11 @@ std::ostream &operator<<(std::ostream &os, const Vec2<float>& v) {
     if(auto[ptr, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), v.y); ec == std::errc()) {
         os << std::string_view{buf.data(), ptr} << "\"";
     }
+#else
+    os << v.x << " " << v.y << '"';
+#endif
+
+
     return os;
 }
 
@@ -34,6 +40,7 @@ std::ostream &operator<<(std::ostream &os, const Vec3<float>& v) {
     std::array<char, 15> buf;
     os << "\"";
 
+#ifdef _WIN32
     if(auto[ptr, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), v.x); ec == std::errc()) {
         os << std::string_view{buf.data(), ptr} << " ";
     }
@@ -45,6 +52,9 @@ std::ostream &operator<<(std::ostream &os, const Vec3<float>& v) {
     if(auto[ptr, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), v.z); ec == std::errc()) {
         os << std::string_view{buf.data(), ptr} << "\"";
     }
+#else
+    os << v.x << " " << v.y << " " << v.z << '"';
+#endif
     return os;
 }
 
@@ -56,6 +66,7 @@ std::ostream &operator<<(std::ostream &os, const Vec4<float> &v) {
     std::array<char, 15> buf;
     os << "\"";
 
+#ifdef _WIN32
     if(auto[ptr, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), v.x); ec == std::errc()) {
         os << std::string_view{buf.data(), ptr} << " ";
     }
@@ -71,6 +82,8 @@ std::ostream &operator<<(std::ostream &os, const Vec4<float> &v) {
     if(auto[ptr, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), v.w); ec == std::errc()) {
         os << std::string_view{buf.data(), ptr} << "\"";
     }
-
+#else
+    os << v.x << " " << v.y << " " << v.z << " " << v.w << '"';
+#endif
     return os;
 }

@@ -6,6 +6,7 @@
 #include "std_string_buffer.hpp"
 
 #include <ranges>
+#include <algorithm>
 
 int DataManager::buffers_count = 0;
 
