@@ -9,8 +9,8 @@
 
 #include <fmt/format.h>
 #include <string>
-#include <ui/editor_window.hpp>
-#include <ui/view.hpp>
+#include <ui/views/editor_window.hpp>
+#include <ui/views/view.hpp>
 
 CommandInterpreter &CommandInterpreter::get_instance() {
     static CommandInterpreter ci;

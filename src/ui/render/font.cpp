@@ -5,7 +5,7 @@
 // App headers
 #include "font.hpp"
 #include <ui/syntax_highlighting.hpp>
-#include <ui/view.hpp>
+#include <ui/views/view.hpp>
 #include <ui/core/layout.hpp>
 #include <core/buffer/std_string_buffer.hpp>
 
@@ -22,8 +22,9 @@
 using u64 = std::size_t;
 
 /// Clean interface wrapped over the C-library. this illustrates intent much better for a moron like me.
-template <typename T>
-constexpr auto alloc_objects_of(std::size_t objects_count) {
+/// Also, it's *only* used here, since it's using the free type library.
+template <typename T, Integral I>
+constexpr auto alloc_objects_of(I objects_count) {
     return (T*)std::calloc(objects_count, sizeof(T));
 }
 
@@ -114,15 +115,15 @@ std::unique_ptr<SimpleFont> SimpleFont::setup_font(const std::string &path, int 
 
     auto font = std::make_unique<SimpleFont>(SimpleFont{pixel_size, std::move(texture), std::move(glyph_cache)});
     font->row_height = row_advance;
-    font->max_glyph_width = max_glyph_width;
-    font->max_glyph_height = max_glyph_height;
+    font->max_glyph_width = static_cast<int>(max_glyph_width);
+    font->max_glyph_height = static_cast<int>(max_glyph_height);
     font->size_bearing_difference_max = max_bearing_size_diff;
 
     return font;
 }
 
 SimpleFont::SimpleFont(int pixelSize, std::unique_ptr<GlyphTexture> &&texture, std::vector<glyph_info> &&glyphs)
-    : pixel_size(pixelSize), t(std::move(texture)), glyph_cache(std::move(glyphs)) {}
+    : t(std::move(texture)), glyph_cache(std::move(glyphs)), pixel_size(pixelSize) {}
 
 int SimpleFont::get_pixel_row_advance() const { return row_height; }
 
@@ -196,7 +197,7 @@ void SimpleFont::create_vertex_data_in(TextVertexArrayObject *vao, ui::View *vie
     auto xpos = float(x);
     auto ypos = float(y);
     if (not have_text) {
-        view_cursor->update_cursor_data(x, y - 6);
+        view_cursor->update_cursor_data(static_cast<GLfloat>(x), static_cast<GLfloat>(y - 6));
     } else {
         // TODO(optimization): change so that instead of doing IF-THEN_ELSE inside this for loop for every character
         //  make it so, that it checks IF we are inside range, then draw the data up until last character, then iterate 1 step
@@ -239,7 +240,7 @@ void SimpleFont::create_vertex_data_in(TextVertexArrayObject *vao, ui::View *vie
                 y -= row_height;
                 continue;
             }
-            xpos = float(x) + glyph.bearing.x;
+            xpos = float(x) + static_cast<float>(glyph.bearing.x);
             ypos = float(y) - static_cast<float>(glyph.size.y - glyph.bearing.y);
             const auto x0 = float(glyph.x0) / float(t->width);
             const auto x1 = float(glyph.x1) / float(t->width);
@@ -341,7 +342,7 @@ void SimpleFont::emplace_colorized_text_gpu_data(TextVertexArrayObject *vao, std
                 y -= row_height;
                 continue;
             }
-            const auto xpos = float(x) + glyph.bearing.x;
+            const auto xpos = float(x) + static_cast<float>(glyph.bearing.x);
             const auto ypos = float(y) - static_cast<float>(glyph.size.y - glyph.bearing.y);
             const auto x0 = float(glyph.x0) / float(t->width);
             const auto x1 = float(glyph.x1) / float(t->width);

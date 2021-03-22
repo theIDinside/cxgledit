@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include <core/core.hpp>
 #include <glad/glad.h>
 #include <memory>
 #include <string>
@@ -19,8 +20,8 @@ struct TextVertex {
     GLfloat r{}, g{}, b{};
 };
 
-template<typename T>
-constexpr auto gpu_mem_required_for_quads(std::size_t quads) -> std::size_t {
+template<typename T, Integral IntType>
+constexpr auto gpu_mem_required_for_quads(IntType quads) -> std::size_t {
     return sizeof(T) * 6 * quads;
 }
 

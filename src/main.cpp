@@ -9,7 +9,7 @@ int main(int argc, const char **argv) {
     if constexpr(DEBUG_IS_ON) {
         util::println("Debugging features is turned on");
     } else {
-        util::println("Debugging features is turned off");
+        util::println("Debugging features is turned off - Running in release mode?");
     }
 
     auto app = App::initialize(WW, WH);

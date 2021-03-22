@@ -7,9 +7,9 @@
 #include <core/buffer/data_manager.hpp>
 #include <ranges>
 #include <ui/core/opengl.hpp>
-#include <ui/editor_window.hpp>
-#include <ui/status_bar.hpp>
-#include <ui/view.hpp>
+#include <ui/views/editor_window.hpp>
+#include <ui/views/status_bar.hpp>
+#include <ui/views/view.hpp>
 #include <utility>
 #include <utils/fileutil.hpp>
 
@@ -38,6 +38,7 @@ static auto text_input_callback(GLFWwindow *window, unsigned int codepoint) {
 };
 
 static auto key_callbacks(GLFWwindow *window, int key, int scancode, int action, int mods) {
+    util::println("key: {} - scancode: {}", key, scancode);
     auto app = get_app_handle(window);
     const auto input = KeyInput{key, mods};
 
@@ -54,8 +55,8 @@ static void initialize_static_resources() {
     if (!font_cfg_data.empty()) {
         for (const auto &fontConfig : font_cfg_data) { FontLibrary::get_instance().load_font(fontConfig, true); }
     } else {
-        constexpr int pixel_sizes[5]{24, 22, 18, 14, 12};
-        for (auto ps : pixel_sizes) {
+        constexpr int default_pixel_sizes[5]{24, 22, 18, 14, 12};
+        for (auto ps : default_pixel_sizes) {
             FontConfig source_code_bold{.name = "SourceCodeProBold",
                                         .path = "assets/fonts/SourceCodePro-Bold.ttf",
                                         .pixel_size = ps,
@@ -77,7 +78,6 @@ static void initialize_static_resources() {
 }
 
 void framebuffer_callback(GLFWwindow *window, int width, int height) {
-    fmt::print("New width: {}\t New height: {}\n", width, height);
     // if w & h == 0, means we minimized. Do nothing. Because when we un-minimize, means we restore the prior size
     if (width != 0 && height != 0) {
         auto app = get_app_handle(window);
@@ -244,7 +244,7 @@ App *App::initialize(int app_width, int app_height, const std::string &title) {
         }
     });
     glfwSetScrollCallback(window, [](auto window, auto xOffset, auto yOffset) {
-        get_app_handle(window)->handle_mouse_scroll(xOffset, yOffset);
+        get_app_handle(window)->handle_mouse_scroll(static_cast<float>(xOffset), static_cast<float>(yOffset));
     });
     return instance;
 }
@@ -341,7 +341,7 @@ void App::update_views_dimensions(float wRatio, float hRatio) {
 
 constexpr auto KEY_LEFT_ANGLE_BRACKET = 61;
 constexpr auto KEY_RIGHT_ANGLE_BRACKET = 62;
-constexpr auto CTRL_L_ANGLE_BRACKET = 162;
+constexpr auto CTRL_L_ANGLE_BRACKET = 161;
 
 constexpr auto should_ignore = [](auto key) {
     return key == GLFW_KEY_LEFT_CONTROL || key == GLFW_KEY_RIGHT_CONTROL || key == GLFW_KEY_LEFT_ALT ||
@@ -817,7 +817,7 @@ void App::handle_key_input(KeyInput input, int action) {
 }
 
 void App::handle_command_input(KeyInput input) {
-    util::println("Command Input Mode Input handler");
+    util::println("Command Input Mode Input handler: <{} | {}>", input.key, input.modifier);
     const auto &[key, modifier] = input;
     switch (key) {
         case KEY_BACKSPACE: {
@@ -1048,17 +1048,6 @@ void App::handle_normal_input(KeyInput input, int action) {
 }
 
 void App::handle_actions_input(KeyInput input, int action) { util::println("Actions Mode Input handler"); }
-
-void App::handle_command_input(KeyInput input, int action) {
-    auto &[key, mod] = input;
-    util::println("Command Input Mode Input handler");
-
-    switch (key) {
-        case GLFW_KEY_ESCAPE:
-            disable_command_input();
-            break;
-    }
-}
 
 void App::handle_popup_input(KeyInput input, int action) {
     auto &[key, mod] = input;

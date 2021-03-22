@@ -79,14 +79,15 @@ set(SOURCES
         src/core/buffer/bookmark.cpp src/core/buffer/bookmark.hpp
         src/core/buffer/text_rep.cpp src/core/buffer/text_rep.hpp
         # UI Render Sources
-        src/ui/core/opengl.cpp src/ui/core/opengl.hpp
-        src/ui/core/layout.cpp src/ui/core/layout.hpp
-        src/ui/view.cpp src/ui/view.hpp
-        src/ui/status_bar.cpp src/ui/status_bar.hpp
-        src/ui/editor_window.cpp src/ui/editor_window.hpp
-        src/ui/modal.cpp src/ui/modal.hpp
+        src/ui/core/opengl.cpp                  src/ui/core/opengl.hpp
+        src/ui/core/layout.cpp                  src/ui/core/layout.hpp
+        src/ui/views/view.cpp                   src/ui/views/view.hpp
+        src/ui/views/status_bar.cpp             src/ui/views/status_bar.hpp
+        src/ui/views/editor_window.cpp          src/ui/views/editor_window.hpp
+        src/ui/views/modal.cpp                  src/ui/views/modal.hpp
+        src/ui/views/cursors/view_cursor.cpp    src/ui/views/cursors/view_cursor.hpp
+        src/ui/views/view_enums.hpp
         src/ui/panel.cpp src/ui/panel.hpp
-        src/ui/cursors/view_cursor.cpp src/ui/cursors/view_cursor.hpp
 
         src/ui/managers/font_library.cpp src/ui/managers/font_library.hpp
         src/ui/managers/shader_library.cpp src/ui/managers/shader_library.hpp
@@ -98,7 +99,6 @@ set(SOURCES
         src/ui/render/vertex_container.cpp src/ui/render/vertex_container.hpp
 
         src/ui/syntax_highlighting.cpp src/ui/syntax_highlighting.hpp
-        src/ui/view_enums.hpp
         # UTIL sources
         src/utils/utils.cpp src/utils/utils.hpp
         src/utils/fileutil.cpp src/utils/fileutil.hpp

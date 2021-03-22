@@ -5,7 +5,7 @@
 #include "std_string_buffer.hpp"
 #include "data_manager.hpp"
 #include <core/strops.hpp>
-#include <ui/view.hpp>
+#include <ui/views/view.hpp>
 #include <algorithm>
 
 void StdStringBuffer::move_cursor(Movement m) {

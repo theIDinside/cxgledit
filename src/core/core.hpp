@@ -52,6 +52,10 @@ namespace asserts {
 
 }// namespace asserts
 
+
+template <typename T>
+concept Integral = std::is_integral_v<T>;
+
 template<typename T>
 concept FloatingPoint = requires(T t) {
     std::is_floating_point_v<T>;

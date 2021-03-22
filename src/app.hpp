@@ -25,7 +25,7 @@
 #include <ui/core/layout.hpp>
 #include <ui/managers/font_library.hpp>
 #include <ui/managers/shader_library.hpp>
-#include <ui/modal.hpp>
+#include <ui/views/modal.hpp>
 
 #include <cfg/configuration.hpp>
 
