@@ -3,8 +3,8 @@
 //
 
 #include "file_manager.hpp"
-#include <core/core.hpp>
 #include <ranges>
+#include <algorithm>
 
 FileManager &FileManager::get_instance() {
     static FileManager fm;
@@ -52,9 +52,9 @@ void FileManager::set_user_input(std::string_view v) {
                 }
             }
 #else
-            for(const auto& path : fs::directory_iterator(path)) {
-                if(keepWithPrefix(path)) {
-                    withSamePrefix.push_back(to_path(path));
+            for(const auto& it : fs::directory_iterator(path)) {
+                if(keepWithPrefix(it)) {
+                    withSamePrefix.push_back(to_path(it));
                 }
             }
 #endif
