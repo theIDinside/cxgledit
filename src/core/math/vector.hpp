@@ -49,9 +49,18 @@ struct Vec2 {
     friend Vec2 operator+(const Vec2 &lhs, const Vec2 &rhs) {
         return Vec2 {
                 .x = static_cast<T>(lhs.x + rhs.x),
-                .y = static_cast<T>(rhs.x + rhs.y)
+                .y = static_cast<T>(lhs.y + rhs.y)
         };
     }
+
+    friend Vec2 operator-(const Vec2 &lhs, const Vec2 &rhs) {
+        return Vec2 {
+                .x = static_cast<T>(lhs.x - rhs.x),
+                .y = static_cast<T>(lhs.y - rhs.y)
+        };
+    }
+
+
     friend bool operator==(const Vec2 &lhs, const Vec2 &rhs);
     friend std::ostream &operator<<(std::ostream &os, const Vec2 &v);
 };
