@@ -28,11 +28,12 @@ public:
     explicit Widget(gui_id widget_id, Widget* parent = nullptr);
     virtual ~Widget();
 
+    [[nodiscard]] gui_id get_guid() const;
+    [[nodiscard]] int get_id() const;
+
     [[nodiscard]] Widget* parent() const;
-    Widget* parent();
     void set_parent(Widget* parentWidget);
 
-    Layout* get_layout();
     [[nodiscard]] Layout* get_layout() const;
     void set_layout(Layout* layout);
 

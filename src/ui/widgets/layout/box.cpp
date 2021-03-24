@@ -10,7 +10,6 @@ void cx::widget::BoxLayout::arrange_horizontally(Widget* parent) {
     auto children = parent->children();
     assert(!children.empty());
     auto remaining_width = parent->width() - (m_spacing * static_cast<i16>(children.size() - 1)) - (m_margin * 2);
-
     const auto fixedWidthInfo =
             std::accumulate(children.cbegin(), children.cend(), std::pair<i16, i16>{0, 0}, [](auto acc, Widget* child) {
                 auto& [childrenWithFS, totalFS] = acc;
@@ -18,30 +17,40 @@ void cx::widget::BoxLayout::arrange_horizontally(Widget* parent) {
                 if (child->fixed_width().has_value()) childrenWithFS++;
                 return acc;
             });
+    const auto [fixed_width_widgets, total_requested_fixed_width] = fixedWidthInfo;
 
-    auto [fixed_width_widgets, total_requested_fixed_width] = fixedWidthInfo;
-    auto widgets_to_resize = children.size() - fixed_width_widgets;
+    const auto widgets_to_resize = [](const auto children, const auto fixedWidgetCount) {
+      auto hiddenCount = 0;
+      for(const auto& c : children) {
+          if(!c->is_visible()) hiddenCount++;
+      }
+      return children.size() - fixedWidgetCount - hiddenCount;
+    }(children, fixed_width_widgets);
+
     remaining_width -= total_requested_fixed_width;
-    auto perElementWidth = remaining_width / widgets_to_resize;
+    const auto perElementWidth = remaining_width / widgets_to_resize;
     auto remaining_fixed_width = total_requested_fixed_width;
     auto xOffset = m_margin;
     auto yOffset = m_margin;
 
-    auto elements_height = parent->height() - m_margin * 2;
+    const auto elements_height = parent->height() - m_margin * 2;
 
     for (auto c : children) {
-        if (auto fw = c->fixed_width(); fw) {
-            c->set_size({*fw, c->fixed_height().value_or(elements_height)});
-            c->set_anchor({xOffset, yOffset});
-            xOffset += *fw + m_spacing;
-            remaining_fixed_width -= *fw;
-        } else {
-            c->set_size({static_cast<i16>(perElementWidth), c->fixed_height().value_or(elements_height)});
-            c->set_anchor({xOffset, yOffset});
-            xOffset += perElementWidth + m_spacing;
-            remaining_width -= perElementWidth;
+        if(c->is_visible()) {
+            if (auto fw = c->fixed_width(); fw) {
+                c->set_size({*fw, c->fixed_height().value_or(elements_height)});
+                c->set_anchor({xOffset, yOffset});
+                xOffset += *fw + m_spacing;
+                remaining_fixed_width -= *fw;
+            } else {
+                c->set_size({static_cast<i16>(perElementWidth), c->fixed_height().value_or(elements_height)});
+                c->set_anchor({xOffset, yOffset});
+                xOffset += perElementWidth + m_spacing;
+                remaining_width -= perElementWidth;
+            }
         }
     }
+    assert(remaining_width < widgets_to_resize);
 }
 
 cx::widget::BoxLayout::BoxLayout(cx::widget::LayoutAxis layoutAxis, i16 margin, i16 spacing)
