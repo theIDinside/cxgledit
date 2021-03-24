@@ -453,13 +453,13 @@ void App::app_debug() {
     util::println("----- View Debug Info -----");
     util::println("Views currently open: {}", editor_views.size());
     assert(active_window->view == active_view);
-    util::println("Active window: {} - Active view name {} - Buffer id: {} - UI ID: {}", active_window->ui_layout_id,
-                  active_view->name, active_buffer->id, active_window->ui_layout_id);
+    util::println("Active window: {} - Active view name {} - Buffer m_id: {} - UI ID: {}", active_window->ui_layout_id,
+                  active_view->name, active_buffer->m_id, active_window->ui_layout_id);
     active_window->status_bar->print_debug_info();
     active_buffer->print_cursor_info();
     active_buffer->print_line_meta_data();
     fmt::print("\n");
-    util::println("---- Layout tree (negative id's are branch nodes, positive leaf nodes ---- ");
+    util::println("---- Layout tree (negative m_id's are branch nodes, positive leaf nodes ---- ");
     dump_layout_tree(root_layout);
     util::println("---------------------------\n");
     auto &dm = DataManager::get_instance();

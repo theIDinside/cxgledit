@@ -253,7 +253,7 @@ void View::set_font(SimpleFont *new_font) {
     forced_draw(true);
 }
 View::~View() {
-    util::println("Destroying View {} and it's affiliated resources. TextBuffer id: {} - Name: {}", name,
+    util::println("Destroying View {} and it's affiliated resources. TextBuffer m_id: {} - Name: {}", name,
                   get_text_buffer()->id, get_text_buffer()->fileName());
     if (not DataManager::get_instance().is_managed(data->id)) {
         DataManager::get_instance().print_all_managed();

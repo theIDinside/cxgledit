@@ -54,10 +54,10 @@ namespace ui::core {
     };
 
     /// Functions for operating on a Layout tree
-    /// Find an Layout object in the tree, starting at root with id
+    /// Find an Layout object in the tree, starting at root with m_id
     Layout *find_by_id(Layout *root, int id);
 
-    /// Creates a new node with id=assignedId, and LayoutType t and pushes it down into sub-tree root *n
+    /// Creates a new node with m_id=assignedId, and LayoutType t and pushes it down into sub-tree root *n
     /// making the node at n, be replaced with a new Branch node, while n gets pushed into left subtree, new node
     /// gets pushed into right subtree
     void push_node(Layout *n, int assignedId, LayoutType t);

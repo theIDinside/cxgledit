@@ -5,7 +5,8 @@
 #include <optional>
 #include <variant>
 #include <vector>
-#include <bindingslib/keybindings.hpp>
+
+enum class CXMode { Normal, Actions, CommandInput, Popup, Search, MacroRecord };
 
 
 #ifdef DEBUG

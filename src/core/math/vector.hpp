@@ -5,7 +5,6 @@
 #pragma once
 #include <cassert>
 #include <core/core.hpp>
-#include <glad/glad.h>
 #include <stdexcept>
 
 using usize = std::size_t;
@@ -47,6 +46,12 @@ struct Vec2 {
         return *(first + i);
     }
 
+    friend Vec2 operator+(const Vec2 &lhs, const Vec2 &rhs) {
+        return Vec2 {
+                .x = static_cast<T>(lhs.x + rhs.x),
+                .y = static_cast<T>(rhs.x + rhs.y)
+        };
+    }
     friend bool operator==(const Vec2 &lhs, const Vec2 &rhs);
     friend std::ostream &operator<<(std::ostream &os, const Vec2 &v);
 };
@@ -92,16 +97,19 @@ struct Vec4 {
     constexpr auto capacity() const { return 4; }
 };
 
+
+using Vec2i16 = Vec2<i16>;
+
 using Vec2i = Vec2<int>;
-using Vec2f = Vec2<GLfloat>;
+using Vec2f = Vec2<float>;
 using Vec2d = Vec2<double>;
 
 using Vec3i = Vec3<int>;
-using Vec3f = Vec3<GLfloat>;
+using Vec3f = Vec3<float>;
 using Vec3d = Vec3<double>;
 
 using Vec4i = Vec4<int>;
-using Vec4f = Vec4<GLfloat>;
+using Vec4f = Vec4<float>;
 using Vec4d = Vec4<double>;
 
 using RGBColor = Vec3f;

@@ -87,7 +87,11 @@ set(SOURCES
         src/ui/views/modal.cpp                  src/ui/views/modal.hpp
         src/ui/views/cursors/view_cursor.cpp    src/ui/views/cursors/view_cursor.hpp
         src/ui/views/view_enums.hpp
-        src/ui/panel.cpp src/ui/panel.hpp
+        src/ui/widgets/panel.cpp src/ui/widgets/panel.hpp
+        src/ui/widgets/widget.cpp               src/ui/widgets/widget.hpp
+        src/ui/widgets/layout/layout.cpp        src/ui/widgets/layout/layout.hpp
+        src/ui/widgets/layout/box.cpp           src/ui/widgets/layout/box.hpp
+
 
         src/ui/managers/font_library.cpp src/ui/managers/font_library.hpp
         src/ui/managers/shader_library.cpp src/ui/managers/shader_library.hpp
@@ -132,6 +136,21 @@ SetupExecutable(NAME ${PROJECT_NAME}
         SOURCES ${SOURCES}
         INCLUDE_DIRS "${SRC_DIR}" "${DEP_DIR}/include" "${FT_DIR}/include" "${GLFW_DIR}/include"
         DEPENDENCIES fmt ${OPENGL_LIBRARIES} glfw ${GLFW_LIBRARIES} glad ${CMAKE_DL_LIBS} freetype cxutils keybound)
+
+
+# Test for widgets, layout functionality etc
+SetupExecutable(NAME widget_test
+
+        SOURCES tests/widget_test.cpp
+                src/ui/widgets/widget.cpp           src/ui/widgets/widget.hpp
+                src/ui/widgets/panel.cpp            src/ui/widgets/panel.hpp
+                src/ui/widgets/layout/layout.cpp    src/ui/widgets/layout/layout.hpp
+                src/ui/widgets/layout/box.cpp       src/ui/widgets/layout/box.hpp
+                src/core/math/vector.cpp            src/core/math/vector.hpp
+
+        INCLUDE_DIRS "${SRC_DIR}"
+        DEPENDENCIES fmt cxutils)
+
 
 # target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}")
 target_compile_definitions(${PROJECT_NAME} PUBLIC "GLFW_INCLUDE_NONE")
