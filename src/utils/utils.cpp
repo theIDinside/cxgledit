@@ -7,20 +7,7 @@
 
 namespace util {
 void printmsg(const char *msg) { fmt::print("{}\n", msg); }
-auto to_string(CXMode mode) -> const char * {
-    switch (mode) {
-        case CXMode::Normal:
-            return "CXMode::Normal";
-        case CXMode::Actions:
-            return "CXMode::Actions";
-        case CXMode::CommandInput:
-            return "CXMode::Command";
-        case CXMode::Popup:
-            return "CXMode::Popup";
-        case CXMode::Search:
-            return "CXMode::Search";
-    }
-}
+
 }// namespace util
 #ifdef DEBUG
 

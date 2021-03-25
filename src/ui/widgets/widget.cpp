@@ -109,10 +109,9 @@ void Widget::set_anchor(Vec2i16 pos) { m_pos = pos; }
 gui_id Widget::get_guid() const { return m_id; }
 int Widget::get_id() const { return m_id.id; }
 
-constexpr bool is_within_bounds(BoundingRect bounds, Vec2i16 pos) {
+constexpr bool is_within_bounds(BoundingRect bounds, Vec2i16 pos)  {
     auto res = (bounds.top_left.x <= pos.x && bounds.bottom_right.x >= pos.x) &&
-           (bounds.top_left.y <= pos.y && bounds.bottom_right.y >= pos.y);
+               (bounds.top_left.y <= pos.y && bounds.bottom_right.y >= pos.y);
     return res;
 }
-
 }// namespace cx::widget

@@ -66,18 +66,20 @@ endif ()
 set(SOURCES
         src/main.cpp
         src/app.cpp
+
         # CORE sources
         src/core/core.hpp
-        src/core/strops.cpp src/core/strops.hpp
-        src/core/buffer/text_data.cpp src/core/buffer/text_data.hpp
-        src/core/buffer/data_manager.cpp src/core/buffer/data_manager.hpp
-        src/cfg/configuration.cpp src/cfg/configuration.hpp
-        src/core/math/vector.cpp src/core/math/vector.hpp
-        src/core/math/matrix.cpp src/core/math/matrix.hpp
-        src/core/buffer/file_context.cpp src/core/buffer/file_context.hpp
-        src/core/buffer/std_string_buffer.cpp src/core/buffer/std_string_buffer.hpp
-        src/core/buffer/bookmark.cpp src/core/buffer/bookmark.hpp
-        src/core/buffer/text_rep.cpp src/core/buffer/text_rep.hpp
+        src/core/strops.cpp                     src/core/strops.hpp
+        src/core/buffer/text_data.cpp           src/core/buffer/text_data.hpp
+        src/core/buffer/data_manager.cpp        src/core/buffer/data_manager.hpp
+        src/cfg/configuration.cpp               src/cfg/configuration.hpp
+        src/core/math/vector.cpp                src/core/math/vector.hpp
+        src/core/math/matrix.cpp                src/core/math/matrix.hpp
+        src/core/buffer/file_context.cpp        src/core/buffer/file_context.hpp
+        src/core/buffer/std_string_buffer.cpp   src/core/buffer/std_string_buffer.hpp
+        src/core/buffer/bookmark.cpp            src/core/buffer/bookmark.hpp
+        src/core/buffer/text_rep.cpp            src/core/buffer/text_rep.hpp
+
         # UI Render Sources
         src/ui/core/opengl.cpp                  src/ui/core/opengl.hpp
         src/ui/core/layout.cpp                  src/ui/core/layout.hpp
@@ -87,15 +89,23 @@ set(SOURCES
         src/ui/views/modal.cpp                  src/ui/views/modal.hpp
         src/ui/views/cursors/view_cursor.cpp    src/ui/views/cursors/view_cursor.hpp
         src/ui/views/view_enums.hpp
-        src/ui/widgets/panel.cpp src/ui/widgets/panel.hpp
+
+        # Widgets (Base objects)
+        src/ui/widgets/panel.cpp                src/ui/widgets/panel.hpp
         src/ui/widgets/widget.cpp               src/ui/widgets/widget.hpp
         src/ui/widgets/layout/layout.cpp        src/ui/widgets/layout/layout.hpp
         src/ui/widgets/layout/box.cpp           src/ui/widgets/layout/box.hpp
-
+        # Widgets (Impl)
+        src/ui/widgets/panel.cpp                src/ui/widgets/panel.hpp
+        src/ui/widgets/editor_window.cpp        src/ui/widgets/editor_window.hpp
+        src/ui/widgets/status_bar.cpp           src/ui/widgets/status_bar.hpp
+        src/ui/widgets/text_view.cpp            src/ui/widgets/text_view.hpp
 
         src/ui/managers/font_library.cpp src/ui/managers/font_library.hpp
         src/ui/managers/shader_library.cpp src/ui/managers/shader_library.hpp
         src/ui/managers/view_manager.cpp src/ui/managers/view_manager.hpp
+
+        # Rendering 
         src/ui/render/font.cpp src/ui/render/font.hpp
         src/ui/render/shader.cpp src/ui/render/shader.hpp
         src/ui/render/texture.cpp src/ui/render/texture.hpp

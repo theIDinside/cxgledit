@@ -5,13 +5,10 @@
 #include "panel.hpp"
 #include <utils/utils.hpp>
 
-cx::widget::Panel::~Panel() {
+namespace cx::widget {
+Panel::~Panel() {}
 
-}
+void Panel::draw() { util::println("Panel drawing not implemented"); }
+Panel::Panel(cx::widget::gui_id id, cx::widget::Widget* parent) : Widget(id, parent) {}
 
-void cx::widget::Panel::draw() {
-    util::println("Panel drawing not implemented");
-}
-cx::widget::Panel::Panel(cx::widget::gui_id id, cx::widget::Widget* parent) : Widget(id, parent) {
-
-}
+}// namespace cx::widget

@@ -88,7 +88,7 @@ int DataManager::get_new_id() {
 CommandResult DataManager::request_close(int i) {
     // TODO: when a buffer gets closed, we will request DataManager to reclaim the buffer, adding it to an empty list
     // for which we can then re-use the memory for another buffer that wants to be opened
-    auto buf = std::ranges::find_if(data, [i](auto &e) { return e->m_id == i; });
+    auto buf = std::ranges::find_if(data, [i](auto &e) { return e->id == i; });
     if (buf != std::end(data)) {
         reuse_list.push_back(std::move(*buf));
         data.erase(buf);
@@ -106,8 +106,8 @@ int DataManager::reuseable_buffers() const {
 }
 bool DataManager::is_managed(int buffer_id) {
     auto is_managed_buffer =
-            std::ranges::any_of(data, [buffer_id](auto& e){ return e->m_id == buffer_id; }) ||
-            std::ranges::any_of(reuse_list, [buffer_id](auto& e){ return e->m_id == buffer_id; });
+            std::ranges::any_of(data, [buffer_id](auto& e){ return e->id == buffer_id; }) ||
+            std::ranges::any_of(reuse_list, [buffer_id](auto& e){ return e->id == buffer_id; });
     return is_managed_buffer;
 }
 void DataManager::print_all_managed() {

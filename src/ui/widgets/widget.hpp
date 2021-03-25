@@ -8,9 +8,10 @@
 #include <ui/widgets/layout/layout.hpp>
 
 namespace cx::widget {
+/// This is wrapped inside a struct, because I *think* I might add other fields here. And if I ever have to remove it
+/// it will be pretty easy
 struct gui_id {
     int id;
-
     constexpr auto operator<=>(const gui_id& rhs) const = default;
 };
 
@@ -19,7 +20,7 @@ struct BoundingRect {
     Vec2i16 bottom_right;
 };
 
-static constexpr inline bool is_within_bounds(BoundingRect bounds, Vec2i16 pos);
+constexpr inline bool is_within_bounds(BoundingRect bounds, Vec2i16 pos);
 
 /// We want Widgets to kind of behave/feel like they do in GUI toolkits like Qt, only without the extra stuff
 class Widget {

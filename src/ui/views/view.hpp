@@ -41,13 +41,6 @@ struct PanelLayout {
     HorizontalLayout h_layout{HorizontalLayout::Left};
 };
 
-class Panel {
-public:
-    int width, height;
-    PanelLayout layout;
-private:
-};
-
 struct View {
     ~View();
     static constexpr auto TEXT_LENGTH_FROM_EDGE = 4u;

@@ -3,6 +3,7 @@
 //
 #define WIN32_LEAN_AND_MEAN
 
+
 #include "app.hpp"
 #include <core/buffer/data_manager.hpp>
 #include <ranges>
