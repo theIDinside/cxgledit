@@ -8,25 +8,14 @@
 #include <windows.h>
 #endif
 
-#include <stack>
 #include <string>
 
 #include <GLFW/glfw3.h>
 #include <filesystem>
-
-#include <ui/render/font.hpp>
-#include <ui/render/shader.hpp>
-#include <bindingslib/keybindings.hpp>
-
+#include <core/commands/command_type_info.hpp>
 #include <core/math/matrix.hpp>
-#include <core/buffer/text_data.hpp>
-#include <core/commands/command_interpreter.hpp>
-
-#include <ui/core/layout.hpp>
-#include <ui/managers/font_library.hpp>
-#include <ui/managers/shader_library.hpp>
-#include <ui/views/modal.hpp>
-
+#include <ui/views/popup_types.hpp>
+#include <bindingslib/keybindings.hpp>
 #include <cfg/configuration.hpp>
 
 typedef Action(__cdecl *KeyBindingFn)(CXMode, KeyInput);
@@ -36,6 +25,13 @@ struct View;
 struct EditorWindow;
 struct StatusBar;
 struct CommandView;
+struct ModalPopup;
+struct PopupItem;
+
+namespace core {
+    struct Layout;
+}
+
 }// namespace ui
 
 namespace fs = std::filesystem;
@@ -62,7 +58,7 @@ struct Register {
 };
 
 void reload_keybinding_library();
-
+class TextData;
 
 class App {
 public:
@@ -102,7 +98,7 @@ public:
     void input_command_or_newline();
     void cycle_command_or_move_cursor(Cycle cycle);
 
-    void toggle_modal_popup(ui::ModalContentsType = ui::ModalContentsType::ActionList);
+    void toggle_modal_popup(ModalContentsType = ModalContentsType::ActionList);
     void find_next_in_active(const std::string& search);
     void reload_configuration(const fs::path& cfg_path = "./assets/cxconfig.cxe");
     void handle_mouse_scroll(float xOffset, float yOffset);

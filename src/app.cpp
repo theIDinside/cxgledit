@@ -4,6 +4,8 @@
 #define WIN32_LEAN_AND_MEAN
 
 #include "app.hpp"
+#include <core/commands/command_type_info.hpp>
+#include <ui/views/popup_types.hpp>
 #include <core/buffer/data_manager.hpp>
 #include <ranges>
 #include <ui/core/opengl.hpp>
@@ -12,6 +14,15 @@
 #include <ui/views/view.hpp>
 #include <utility>
 #include <utils/fileutil.hpp>
+
+#include <core/buffer/text_data.hpp>
+#include <core/commands/command_interpreter.hpp>
+#include <core/math/matrix.hpp>
+#include <ui/core/layout.hpp>
+#include <ui/managers/font_library.hpp>
+#include <ui/managers/shader_library.hpp>
+#include <ui/managers/widget_manager.hpp>
+#include <ui/views/modal.hpp>
 
 /// Utility macro for getting registered App pointer with GLFW
 #define get_app_handle(window) ((App *) glfwGetWindowUserPointer(window))
@@ -83,6 +94,7 @@ void framebuffer_callback(GLFWwindow *window, int width, int height) {
         auto app = get_app_handle(window);
         const auto wratio = static_cast<float>(width) / static_cast<float>(app->win_width);
         const auto hratio = static_cast<float>(height) / static_cast<float>(app->win_height);
+        WidgetManager::get_instance().set_screen_size({static_cast<short>(width), static_cast<short>(height)});
         app->set_dimensions(width, height);
         app->update_views_dimensions(wratio, hratio);
         glViewport(0, 0, width, height);
@@ -430,9 +442,9 @@ void App::cycle_command_or_move_cursor(Cycle cycle) {
         if (active_buffer->mark_set) { active_buffer->clear_marks(); }
         if (not is_within(active_buffer->cursor.line, active_view)) {
             if (cycle == Cycle::Forward) {
-                active_view->scroll_to(active_view->cursor->views_top_line + 1);
+                active_view->scroll_to(active_view->cursor->m_views_top_line + 1);
             } else {
-                active_view->scroll_to(active_view->cursor->views_top_line - 1);
+                active_view->scroll_to(active_view->cursor->m_views_top_line - 1);
             }
         }
     }
@@ -471,7 +483,7 @@ void App::app_debug() {
     util::println("- Top line: '{}' - Bottom line: {}", top, bot);
 
     util::println("APPDEBUG: Buffer line: {}\t Cursor line: {}\tDisplayable lines in view: {} - Scrolled: {}",
-                  active_window->get_text_buffer()->cursor.line, active_window->view->cursor->views_top_line,
+                  active_window->get_text_buffer()->cursor.line, active_window->view->cursor->m_views_top_line,
                   active_window->view->lines_displayable, active_window->view->scrolled);
     auto &fl = FontLibrary::get_instance();
     fl.print_loaded_fonts();
@@ -564,7 +576,7 @@ void App::fwrite_active_to_disk(const std::string &path) {
     write_impl(p);
 }
 
-void App::toggle_modal_popup(ui::ModalContentsType contents) {
+void App::toggle_modal_popup(ModalContentsType contents) {
     static CXMode priorMode;
     util::println("Toggle modal");
     if (modal_shown || mode == CXMode::Popup) {
@@ -573,7 +585,7 @@ void App::toggle_modal_popup(ui::ModalContentsType contents) {
         priorMode = CXMode::Popup;
     } else if (mode == CXMode::Normal) {
         switch (contents) {
-            case ui::ActionList: {
+            case ModalContentsType::ActionList: {
                 FileContext fileContextInfo = active_window->file_context();
                 std::vector<ui::PopupItem> context_specific_items =
                         ui::PopupItem::make_action_list_from_context(fileContextInfo);
@@ -582,7 +594,7 @@ void App::toggle_modal_popup(ui::ModalContentsType contents) {
                 const auto y = active_window->view->cursor->pos_y;
                 modal_popup->anchor_to(x + 10, y);
             } break;
-            case ui::Bookmarks: {
+            case ModalContentsType::Bookmarks: {
                 auto bookmarks = active_window->get_bookmarks();
                 if (bookmarks.empty()) return;
                 std::vector<ui::PopupItem> context_specific_items;
@@ -590,7 +602,7 @@ void App::toggle_modal_popup(ui::ModalContentsType contents) {
                 std::ranges::transform(bookmarks, std::back_inserter(context_specific_items), [&index](auto b) {
                     return ui::PopupItem{.item_index = index++,
                                          .displayable = b.line_contents,
-                                         .type = ui::PopupActionType::AppCommand,
+                                         .type = PopupActionType::AppCommand,
                                          .command = Commands::GotoBookmark};
                 });
                 modal_popup->register_actions(context_specific_items);
@@ -598,7 +610,7 @@ void App::toggle_modal_popup(ui::ModalContentsType contents) {
                 auto y = active_window->view->cursor->pos_y;
                 modal_popup->anchor_to(x + 10, y);
             } break;
-            case ui::Item: {
+            case ModalContentsType::Item: {
 
             } break;
         }
@@ -704,11 +716,11 @@ void App::handle_modal_selection(const std::optional<ui::PopupItem> &possible_se
     if (possible_selected) {
         const auto &selected = possible_selected.value();
         switch (selected.type) {
-            case ui::PopupActionType::Insert:
+            case PopupActionType::Insert:
                 toggle_modal_popup();
                 active_buffer->insert_str(selected.displayable);
                 break;
-            case ui::PopupActionType::AppCommand:
+            case PopupActionType::AppCommand:
                 util::println("Selected command: {}", selected.displayable);
                 toggle_modal_popup();
                 switch (selected.command.value_or(Commands::Fail)) {
@@ -910,13 +922,13 @@ void App::handle_normal_input(KeyInput input, int action) {
             case GLFW_KEY_PAGE_UP: {
                 active_window->get_text_buffer()->move_cursor(
                         Movement::Line(active_window->view->lines_displayable, CursorDirection::Back));
-                active_window->view->scroll_to(active_window->view->cursor->views_top_line -
+                active_window->view->scroll_to(active_window->view->cursor->m_views_top_line -
                                                active_window->view->lines_displayable);
             } break;
             case GLFW_KEY_PAGE_DOWN: {
                 active_window->get_text_buffer()->move_cursor(
                         Movement::Line(active_window->view->lines_displayable, CursorDirection::Forward));
-                active_window->view->scroll_to(active_window->view->cursor->views_top_line +
+                active_window->view->scroll_to(active_window->view->cursor->m_views_top_line +
                                                active_window->view->lines_displayable);
             } break;
         }
@@ -932,11 +944,11 @@ void App::handle_normal_input(KeyInput input, int action) {
             } break;
             case GLFW_KEY_UP: {
                 active_window->get_text_buffer()->move_cursor(Movement::Line(3, CursorDirection::Back));
-                active_view->scroll_to(active_view->cursor->views_top_line - 3);
+                active_view->scroll_to(active_view->cursor->m_views_top_line - 3);
             } break;
             case GLFW_KEY_DOWN: {
                 active_window->get_text_buffer()->move_cursor(Movement::Line(3, CursorDirection::Forward));
-                active_view->scroll_to(active_view->cursor->views_top_line + 3);
+                active_view->scroll_to(active_view->cursor->m_views_top_line + 3);
             } break;
             case GLFW_KEY_RIGHT:
                 buffer_set_mark_at_cursor(modifier);
@@ -978,7 +990,7 @@ void App::handle_normal_input(KeyInput input, int action) {
             } break;
             case GLFW_KEY_B: {
                 if (modifier & GLFW_MOD_SHIFT) {
-                    toggle_modal_popup(ui::ModalContentsType::Bookmarks);
+                    toggle_modal_popup(ModalContentsType::Bookmarks);
                 } else {
                     active_window->set_bookmark();
                     auto bms = active_window->get_bookmarks();
@@ -1066,7 +1078,7 @@ void App::handle_popup_input(KeyInput input, int action) {
             handle_modal_selection(modal_popup->get_choice());
         } break;
         case GLFW_KEY_DELETE: {
-            if (modal_popup->type == ui::ModalContentsType::Bookmarks) {
+            if (modal_popup->type == ModalContentsType::Bookmarks) {
                 auto selected = modal_popup->get_choice();
                 if (selected) {
                     active_window->remove_bookmark(selected.value().item_index);
@@ -1127,13 +1139,13 @@ void App::handle_mouse_scroll(float xOffset, float yOffset) {
         active_buffer->move_cursor(Movement::Line(movementTotal, CursorDirection::Forward));
         if (active_buffer->mark_set) { active_buffer->clear_marks(); }
         if (not is_within(active_buffer->cursor.line, active_view)) {
-            active_view->scroll_to(active_view->cursor->views_top_line + movementTotal);
+            active_view->scroll_to(active_view->cursor->m_views_top_line + movementTotal);
         }
     } else { // scroll up. I think
         active_buffer->move_cursor(Movement::Line(movementTotal, CursorDirection::Back));
         if (active_buffer->mark_set) { active_buffer->clear_marks(); }
         if (not is_within(active_buffer->cursor.line, active_view)) {
-            active_view->scroll_to(active_view->cursor->views_top_line - movementTotal);
+            active_view->scroll_to(active_view->cursor->m_views_top_line - movementTotal);
         }
     }
 }
