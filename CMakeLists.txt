@@ -95,12 +95,15 @@ set(SOURCES
         src/ui/widgets/widget.cpp               src/ui/widgets/widget.hpp
         src/ui/widgets/layout/layout.cpp        src/ui/widgets/layout/layout.hpp
         src/ui/widgets/layout/box.cpp           src/ui/widgets/layout/box.hpp
+        src/ui/widgets/layout/single_fill.cpp   src/ui/widgets/layout/single_fill.hpp
+
         # Widgets (Impl)
         src/ui/widgets/panel.cpp                src/ui/widgets/panel.hpp
         src/ui/widgets/editor_window.cpp        src/ui/widgets/editor_window.hpp
         src/ui/widgets/status_bar.cpp           src/ui/widgets/status_bar.hpp
         src/ui/widgets/text_view.cpp            src/ui/widgets/text_view.hpp
 
+        src/ui/managers/widget_manager.cpp      src/ui/managers/widget_manager.hpp
         src/ui/managers/font_library.cpp src/ui/managers/font_library.hpp
         src/ui/managers/shader_library.cpp src/ui/managers/shader_library.hpp
         src/ui/managers/view_manager.cpp src/ui/managers/view_manager.hpp
@@ -133,6 +136,7 @@ add_library(glad ./src/glad.c)
 
 target_include_directories(glad PRIVATE "${DEP_DIR}/include")
 set(FT_DIR ${DEP_DIR}/freetype-2.10.4)
+
 add_subdirectory(${FT_DIR})
 
 # Our custom add_library & add_executable calls, to shorten down this file a little tiny bit and make it more skimmable
@@ -141,6 +145,8 @@ SetupLibrary(NAME keybound
         SOURCES deps/include/bindingslib/keybindings.cpp)
 
 set_target_properties(keybound PROPERTIES CXX_STANDARD 20)
+
+
 
 SetupExecutable(NAME ${PROJECT_NAME}
         SOURCES ${SOURCES}
@@ -173,13 +179,13 @@ add_dependencies(cxgledit keybound)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     message("You are using CLANG. Setting CLANG flags: ${CLANG_FLAGS}")
-    target_compile_options(${PROJECT_NAME} PUBLIC ${CLANG_FLAGS})
+    target_compile_options(${PROJECT_NAME} PRIVATE ${CLANG_FLAGS})
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     message("You are using GCC. Setting GCC flags: ${GCC_FLAGS}")
-    target_compile_options(${PROJECT_NAME} PUBLIC ${GCC_FLAGS})
+    target_compile_options(${PROJECT_NAME} PRIVATE ${GCC_FLAGS})
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     message("You are using MSVC. Setting MSVC flags: ${MSVC_FLAGS}")
-    target_compile_options(${PROJECT_NAME} PUBLIC ${MSVC_FLAGS})
+    target_compile_options(${PROJECT_NAME} PRIVATE ${MSVC_FLAGS})
 endif()
 
 # TODO(count character occurence, using avx): set add_definitions(-DINTRINSICS_ENABLED) when feature is implemented

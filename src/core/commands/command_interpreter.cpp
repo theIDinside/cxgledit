@@ -3,6 +3,7 @@
 //
 
 #include "command_interpreter.hpp"
+#include "command_type_info.hpp"
 #include "file_manager.hpp"
 #include <algorithm>
 #include <app.hpp>
@@ -11,6 +12,8 @@
 #include <string>
 #include <ui/views/editor_window.hpp>
 #include <ui/views/view.hpp>
+#include <ui/managers/font_library.hpp>
+
 
 CommandInterpreter &CommandInterpreter::get_instance() {
     static CommandInterpreter ci;
