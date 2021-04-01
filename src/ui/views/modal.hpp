@@ -3,9 +3,11 @@
 //
 
 #pragma once
+#include "popup_types.hpp"
 #include "view_enums.hpp"
 #include <core/buffer/file_context.hpp>
 #include <core/commands/command_interpreter.hpp>
+#include <core/commands/command_type_info.hpp>
 #include <core/math/matrix.hpp>
 #include <ui/core/layout.hpp>
 #include <vector>
@@ -14,18 +16,6 @@ class TextData;
 
 namespace ui {
 struct View;
-
-enum ModalContentsType {
-    ActionList,
-    Bookmarks,
-    Item
-};
-
-enum class PopupActionType {
-    Insert,     // for when selecting an item in the popup list, to insert that text at the cursor
-    AppCommand, // for when the users selects an item meant to run a command that the App class understands
-};
-
 
 struct PopupItem {
     int item_index = 0;

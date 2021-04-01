@@ -39,17 +39,19 @@ public:
     void set_layout(Layout* layout);
 
     [[nodiscard]] const Vec2i16& get_relative_position() const;
-    [[nodiscard]] Vec2i16 calculate_absolute_position() const;
+    [[nodiscard]] Vec2i16 calculate_absolute_position();
     [[nodiscard]] Vec2i16 size() const;
     [[nodiscard]] bool is_fixed_size() const;
 
-    void set_size(Vec2i16 size);
+    virtual void set_size(Vec2i16 size);
     [[nodiscard]] i16 width() const;
     [[nodiscard]] std::optional<i16> fixed_width() const;
 
     /// Calling resize() on a widget, triggers a layout action, layout out the children of that widget according to the new size
     /// which is what differs this member function from set_size() which does no such thing.
-    void resize(std::optional<i16> maybe_width, std::optional<i16> maybe_height);
+    virtual void resize(std::optional<i16> maybe_width, std::optional<i16> maybe_height);
+
+    virtual void set_fixed_size(std::optional<i16> maybe_width, std::optional<i16> maybe_height);
     void set_width(i16 width);
     [[nodiscard]] i16 height() const;
     [[nodiscard]] std::optional<i16> fixed_height() const;
@@ -59,7 +61,7 @@ public:
     [[nodiscard]] inline std::vector<Widget*> children() const;
     void add_child(Widget* widget);
 
-    void set_anchor(Vec2i16 pos);
+    virtual void set_anchor(Vec2i16 pos);
 
     [[nodiscard]] BoundingRect bounding_rect() const;
     [[nodiscard]] bool is_visible() const;
@@ -74,12 +76,15 @@ public:
     /// widgets.
     void layout_widget();
 
-private:
+    virtual void handle_mouse_click(Vec2i16 mousePos);
+
+protected:
     gui_id m_id;
     Vec2i16 m_size;
     std::optional<i16> m_fixed_width;
     std::optional<i16> m_fixed_height;
     Vec2i16 m_pos;
+    Vec2i16 m_screen_pos;
     Layout* p_layout;
     Widget* p_parent;
     std::vector<Widget*> m_children;

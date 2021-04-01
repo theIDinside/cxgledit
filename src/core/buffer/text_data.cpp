@@ -57,3 +57,11 @@ FileContext TextData::file_context() const {
         return FileContext{.type = ContexTypes::Unhandled, .path = file_path};
     }
 }
+
+std::optional<int> TextMetaData::get(std::size_t line_number) const {
+    if(line_number < line_begins.size()) [[likely]] {
+        return line_begins[line_number];
+    } else [[unlikely]] {
+        return {};
+    }
+}

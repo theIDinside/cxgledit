@@ -27,7 +27,7 @@ std::unique_ptr<ViewCursor> ViewCursor::create_from(std::unique_ptr<View> &ownin
     shader->setup_fillcolor_ids();
     vc->mvp = owning_view->mvp;
 
-    vc->views_top_line = buf_curs.line;
+    vc->m_views_top_line = buf_curs.line;
     vc->index = buf_curs.pos;
     vc->cursor_data = std::move(cursor_vao);
     vc->line_shade_data = std::move(line_shade_vao);
@@ -52,7 +52,7 @@ std::unique_ptr<ViewCursor> ViewCursor::create_from(View *view) {
     shader->setup_fillcolor_ids();
 
     vc->mvp = view->mvp;
-    vc->views_top_line = buf_curs.line;
+    vc->m_views_top_line = buf_curs.line;
     vc->index = buf_curs.pos;
     vc->cursor_data = std::move(cursor_vao);
     vc->line_shade_data = std::move(line_shade_vao);
@@ -148,15 +148,14 @@ void ViewCursor::set_line_rect(GLfloat x1, GLfloat x2, GLfloat y1, int rectHeigh
     const auto h = static_cast<float>(rectHeight);
     const auto x = x1;
     const auto y = y1;
-    auto &data = cursor_data->vbo->data;
     cursor_data->vbo->pristine = false;
-    data.clear();
-    data.emplace_back(Vertex{x, y + h});
-    data.emplace_back(Vertex{x, y});
-    data.emplace_back(Vertex{x + w, y});
-    data.emplace_back(Vertex{x, y + h});
-    data.emplace_back(Vertex{x + w, y});
-    data.emplace_back(Vertex{x + w, y + h});
+    cursor_data->vbo->data.clear();
+    cursor_data->vbo->data.emplace_back(Vertex{x, y + h});
+    cursor_data->vbo->data.emplace_back(Vertex{x, y});
+    cursor_data->vbo->data.emplace_back(Vertex{x + w, y});
+    cursor_data->vbo->data.emplace_back(Vertex{x, y + h});
+    cursor_data->vbo->data.emplace_back(Vertex{x + w, y});
+    cursor_data->vbo->data.emplace_back(Vertex{x + w, y + h});
 }
 void ViewCursor::set_projection(Matrix orthoProjection) {
     this->mvp = orthoProjection;

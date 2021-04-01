@@ -44,8 +44,8 @@ struct EditorWindow {
     void handle_click(int xPos, int yPos);
     void set_view_colors(RGBColor bg, RGBColor fg, RGBColor whenActiveColor);
     void set_font(SimpleFont *pFont);
-
     void set_caret_style(Configuration::Cursor style);
+
     FileContext file_context() const;
     const std::vector<Bookmark>& get_bookmarks() const;
     void set_bookmark();

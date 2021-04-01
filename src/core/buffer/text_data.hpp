@@ -57,6 +57,8 @@ struct TextMetaData {
     std::vector<int> line_begins{0};
     std::string buf_name{};
     std::vector<Bookmark> bookmarks{};
+
+    std::optional<int> get(size_t line_number) const;
 };
 
 enum class BufferTypeInfo { CommandInput, StatusBar, EditBuffer, Modal };
@@ -88,12 +90,11 @@ public:
     virtual void remove(const Movement &m) = 0;
     virtual void erase() = 0;
 
-    virtual std::size_t get_cursor_pos() const = 0;
-
-    virtual std::size_t size() const = 0;
-    virtual std::size_t capacity() const = 0;
-    virtual bool empty() const { return size() == 0; };
-    virtual std::size_t lines_count() const = 0;
+    [[nodiscard]] virtual std::size_t get_cursor_pos() const = 0;
+    [[nodiscard]] virtual std::size_t size() const = 0;
+    [[nodiscard]] virtual std::size_t capacity() const = 0;
+    [[nodiscard]] virtual bool empty() const { return size() == 0; };
+    [[nodiscard]] virtual std::size_t lines_count() const = 0;
 
     virtual BufferCursor &get_cursor() = 0;
 
@@ -111,10 +112,10 @@ public:
     virtual void rebuild_metadata() = 0;
     virtual void clear_metadata();
     virtual bool has_metadata() { return has_meta_data && not meta_data.line_begins.empty(); }
-    virtual bool is_pristine() const { return state_is_pristine; }
+    [[nodiscard]] virtual bool is_pristine() const { return state_is_pristine; }
     virtual void set_bookmark() = 0;
 #ifdef DEBUG
-    virtual std::string to_std_string() const = 0;
+    [[nodiscard]] virtual std::string to_std_string() const = 0;
     virtual std::string_view to_string_view() = 0;
     virtual void load_string(std::string &&data) = 0;
     virtual void set_string(std::string& data) = 0;
@@ -125,7 +126,7 @@ public:
         util::println("Buffer cursor [i:{}, ln: {}, col: {}]", cursor.pos, cursor.line, cursor.col_pos);
     }
     void print_line_meta_data() const {
-        util::println("meta data - line begin: {}", meta_data.line_begins[cursor.line]);
+        util::println("meta data - line begin: {}", meta_data.line_begins[static_cast<unsigned long>(cursor.line)]);
         util::println("Buffer meta data up to date: {}", data_is_pristine);
     }
 #endif
@@ -146,7 +147,6 @@ public:
     virtual void goto_next(std::string search) = 0;
 
     void set_name(std::string buffer_name);
-
     virtual FileContext file_context() const;
 
 protected:

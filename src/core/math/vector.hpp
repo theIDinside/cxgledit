@@ -59,8 +59,6 @@ struct Vec2 {
                 .y = static_cast<T>(lhs.y - rhs.y)
         };
     }
-
-
     friend bool operator==(const Vec2 &lhs, const Vec2 &rhs);
     friend std::ostream &operator<<(std::ostream &os, const Vec2 &v);
 };

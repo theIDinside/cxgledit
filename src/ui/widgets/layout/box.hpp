@@ -34,8 +34,8 @@ namespace cx::widget {
         /// and be clipped (Relaxed)
         ManageConstraints m_layout_constraints = ManageConstraints::FitAll;
 
-        void arrange_horizontally(Widget* widget);
-        void arrange_vertically(Widget* widget);
+        void arrange_horizontally(Widget* widget) const;
+        void arrange_vertically(Widget* widget) const;
     };
 
 }

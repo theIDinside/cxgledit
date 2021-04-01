@@ -2,7 +2,7 @@
 // Created by 46769 on 2021-01-17.
 //
 #include "configuration.hpp"
-
+#include <ui/managers/font_library.hpp>
 #include <fstream>
 #include <sstream>
 

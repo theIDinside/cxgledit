@@ -289,7 +289,7 @@ void View::draw_modal_view(int selected, std::vector<TextDrawable> &drawables) {
 void View::set_projection(Matrix projection) { this->mvp = projection; }
 
 std::pair<std::string_view, std::string_view> View::debug_print_boundary_lines() {
-    const auto top_line = cursor->views_top_line;
+    const auto top_line = cursor->m_views_top_line;
     const auto end_line = top_line + lines_displayable;
 
     auto buf = get_text_buffer();
@@ -318,9 +318,9 @@ void View::scroll_to(int line) {
     int linesInBuffer = AS(get_text_buffer()->meta_data.line_begins.size(), int);
     int maxScrollableTopLine = std::max(0, linesInBuffer - lines_displayable + (lines_displayable / 2));
     if (line < maxScrollableTopLine) {
-        cursor->views_top_line = std::max(line, 0);
+        cursor->m_views_top_line = std::max(line, 0);
     } else {
-        cursor->views_top_line = maxScrollableTopLine;
+        cursor->m_views_top_line = maxScrollableTopLine;
     }
 }
 

@@ -9,8 +9,8 @@ either creates a bunch of textures for each character, or they create a texture 
 help) yet and still issue *one drawcall per character* - which kind of defeats the purpose of having the texture
 atlast to begin with. So some hacking lead me to writing the SimpleFont class that can scan text (right now it's just std::string,
 I will write my own buffer type, probably a gap buffer or something easy like that to begin with) and create
-all the vertex data for a views_top_line, or even the entire file, upload that to the gpu and issue 1 draw call - instead of 15000
-for a file with 500 lines and 30 character per views_top_line average.
+all the vertex data for a m_view_line_anchor, or even the entire file, upload that to the gpu and issue 1 draw call - instead of 15000
+for a file with 500 lines and 30 character per m_view_line_anchor average.
 
 ![First render](docs/img/initial.PNG)
 
@@ -81,12 +81,12 @@ then draw the *entire* buffer, we are obviously wasting a *BUNCH* of time on:
 - Doing a bunch of work with vertices that aren't even close to being displayed
 
 Text editing is fairly easy. But it comes with a list of somewhat difficult / interesting challanges,
-such as, what constitutes a views_top_line, _where_ in memory does a views_top_line begin (does it begin at index_at='\n', or index_after='\n')
+such as, what constitutes a m_view_line_anchor, _where_ in memory does a m_view_line_anchor begin (does it begin at index_at='\n', or index_after='\n')
 Choosing what to do here will have reverberating effects, which is interesting and a good learning experience
 for beginners. Representing text in a "everything is an index", is not necesarrily good. In fact it's a major
-source of bugs. When you want to delete a views_top_line, you don't want to mess with lines before or after it.
+source of bugs. When you want to delete a m_view_line_anchor, you don't want to mess with lines before or after it.
 Thus some abstraction is good here, such as "item boundary" or just boundary. This way we can query our datastructure for,
-"find beginning of views_top_line", with a parameter of Boundary::Inside or Boundary::Outside, specifying what we mean in that
+"find beginning of m_view_line_anchor", with a parameter of Boundary::Inside or Boundary::Outside, specifying what we mean in that
 specific instance.
 
 

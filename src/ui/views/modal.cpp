@@ -3,9 +3,10 @@
 //
 
 #include "modal.hpp"
-#include <core/buffer/std_string_buffer.hpp>
-#include <ranges>
+#include "popup_types.hpp"
 #include <algorithm>
+#include <core/buffer/std_string_buffer.hpp>
+#include <core/commands/command_type_info.hpp>
 #include <ui/managers/font_library.hpp>
 #include <ui/views/view.hpp>
 
@@ -122,15 +123,15 @@ std::vector<ui::PopupItem> ui::PopupItem::make_action_list_from_context(const Fi
     auto index = 0;
     switch (context.type) {
         case CPPHeader: {
-            result.push_back(ui::PopupItem{index++, "Goto Implementation file", ui::PopupActionType::AppCommand,
+            result.push_back(ui::PopupItem{index++, "Goto Implementation file", PopupActionType::AppCommand,
                                            Commands::GotoSource});
         } break;
         case CPPSource: {
             result.push_back(
-                    ui::PopupItem{index++, "Goto header", ui::PopupActionType::AppCommand, Commands::GotoHeader});
+                    ui::PopupItem{index++, "Goto header", PopupActionType::AppCommand, Commands::GotoHeader});
         } break;
         case Config: {
-            result.push_back(ui::PopupItem{index++, "Load this configuration", ui::PopupActionType::AppCommand,
+            result.push_back(ui::PopupItem{index++, "Load this configuration", PopupActionType::AppCommand,
                                            Commands::ReloadConfiguration});
         } break;
         case Unhandled: {
@@ -141,10 +142,10 @@ std::vector<ui::PopupItem> ui::PopupItem::make_action_list_from_context(const Fi
             PANIC("All cases for PopupItem based on FileContext not yet implemented");
         }
     }
-    result.push_back(ui::PopupItem{index++, "Goto", ui::PopupActionType::AppCommand, Commands::GotoLine});
-    result.push_back(ui::PopupItem{index++, "Open file", ui::PopupActionType::AppCommand, Commands::OpenFile});
-    result.push_back(ui::PopupItem{index++, "Find in file", ui::PopupActionType::AppCommand, Commands::Search});
-    result.push_back(ui::PopupItem{index++, "Save file", ui::PopupActionType::AppCommand, Commands::WriteFile});
-    result.push_back(ui::PopupItem{index++, "Save all", ui::PopupActionType::AppCommand, Commands::WriteAllFiles});
+    result.push_back(ui::PopupItem{index++, "Goto", PopupActionType::AppCommand, Commands::GotoLine});
+    result.push_back(ui::PopupItem{index++, "Open file", PopupActionType::AppCommand, Commands::OpenFile});
+    result.push_back(ui::PopupItem{index++, "Find in file", PopupActionType::AppCommand, Commands::Search});
+    result.push_back(ui::PopupItem{index++, "Save file", PopupActionType::AppCommand, Commands::WriteFile});
+    result.push_back(ui::PopupItem{index++, "Save all", PopupActionType::AppCommand, Commands::WriteAllFiles});
     return result;
 }

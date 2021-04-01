@@ -409,12 +409,12 @@ void SimpleFont::add_colorized_text_gpu_data(TextVertexArrayObject *vao, std::ve
 void SimpleFont::create_vertex_data_no_highlighting(ui::View *view, ui::core::ScreenPos startingTopLeftPos) {
     // FN_MICRO_BENCH();
     auto buf = view->get_text_buffer();
-    auto character_start = buf->meta_data.line_begins[view->cursor->views_top_line];
+    auto character_start = buf->meta_data.line_begins[view->cursor->m_views_top_line];
     auto char_end = 0;
-    if(view->cursor->views_top_line + view->lines_displayable >= buf->meta_data.line_begins.size() - 1) {
+    if(view->cursor->m_views_top_line + view->lines_displayable >= buf->meta_data.line_begins.size() - 1) {
         char_end = buf->size();
     } else {
-        auto end_line = view->cursor->views_top_line + view->lines_displayable;
+        auto end_line = view->cursor->m_views_top_line + view->lines_displayable;
         char_end = buf->meta_data.line_begins[end_line+1];
     }
     auto total_characters = char_end - character_start;
@@ -518,17 +518,17 @@ void SimpleFont::create_vertex_data_no_highlighting(ui::View *view, ui::core::Sc
 void SimpleFont::create_vertex_data_for_syntax(ui::View* view, const ui::core::ScreenPos startingTopLeftPos) {
     // FN_MICRO_BENCH();
     auto buf = view->get_text_buffer();
-    auto character_start = buf->meta_data.line_begins[view->cursor->views_top_line];
+    auto character_start = buf->meta_data.line_begins[view->cursor->m_views_top_line];
 
 
     // Calculate the character range, that currently is displayable on the screen.
     // We use the amount of lines the view can display, it's current "top line" and where that points to
     // in the buffer. we get this info from out of buf->meta_data, which consists of indices where line beginnings are.
     auto char_end = 0;
-    if(view->cursor->views_top_line + view->lines_displayable >= buf->meta_data.line_begins.size() - 1) {
+    if(view->cursor->m_views_top_line + view->lines_displayable >= buf->meta_data.line_begins.size() - 1) {
         char_end = buf->size();
     } else {
-        auto end_line = view->cursor->views_top_line + view->lines_displayable;
+        auto end_line = view->cursor->m_views_top_line + view->lines_displayable;
         char_end = buf->meta_data.line_begins[end_line+1];
     }
 
@@ -657,7 +657,7 @@ void SimpleFont::create_vertex_data_for_syntax(ui::View* view, const ui::core::S
 void SimpleFont::create_vertex_data_for_only_visible(ui::View *view, ui::core::ScreenPos startingTopLeftPos) {
     auto buf = view->get_text_buffer();
     auto buf_curs = view->get_text_buffer()->get_cursor();
-    auto top_line = std::max(view->cursor->views_top_line - 40, 0);
+    auto top_line = std::max(view->cursor->m_views_top_line - 40, 0);
     auto total_lines = view->lines_displayable;
     auto bottom_line = top_line + total_lines + 40;
     assert(row_height == view->font->get_pixel_row_advance());

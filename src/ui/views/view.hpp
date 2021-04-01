@@ -88,7 +88,6 @@ struct View {
     Shader *shader = nullptr;
     std::size_t vertexCapacity{0};
     int scrolled = 0;
-    int lines_scrolled = 0;
     Boxed<ViewCursor> cursor;
     ViewType type = ViewType::Text;
 

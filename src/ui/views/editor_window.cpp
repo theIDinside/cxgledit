@@ -6,6 +6,7 @@
 #include <core/buffer/data_manager.hpp>
 #include <ui/views/status_bar.hpp>
 #include <ui/views/view.hpp>
+#include <ui/managers/font_library.hpp>
 
 /// The optional<TD*> is *ONLY* to express the purpose that this value can be nil
 /// just having a pointer here, could *very* well lead me to believe at some point that null can't be passed here
@@ -75,7 +76,7 @@ void EditorWindow::handle_click(int xPos, int yPos) {
 
         const auto row_clicked = std::floor(std::max(0, yPos - status_bar->ui_view->height) /
                                       float(view->get_font()->get_pixel_row_advance())) +
-                           view->get_cursor()->views_top_line;
+                           view->get_cursor()->m_views_top_line;
         if (meta_data.line_begins.size() > row_clicked) {
             const auto bufIdx = meta_data.line_begins[int(row_clicked)];
             view->get_text_buffer()->step_cursor_to(bufIdx);

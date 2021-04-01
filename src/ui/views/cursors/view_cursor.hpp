@@ -12,11 +12,6 @@ namespace ui {
     struct View;
 
     struct ViewCursor {
-
-        /// Called from within View's constructor/factory method
-        /// N.B.!! Must take a *fully* and *well formed/created* View object (pointer to)
-        /// as it will use this pointer to query the TextData buffer object where it's cursor is located at
-        /// within the buffer
         static std::unique_ptr<ViewCursor> create_from(std::unique_ptr<View> &owning_view);
         static std::unique_ptr<ViewCursor> create_from(View* owning_view);
 
@@ -35,7 +30,7 @@ namespace ui {
         Matrix mvp;
         View *view = nullptr;
         Shader *shader = nullptr;
-        int views_top_line{};
+        int m_views_top_line{};
         int width{};
         int height{};
         int pos_x;

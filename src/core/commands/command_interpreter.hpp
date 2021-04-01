@@ -3,31 +3,13 @@
 //
 
 #pragma once
+#include "command_type_info.hpp"
+#include <GLFW/glfw3.h>
 #include <optional>
 #include <string>
 #include <string_view>
-#include <GLFW/glfw3.h>
 
 class App;
-
-enum class Commands {
-    OpenFile,
-    WriteFile,
-    WriteAllFiles,
-    GotoLine,
-    GotoBookmark,
-    UserCommand,
-    Search,
-    Fail,
-    GotoHeader,
-    ReloadConfiguration,
-    GotoSource
-};
-
-enum class Cycle : int {
-    Forward = GLFW_KEY_DOWN,        // down
-    Backward = GLFW_KEY_UP,       // up
-};
 
 struct EditorCommand {
     Commands type;

@@ -15,7 +15,6 @@ public:
     virtual ~Layout() = default;
     virtual void arrange_widget(Widget* w) = 0;
     virtual void set_container(Widget* w) { widget_container = w; }
-
 protected:
     Widget* widget_container;
 };
